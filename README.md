@@ -5,7 +5,7 @@ My favorite types.
 ## Usage
 
 ```ts
-import { Result } from "@asuka/core";
+import { Result } from "@askua/core";
 
 function toUpperCase(obj: any): Result<string> {
   if (typeof obj === "string") {

@@ -1,5 +1,5 @@
 {
-  "name": "@asuka/core",
+  "name": "@askua/core",
   "description": "My favorite types",
   "version": "1.0.0-rc1",
   "exports": "./mod.ts",
