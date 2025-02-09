@@ -5,12 +5,22 @@ export interface Ok<T> {
 }
 
 /** impl Ok<T> */
-class ok<T> implements Ok<T> {
+class ok<T> implements Ok<T>, Iterable<T> {
   readonly ok = true;
   constructor(readonly value: T) {}
 
   toString(): string {
     return `Ok(${this.value})`;
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    let count = 0;
+    const value = this.value;
+    return Object.assign(this, {
+      next(): IteratorResult<T> {
+        return { done: 0 < count++, value };
+      },
+    });
   }
 }
 
@@ -20,12 +30,20 @@ export interface Err<E> {
   error: E;
 }
 
-class err<E> implements Err<E> {
+class err<E> implements Err<E>, Iterable<never> {
   readonly ok = false;
   constructor(readonly error: E) {}
 
   toString(): string {
     return `Err(${this.error})`;
+  }
+
+  [Symbol.iterator](): Iterator<never> {
+    return Object.assign(this, {
+      next(): IteratorResult<never> {
+        return { done: true, value: undefined };
+      },
+    });
   }
 }
 
@@ -51,30 +69,44 @@ export interface StaticResult {
    * ### Example
    *
    * ```ts
-   * import { assertObjectMatch } from "@std/assert";
+   * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
    * assertObjectMatch(
    *   Result.ok("is ok"),
    *   { ok: true, value: "is ok" },
    * );
+   *
+   * for (const value of Result.ok("is ok")) {
+   *   assertEquals(value, "is ok");
+   * }
+   *
+   * const array = Array.from(Result.ok("is ok"));
+   * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T>(value: T): Ok<T>;
+  ok<T>(value: T): Ok<T> & Iterable<T>;
   /**
    * return Err<E>
    *
    * ### Example
    *
    * ```ts
-   * import { assertObjectMatch } from "@std/assert";
+   * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
    * assertObjectMatch(
    *   Result.err("is error"),
    *   { ok: false, error: "is error" },
    * );
+   *
+   * for (const _ of Result.err("is error")) {
+   *   assert(false);
+   * }
+   *
+   * const array = Array.from(Result.err("is error"));
+   * assertEquals(array, []);
    * ```
    */
-  err<E>(error: E): Err<E>;
+  err<E>(error: E): Err<E> & Iterable<never>;
 }
 
 /**
@@ -102,10 +134,10 @@ export interface StaticResult {
 export type Result<T, E = Error> = Ok<T> | Err<E>;
 /** impl StaticResult */
 export const Result: StaticResult = {
-  ok<T>(value: T): Ok<T> {
+  ok<T>(value: T): Ok<T> & Iterable<T> {
     return new ok(value);
   },
-  err<E>(error: E): Err<E> {
+  err<E>(error: E): Err<E> & Iterable<never> {
     return new err(error);
   },
 };

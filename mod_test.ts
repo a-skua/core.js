@@ -40,4 +40,48 @@ Deno.test("Result", async (t) => {
       });
     }
   }
+
+  {
+    const tests = [
+      [Result.ok("value"), ["value"]],
+      [Result.err("error"), []],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`for of ${result}`, () => {
+        let i = 0;
+        for (const value of result) {
+          assertEquals(value, expected[i++]);
+        }
+        assertEquals(i, expected.length);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok("value"), ["value"] as string[]],
+      [Result.err("error"), [] as string[]],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`Array.from(${result}) => [${expected}]`, () => {
+        const array = Array.from(result);
+        assertEquals(array, expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok("value"), true],
+      [Result.err("error"), true],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`Symbol.iterator in ${result} => ${expected}`, () => {
+        assertEquals(Symbol.iterator in result, expected);
+      });
+    }
+  }
 });
