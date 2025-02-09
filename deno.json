@@ -1,0 +1,14 @@
+{
+  "name": "@asuka/core",
+  "description": "My favorite types",
+  "version": "1.0.0-rc1",
+  "exports": "./mod.ts",
+  "tasks": {
+    "tests": "deno test && deno test --doc . && deno bench",
+    "bench": "deno bench | sed s:$(dirname $(pwd))::",
+    "check": "deno fmt && deno lint && deno check . && deno task tests && deno publish --dry-run"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}
