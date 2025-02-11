@@ -1,7 +1,20 @@
-/** type Ok */
+/**
+ * type Ok
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ *
+ * const result = Result.ok("is ok");
+ * assertEquals([...result], ["is ok"]);
+ * ```
+ */
 export interface Ok<T> {
-  ok: true;
-  value: T;
+  /** true */
+  readonly ok: true;
+  /** value */
+  readonly value: T;
 }
 
 /** impl Ok<T> */
@@ -24,12 +37,26 @@ class ok<T> implements Ok<T>, Iterable<T> {
   }
 }
 
-/** type Err */
+/**
+ * type Err
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ *
+ * const result = Result.err("is error");
+ * assertEquals([...result], []);
+ * ```
+ */
 export interface Err<E> {
-  ok: false;
-  error: E;
+  /** false */
+  readonly ok: false;
+  /** error */
+  readonly error: E;
 }
 
+/** impl Err<E> */
 class err<E> implements Err<E>, Iterable<never> {
   readonly ok = false;
   constructor(readonly error: E) {}
@@ -52,7 +79,7 @@ class err<E> implements Err<E>, Iterable<never> {
  *
  * ### Example
  *
- * ``ts
+ * ```ts
  * function toUpperCase(obj: any): Result<string> {
  *   if (typeof obj === "string") {
  *     return Result.ok(obj.toUpperCase());

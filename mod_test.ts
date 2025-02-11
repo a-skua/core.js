@@ -35,7 +35,7 @@ Deno.test("Result", async (t) => {
     ] as const;
 
     for (const [result, expected] of tests) {
-      await t.step(`obj.toString() => ${result}`, () => {
+      await t.step(`${result}.toString() => ${expected}`, () => {
         assertEquals(`${result}`, expected);
       });
     }

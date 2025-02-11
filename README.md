@@ -2,6 +2,14 @@
 
 My favorite types.
 
+## Installation
+
+```sh
+npx jsr add @askua/core
+```
+
+Published to [JSR](https://jsr.io/@askua/core)
+
 ## Usage
 
 ```ts

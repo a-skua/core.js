@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "exports": "./mod.ts",
   "tasks": {
     "version": "jq -r '.version' < deno.json",
