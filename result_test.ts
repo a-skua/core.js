@@ -1,5 +1,5 @@
 import { assertEquals, assertObjectMatch } from "@std/assert";
-import { Result } from "./mod.ts";
+import { Result } from "./result.ts";
 
 Deno.test("Result", async (t) => {
   {

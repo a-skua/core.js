@@ -1,4 +1,4 @@
-import { Result } from "./mod.ts";
+import { Result } from "./result.ts";
 
 Deno.bench("Result.ok(value)", () => {
   Result.ok("value");
