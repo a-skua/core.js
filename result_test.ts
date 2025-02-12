@@ -1,5 +1,6 @@
 import { assertEquals, assertObjectMatch } from "@std/assert";
 import { Result } from "./result.ts";
+import { Option } from "./option.ts";
 
 Deno.test("Result", async (t) => {
   {
@@ -81,6 +82,43 @@ Deno.test("Result", async (t) => {
     for (const [result, expected] of tests) {
       await t.step(`Symbol.iterator in ${result} => ${expected}`, () => {
         assertEquals(Symbol.iterator in result, expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok("value"), Option.some("value")],
+      [Result.err("error"), Option.none()],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.toOption() => ${expected}`, () => {
+        assertEquals(result.toOption(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [{ ok: true, value: "value" }, ["value"] as string[]],
+      [{ ok: false, error: "error" }, []],
+    ] as const;
+    for (const [input, expected] of tests) {
+      await t.step(`[...Result(${input})] => [${expected}]`, () => {
+        assertEquals([...Result(input)], expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [{ ok: true, value: "value" }, "Ok(value)"],
+      [{ ok: false, error: "error" }, "Err(error)"],
+    ] as const;
+    for (const [input, expected] of tests) {
+      await t.step(`Result(${input}).toString() => ${expected}`, () => {
+        assertEquals(Result(input).toString(), expected);
       });
     }
   }

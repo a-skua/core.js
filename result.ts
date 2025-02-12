@@ -1,3 +1,5 @@
+import type { None, OptionToResult, Some } from "./option.ts";
+import { Option } from "./option.ts";
 /**
  * type Ok
  *
@@ -18,9 +20,13 @@ export interface Ok<T> {
 }
 
 /** impl Ok<T> */
-class ok<T> implements Ok<T>, Iterable<T> {
+class ok<T> implements Ok<T>, Iterable<T>, ResultToOption<T> {
   readonly ok = true;
   constructor(readonly value: T) {}
+
+  toOption(): Some<T> & Iterable<T> & OptionToResult<T> {
+    return Option.some(this.value);
+  }
 
   toString(): string {
     return `Ok(${this.value})`;
@@ -57,9 +63,13 @@ export interface Err<E> {
 }
 
 /** impl Err<E> */
-class err<E> implements Err<E>, Iterable<never> {
+class err<E> implements Err<E>, Iterable<never>, ResultToOption<never> {
   readonly ok = false;
   constructor(readonly error: E) {}
+
+  toOption(): None & Iterable<never> & OptionToResult<never> {
+    return Option.none();
+  }
 
   toString(): string {
     return `Err(${this.error})`;
@@ -72,6 +82,27 @@ class err<E> implements Err<E>, Iterable<never> {
       },
     });
   }
+}
+
+/**
+ * Result to Option
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Option } from "@askua/core/option";
+ *
+ * const some = Result.ok("is ok").toOption();
+ * assertEquals(some, Option.some("is ok"));
+ *
+ * const none = Result.err("is error").toOption();
+ * assertEquals(none, Option.none());
+ * ```
+ */
+export interface ResultToOption<T> {
+  /** to Option */
+  toOption(): Option<T> & Iterable<T> & OptionToResult<T>;
 }
 
 /**
@@ -111,7 +142,7 @@ export interface StaticResult {
    * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T>(value: T): Ok<T> & Iterable<T>;
+  ok<T>(value: T): Ok<T> & Iterable<T> & ResultToOption<T>;
   /**
    * return Err<E>
    *
@@ -133,7 +164,7 @@ export interface StaticResult {
    * assertEquals(array, []);
    * ```
    */
-  err<E>(error: E): Err<E> & Iterable<never>;
+  err<E>(error: E): Err<E> & Iterable<never> & ResultToOption<never>;
 }
 
 /**
@@ -160,11 +191,22 @@ export interface StaticResult {
  */
 export type Result<T, E = Error> = Ok<T> | Err<E>;
 /** impl StaticResult */
-export const Result: StaticResult = {
-  ok<T>(value: T): Ok<T> & Iterable<T> {
-    return new ok(value);
-  },
-  err<E>(error: E): Err<E> & Iterable<never> {
-    return new err(error);
-  },
-};
+export const Result:
+  & (<T, E>(
+    result: Result<T, E>,
+  ) => Result<T, E> & Iterable<T> & ResultToOption<T>)
+  & StaticResult = Object.assign(
+    <T, E>(
+      result: Result<T, E>,
+    ): Result<T, E> & Iterable<T> & ResultToOption<T> => {
+      return result.ok ? new ok(result.value) : new err(result.error);
+    },
+    {
+      ok<T>(value: T): Ok<T> & Iterable<T> & ResultToOption<T> {
+        return new ok(value);
+      },
+      err<E>(error: E): Err<E> & Iterable<never> & ResultToOption<never> {
+        return new err(error);
+      },
+    },
+  );

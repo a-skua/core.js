@@ -37,3 +37,19 @@ Deno.bench("Array.from(Result.ok(value))", () => {
 Deno.bench("Array.from(Result.err(error))", () => {
   Array.from(Result.err("error"));
 });
+
+Deno.bench("Result({ ok: true, value })", () => {
+  Result({ ok: true, value: "value" });
+});
+
+Deno.bench("Result({ ok: false, error })", () => {
+  Result({ ok: false, error: "error" });
+});
+
+Deno.bench("Result.ok(value).toOption()", () => {
+  Result.ok("value").toOption();
+});
+
+Deno.bench("Result.err(error).toOption()", () => {
+  Result.err("error").toOption();
+});
