@@ -1,4 +1,5 @@
 import type { Err, Ok, ResultToOption } from "./result.ts";
+import type { MapOperator } from "./types.ts";
 import { Result } from "./result.ts";
 
 /**
@@ -20,30 +21,6 @@ export interface Some<T> {
   readonly value: T;
 }
 
-/** implementation of Some */
-class _Some<T> implements Some<T>, Iterable<T>, OptionToResult<T> {
-  readonly some = true;
-  constructor(readonly value: T) {}
-
-  toString(): string {
-    return `Some(${this.value})`;
-  }
-
-  toResult(): Ok<T> & Iterable<T> & ResultToOption<T> {
-    return Result.ok(this.value);
-  }
-
-  [Symbol.iterator](): Iterator<T> {
-    let count = 0;
-    const value = this.value;
-    return Object.assign(this, {
-      next(): IteratorResult<T> {
-        return { done: 0 < count++, value };
-      },
-    });
-  }
-}
-
 /**
  * type None
  *
@@ -61,28 +38,42 @@ export interface None {
   readonly some: false;
 }
 
-/** implementation of None */
-class _None implements None, Iterable<never>, OptionToResult<never> {
-  readonly some = false;
+/**
+ * type Option
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
+ *
+ * assertObjectMatch(
+ *   Option.some("is some"),
+ *   { some: true, value: "is some" },
+ * );
+ *
+ * assertObjectMatch(
+ *   Option.none(),
+ *   { some: false },
+ * );
+ *
+ * for (const value of Option.some("is some")) {
+ *   assertEquals(value, "is some");
+ * }
+ *
+ * for (const _ of Option.none()) {
+ *   assert(false);
+ * }
+ *
+ * const array = Array.from(Option.some("is some"));
+ * assertEquals(array, ["is some"]);
+ * ```
+ */
+export type Option<T> = Some<T> | None;
 
-  toString(): string {
-    return "None";
-  }
-
-  toResult<E = Error>(
-    err: E = new Error("None") as E,
-  ): Err<E> & Iterable<never> & ResultToOption<never> {
-    return Result.err(err);
-  }
-
-  [Symbol.iterator](): Iterator<never> {
-    return Object.assign(this, {
-      next(): IteratorResult<never> {
-        return { done: true, value: undefined };
-      },
-    });
-  }
-}
+export type OptionInstance<T> =
+  & Iterable<T>
+  & OptionToResult<T>
+  & MapOperator<T, Option<unknown>>;
 
 /**
  * Option to Result
@@ -135,7 +126,11 @@ export interface StaticOption {
    * assertEquals(array, ["is some"]);
    * ```
    */
-  some<T>(value: T): Some<T> & Iterable<T> & OptionToResult<T>;
+  some<T>(
+    value: T,
+  ):
+    & Some<T>
+    & OptionInstance<T>;
   /**
    * Create a None instance.
    *
@@ -156,56 +151,88 @@ export interface StaticOption {
    * const array = Array.from(Option.none());
    * assertEquals(array, []);
    */
-  none():
+  none<T = never>():
     & None
-    & Iterable<never>
-    & OptionToResult<never>
-    & OptionToResult<never>;
+    & OptionInstance<T>;
 }
 
-/**
- * type Option
- *
- * ### Example
- *
- * ```ts
- * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
- *
- * assertObjectMatch(
- *   Option.some("is some"),
- *   { some: true, value: "is some" },
- * );
- *
- * assertObjectMatch(
- *   Option.none(),
- *   { some: false },
- * );
- *
- * for (const value of Option.some("is some")) {
- *   assertEquals(value, "is some");
- * }
- *
- * for (const _ of Option.none()) {
- *   assert(false);
- * }
- *
- * const array = Array.from(Option.some("is some"));
- * assertEquals(array, ["is some"]);
- * ```
- */
-export type Option<T> = Some<T> | None;
-/** implementation of StaticOption */
+/** impl Some */
+class _Some<T> implements Some<T>, OptionInstance<T> {
+  readonly some = true;
+  constructor(readonly value: T) {}
+
+  toString(): string {
+    return `Some(${this.value})`;
+  }
+
+  /** impl OptionToResult */
+  toResult(): Ok<T> & Iterable<T> & ResultToOption<T> {
+    return Result.ok(this.value);
+  }
+
+  /** impl MapOperator */
+  map<U, V extends Option<U>>(fn: (v: T) => V): V {
+    return fn(this.value);
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    let count = 0;
+    const value = this.value;
+    return Object.assign(this, {
+      next(): IteratorResult<T> {
+        return { done: 0 < count++, value };
+      },
+    });
+  }
+}
+
+/** impl None */
+class _None<T = never> implements None, OptionInstance<T> {
+  readonly some = false;
+
+  toString(): string {
+    return "None";
+  }
+
+  /** impl OptionToResult */
+  toResult<E = Error>(
+    err: E = new Error("None") as E,
+  ): Err<E> & Iterable<T> & ResultToOption<T> {
+    return Result.err(err);
+  }
+
+  /** impl MapOperator */
+  map<U, V extends Option<U>>(): V {
+    return this as unknown as V;
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    return Object.assign(this, {
+      next(): IteratorResult<T> {
+        return { done: true, value: undefined };
+      },
+    });
+  }
+}
+
+/** impl StaticOption */
 export const Option:
-  & (<T>(option: Option<T>) => Option<T> & Iterable<T> & OptionToResult<T>)
+  & (<T>(option: Option<T>) => Option<T> & OptionInstance<T>)
   & StaticOption = Object.assign(
-    <T>(option: Option<T>): Option<T> & Iterable<T> & OptionToResult<T> => {
-      return option.some ? new _Some(option.value) : new _None();
+    <T>(option: Option<T>): Option<T> & OptionInstance<T> => {
+      return option.some ? Option.some(option.value) : Option.none();
     },
     {
-      some<T>(value: T): Some<T> & Iterable<T> & OptionToResult<T> {
+      some<T>(
+        value: T,
+      ):
+        & Some<T>
+        & OptionInstance<T> {
         return new _Some(value);
       },
-      none(): None & Iterable<never> & OptionToResult<never> {
+      none<T = never>():
+        & None
+        & OptionInstance<T> {
         return new _None();
       },
     },
