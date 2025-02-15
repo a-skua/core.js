@@ -1,11 +1,12 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.0.0-rc3",
+  "version": "1.0.0-rc4",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
-    "./option": "./option.ts"
+    "./option": "./option.ts",
+    "./brand": "./brand.ts"
   },
   "tasks": {
     "version": "jq -r '.version' < deno.json",
