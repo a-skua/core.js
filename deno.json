@@ -6,7 +6,8 @@
     ".": "./mod.ts",
     "./result": "./result.ts",
     "./option": "./option.ts",
-    "./brand": "./brand.ts"
+    "./brand": "./brand.ts",
+    "./types": "./types.ts"
   },
   "tasks": {
     "version": "jq -r '.version' < deno.json",
