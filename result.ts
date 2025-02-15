@@ -20,7 +20,7 @@ export interface Ok<T> {
 }
 
 /** impl Ok<T> */
-class ok<T> implements Ok<T>, Iterable<T>, ResultToOption<T> {
+class _Ok<T> implements Ok<T>, Iterable<T>, ResultToOption<T> {
   readonly ok = true;
   constructor(readonly value: T) {}
 
@@ -63,7 +63,7 @@ export interface Err<E> {
 }
 
 /** impl Err<E> */
-class err<E> implements Err<E>, Iterable<never>, ResultToOption<never> {
+class _Err<E> implements Err<E>, Iterable<never>, ResultToOption<never> {
   readonly ok = false;
   constructor(readonly error: E) {}
 
@@ -199,14 +199,14 @@ export const Result:
     <T, E>(
       result: Result<T, E>,
     ): Result<T, E> & Iterable<T> & ResultToOption<T> => {
-      return result.ok ? new ok(result.value) : new err(result.error);
+      return result.ok ? new _Ok(result.value) : new _Err(result.error);
     },
     {
       ok<T>(value: T): Ok<T> & Iterable<T> & ResultToOption<T> {
-        return new ok(value);
+        return new _Ok(value);
       },
       err<E>(error: E): Err<E> & Iterable<never> & ResultToOption<never> {
-        return new err(error);
+        return new _Err(error);
       },
     },
   );

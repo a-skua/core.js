@@ -21,7 +21,7 @@ export interface Some<T> {
 }
 
 /** implementation of Some */
-class some<T> implements Some<T>, Iterable<T>, OptionToResult<T> {
+class _Some<T> implements Some<T>, Iterable<T>, OptionToResult<T> {
   readonly some = true;
   constructor(readonly value: T) {}
 
@@ -62,7 +62,7 @@ export interface None {
 }
 
 /** implementation of None */
-class none implements None, Iterable<never>, OptionToResult<never> {
+class _None implements None, Iterable<never>, OptionToResult<never> {
   readonly some = false;
 
   toString(): string {
@@ -199,14 +199,14 @@ export const Option:
   & (<T>(option: Option<T>) => Option<T> & Iterable<T> & OptionToResult<T>)
   & StaticOption = Object.assign(
     <T>(option: Option<T>): Option<T> & Iterable<T> & OptionToResult<T> => {
-      return option.some ? new some(option.value) : new none();
+      return option.some ? new _Some(option.value) : new _None();
     },
     {
       some<T>(value: T): Some<T> & Iterable<T> & OptionToResult<T> {
-        return new some(value);
+        return new _Some(value);
       },
       none(): None & Iterable<never> & OptionToResult<never> {
-        return new none();
+        return new _None();
       },
     },
   );
