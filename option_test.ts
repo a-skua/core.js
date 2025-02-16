@@ -1,4 +1,4 @@
-import { assertEquals, assertObjectMatch } from "@std/assert";
+import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
 import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 import { Result } from "./result.ts";
@@ -174,6 +174,43 @@ Deno.test("Option", async (t) => {
 
       await t.step(`${option}.map(${fn}) => ${expected}`, () => {
         assertEquals(option.map(fn as Fn), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Option.some(1), 1],
+    ] as const;
+
+    for (const [option, expected] of tests) {
+      await t.step(`${option}.unwrap() => ${expected}`, () => {
+        assertEquals(option.unwrap(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Option.none(), Error],
+    ] as const;
+
+    for (const [option, expected] of tests) {
+      await t.step(`${option}.unwrap() => throw ${expected}`, () => {
+        assertThrows(() => option.unwrap(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Option.some(1), 0, 1],
+      [Option.none<number>(), 0, 0],
+    ] as const;
+
+    for (const [option, value, expected] of tests) {
+      await t.step(`${option}.unwrapOr(${value}) => ${expected}`, () => {
+        assertEquals(option.unwrapOr(value), expected);
       });
     }
   }

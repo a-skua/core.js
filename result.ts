@@ -1,6 +1,6 @@
 import type { None, Some } from "./option.ts";
 import type { Context } from "./types.ts";
-import type { BindOperator, MapOperator } from "./types.ts";
+import type { BindOperator, MapOperator, UnwrapOperator } from "./types.ts";
 import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 
@@ -67,15 +67,20 @@ export interface Err<E> {
 export type Result<T, E = Error> = Context<"Result"> & (Ok<T> | Err<E>);
 
 /** Result Instance */
-export interface ResultInstance<T, E = Error>
-  extends Iterable<T>, ResultToOption<T>, BindOperator<T>, MapOperator<T> {
+export interface ResultInstance<T>
+  extends
+    Iterable<T>,
+    ResultToOption<T>,
+    BindOperator<T>,
+    MapOperator<T>,
+    UnwrapOperator<T> {
   /** Bind Operator */
-  bind<U, E = Error, V = Result<U, E> & ResultInstance<U, E>>(
+  bind<U, E = Error, V = Result<U, E> & ResultInstance<U>>(
     fn: (v: T) => V,
   ): V;
 
   /** Map Operator */
-  map<U, V = Result<U, E> & ResultInstance<U, E>>(fn: (v: T) => U): V;
+  map<U, E = Error, V = Result<U, E> & ResultInstance<U>>(fn: (v: T) => U): V;
 }
 /**
  * Result to Option
@@ -135,7 +140,7 @@ export interface StaticResult {
    * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T, E = never>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T, E>;
+  ok<T>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T>;
   /**
    * return Err<E>
    *
@@ -159,11 +164,11 @@ export interface StaticResult {
    */
   err<T = never, E = Error>(
     error: E,
-  ): Context<"Result"> & Err<E> & ResultInstance<T, E>;
+  ): Context<"Result"> & Err<E> & ResultInstance<T>;
 }
 
 /** impl Ok<T> */
-class _Ok<T, E = never> implements Ok<T>, ResultInstance<T, E> {
+class _Ok<T> implements Ok<T>, ResultInstance<T> {
   readonly ok = true;
   constructor(readonly value: T) {
   }
@@ -187,6 +192,16 @@ class _Ok<T, E = never> implements Ok<T>, ResultInstance<T, E> {
     return Result.ok(fn(this.value)) as V;
   }
 
+  /** impl UnwrapOperator */
+  unwrap(): T {
+    return this.value;
+  }
+
+  /** impl UnwrapOperator */
+  unwrapOr(): T {
+    return this.value;
+  }
+
   /** impl Iterable */
   [Symbol.iterator](): Iterator<T> {
     let count = 0;
@@ -200,7 +215,7 @@ class _Ok<T, E = never> implements Ok<T>, ResultInstance<T, E> {
 }
 
 /** impl Err<E> */
-class _Err<T = never, E = Error> implements Err<E>, ResultInstance<T, E> {
+class _Err<T = never, E = Error> implements Err<E>, ResultInstance<T> {
   readonly ok = false;
   constructor(readonly error: E) {
   }
@@ -224,6 +239,16 @@ class _Err<T = never, E = Error> implements Err<E>, ResultInstance<T, E> {
     return this as unknown as U;
   }
 
+  /** impl UnwrapOperator */
+  unwrap(): T {
+    throw this.error;
+  }
+
+  /** impl UnwrapOperator */
+  unwrapOr(value: T): T {
+    return value;
+  }
+
   /** impl Iterable */
   [Symbol.iterator](): Iterator<never> {
     return Object.assign(this, {
@@ -236,23 +261,23 @@ class _Err<T = never, E = Error> implements Err<E>, ResultInstance<T, E> {
 
 /** impl StaticResult */
 export const Result:
-  & (<T, E>(result: Ok<T> | Err<E>) => Result<T, E> & ResultInstance<T, E>)
+  & (<T, E>(result: Ok<T> | Err<E>) => Result<T, E> & ResultInstance<T>)
   & StaticResult = Object.assign(
-    <T, E>(result: Ok<T> | Err<E>): Result<T, E> & ResultInstance<T, E> => {
+    <T, E>(result: Ok<T> | Err<E>): Result<T, E> & ResultInstance<T> => {
       return result.ok ? Result.ok(result.value) : Result.err(result.error);
     },
     {
-      ok<T, E>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T, E> {
+      ok<T>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T> {
         return new _Ok(value) as
           & Context<"Result">
           & Ok<T>
-          & ResultInstance<T, E>;
+          & ResultInstance<T>;
       },
-      err<T, E>(error: E): Context<"Result"> & Err<E> & ResultInstance<T, E> {
+      err<T, E>(error: E): Context<"Result"> & Err<E> & ResultInstance<T> {
         return new _Err(error) as unknown as
           & Context<"Result">
           & Err<E>
-          & ResultInstance<T, E>;
+          & ResultInstance<T>;
       },
     },
   );

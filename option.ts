@@ -1,5 +1,5 @@
 import type { Err, Ok } from "./result.ts";
-import type { BindOperator, MapOperator } from "./types.ts";
+import type { BindOperator, MapOperator, UnwrapOperator } from "./types.ts";
 import type { Context } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
@@ -74,7 +74,12 @@ export type Option<T> = Context<"Option"> & (Some<T> | None);
 
 /** Option Instance */
 export interface OptionInstance<T>
-  extends Iterable<T>, OptionToResult<T>, MapOperator<T>, BindOperator<T> {
+  extends
+    Iterable<T>,
+    OptionToResult<T>,
+    MapOperator<T>,
+    BindOperator<T>,
+    UnwrapOperator<T> {
   /** Map Operator */
   map<U, V = Option<U> & OptionInstance<U>>(fn: (v: T) => U): V;
 
@@ -102,7 +107,7 @@ export interface OptionInstance<T>
  */
 export interface OptionToResult<T> {
   /** to Result */
-  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T, E>;
+  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T>;
 }
 
 /**
@@ -173,7 +178,7 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   }
 
   /** impl OptionToResult */
-  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T, never> {
+  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T> {
     return Result.ok(this.value);
   }
 
@@ -185,6 +190,16 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   /** impl MapOperator */
   map<U, V>(fn: (v: T) => U): V {
     return Option.some(fn(this.value)) as V;
+  }
+
+  /** impl UnwrapOperator */
+  unwrap(): T {
+    return this.value;
+  }
+
+  /** impl UnwrapOperator */
+  unwrapOr(): T {
+    return this.value;
   }
 
   /** impl Iterable */
@@ -212,7 +227,7 @@ class _None<T = never> implements None, OptionInstance<T> {
   /** impl OptionToResult */
   toResult<E = Error>(
     err: E = new Error("None") as E,
-  ): Context<"Result"> & Err<E> & ResultInstance<T, E> {
+  ): Context<"Result"> & Err<E> & ResultInstance<T> {
     return Result.err(err);
   }
 
@@ -224,6 +239,16 @@ class _None<T = never> implements None, OptionInstance<T> {
   /** impl MapOperator */
   map<U>(): U {
     return this as unknown as U;
+  }
+
+  /** impl UnwrapOperator */
+  unwrap(): T {
+    throw new Error("None");
+  }
+
+  /** impl UnwrapOperator */
+  unwrapOr(value: T): T {
+    return value;
   }
 
   /** impl Iterable */

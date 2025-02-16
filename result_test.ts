@@ -1,4 +1,4 @@
-import { assertEquals, assertObjectMatch } from "@std/assert";
+import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
 import { Result } from "./result.ts";
 import type { ResultInstance } from "./result.ts";
 import { Option } from "./option.ts";
@@ -138,7 +138,7 @@ Deno.test("Result", async (t) => {
     for (const [result, fn, expected] of tests) {
       type Fn = (
         n: number,
-      ) => Result<number, string> & ResultInstance<number, string>;
+      ) => Result<number, string> & ResultInstance<number>;
 
       await t.step(`${result}.bind(${fn}) => ${expected}`, () => {
         assertEquals(result.bind(fn as Fn), expected);
@@ -160,7 +160,44 @@ Deno.test("Result", async (t) => {
       type Fn = (n: number) => number;
 
       await t.step(`${result}.map(${fn}) => ${expected}`, () => {
-        assertEquals(result.map(fn as Fn), expected);
+        assertEquals(result.map<number, string>(fn as Fn), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok(1), 1],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.unwrap() => ${expected}`, () => {
+        assertEquals(result.unwrap(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.err(new Error("error")), Error],
+    ] as const;
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.unwrap() => throw ${expected}`, () => {
+        assertThrows(() => result.unwrap(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok(1), 0, 1],
+      [Result.err<number>(new Error("error")), 0, 0],
+    ] as const;
+
+    for (const [result, defaultValue, expected] of tests) {
+      await t.step(`${result}.unwrapOr(${defaultValue}) => ${expected}`, () => {
+        assertEquals(result.unwrapOr(defaultValue), expected);
       });
     }
   }
