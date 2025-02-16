@@ -138,8 +138,8 @@ Deno.test("Result", async (t) => {
     for (const [result, fn, expected] of tests) {
       type Fn = (n: number) => Result<number, string> & ResultInstance<unknown>;
 
-      await t.step(`${result}.map(${fn}) => ${expected}`, () => {
-        assertEquals(result.map(fn as Fn), expected);
+      await t.step(`${result}.bind(${fn}) => ${expected}`, () => {
+        assertEquals(result.bind(fn as Fn), expected);
       });
     }
   }

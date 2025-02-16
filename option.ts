@@ -1,5 +1,5 @@
 import type { Err, Ok } from "./result.ts";
-import type { MapOperator } from "./types.ts";
+import type { BindOperator } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
@@ -75,7 +75,7 @@ export type Option<T> = Some<T> | None;
 export type OptionInstance<T> =
   & Iterable<T>
   & OptionToResult<T>
-  & MapOperator<T, Option<unknown>>;
+  & BindOperator<T, Option<unknown>>;
 
 /**
  * Option to Result
@@ -170,8 +170,8 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
     return Result.ok(this.value);
   }
 
-  /** impl MapOperator */
-  map<U, V extends Option<U>>(fn: (v: T) => V): V {
+  /** impl BindOperator */
+  bind<U, V extends Option<U>>(fn: (v: T) => V): V {
     return fn(this.value);
   }
 
@@ -202,8 +202,8 @@ class _None<T = never> implements None, OptionInstance<T> {
     return Result.err(err);
   }
 
-  /** impl MapOperator */
-  map<U, V extends Option<U>>(): V {
+  /** impl BindOperator */
+  bind<U, V extends Option<U>>(): V {
     return this as unknown as V;
   }
 

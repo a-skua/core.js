@@ -157,8 +157,8 @@ Deno.test("Option", async (t) => {
     for (const [option, fn, expected] of tests) {
       type Fn = (n: number) => Option<unknown> & OptionInstance<unknown>;
 
-      await t.step(`${option}.map(${fn}) => ${expected}`, () => {
-        assertEquals(option.map(fn as Fn), expected);
+      await t.step(`${option}.bind(${fn}) => ${expected}`, () => {
+        assertEquals(option.bind(fn as Fn), expected);
       });
     }
   }
