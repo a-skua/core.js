@@ -1,5 +1,6 @@
 import { assertEquals, assertObjectMatch } from "@std/assert";
 import { Result } from "./result.ts";
+import type { ResultInstance } from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("Result", async (t) => {
@@ -119,6 +120,26 @@ Deno.test("Result", async (t) => {
     for (const [input, expected] of tests) {
       await t.step(`Result(${input}).toString() => ${expected}`, () => {
         assertEquals(Result(input).toString(), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok(1), (n: number) => Result.ok(n + 1), Result.ok(2)],
+      [Result.ok(1), (_: number) => Result.err("error"), Result.err("error")],
+      [
+        Result.err<number, string>("error"),
+        (n: number) => Result.ok(n + 1),
+        Result.err("error"),
+      ],
+    ] as const;
+
+    for (const [result, fn, expected] of tests) {
+      type Fn = (n: number) => Result<number, string> & ResultInstance<unknown>;
+
+      await t.step(`${result}.map(${fn}) => ${expected}`, () => {
+        assertEquals(result.map(fn as Fn), expected);
       });
     }
   }

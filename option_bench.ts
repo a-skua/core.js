@@ -62,6 +62,10 @@ Deno.bench("Option.none().toResult(error)", () => {
   Option.none().toResult("error");
 });
 
-Deno.bench("Option.map(value)", () => {
-  Option.some(0.4).map((n) => n > 0.5 ? Option.some(n) : Option.none());
+Deno.bench("Option.some(value).map(fn)", () => {
+  Option.some(1).map((n) => Option.some(n));
+});
+
+Deno.bench("Option.none().map(fn)", () => {
+  Option.none<number>().map((n) => Option.some(n));
 });

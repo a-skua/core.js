@@ -1,5 +1,8 @@
-import type { None, OptionToResult, Some } from "./option.ts";
+import type { None, Some } from "./option.ts";
+import type { MapOperator } from "./types.ts";
+import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
+
 /**
  * type Ok
  *
@@ -17,30 +20,6 @@ export interface Ok<T> {
   readonly ok: true;
   /** value */
   readonly value: T;
-}
-
-/** impl Ok<T> */
-class _Ok<T> implements Ok<T>, Iterable<T>, ResultToOption<T> {
-  readonly ok = true;
-  constructor(readonly value: T) {}
-
-  toOption(): Some<T> & Iterable<T> & OptionToResult<T> {
-    return Option.some(this.value);
-  }
-
-  toString(): string {
-    return `Ok(${this.value})`;
-  }
-
-  [Symbol.iterator](): Iterator<T> {
-    let count = 0;
-    const value = this.value;
-    return Object.assign(this, {
-      next(): IteratorResult<T> {
-        return { done: 0 < count++, value };
-      },
-    });
-  }
 }
 
 /**
@@ -62,27 +41,35 @@ export interface Err<E> {
   readonly error: E;
 }
 
-/** impl Err<E> */
-class _Err<E> implements Err<E>, Iterable<never>, ResultToOption<never> {
-  readonly ok = false;
-  constructor(readonly error: E) {}
+/**
+ * type Result
+ *
+ * ### Example
+ *
+ * ```ts
+ * function toUpperCase(obj: any): Result<string> {
+ *   if (typeof obj === "string") {
+ *     return Result.ok(obj.toUpperCase());
+ *   }
+ *
+ *   return Result.err(new Error("is not string"));
+ * }
+ *
+ * const result = toUpperCase(1);
+ * if (result.ok) {
+ *   console.log(result.value);
+ * } else {
+ *   console.error(result.error);
+ * }
+ * ```
+ */
+export type Result<T, E = Error> = Ok<T> | Err<E>;
 
-  toOption(): None & Iterable<never> & OptionToResult<never> {
-    return Option.none();
-  }
-
-  toString(): string {
-    return `Err(${this.error})`;
-  }
-
-  [Symbol.iterator](): Iterator<never> {
-    return Object.assign(this, {
-      next(): IteratorResult<never> {
-        return { done: true, value: undefined };
-      },
-    });
-  }
-}
+/** Result Instance */
+export type ResultInstance<T> =
+  & Iterable<T>
+  & ResultToOption<T>
+  & MapOperator<T, Result<unknown, unknown>>;
 
 /**
  * Result to Option
@@ -102,7 +89,7 @@ class _Err<E> implements Err<E>, Iterable<never>, ResultToOption<never> {
  */
 export interface ResultToOption<T> {
   /** to Option */
-  toOption(): Option<T> & Iterable<T> & OptionToResult<T>;
+  toOption(): Option<T> & OptionInstance<T>;
 }
 
 /**
@@ -142,7 +129,7 @@ export interface StaticResult {
    * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T>(value: T): Ok<T> & Iterable<T> & ResultToOption<T>;
+  ok<T>(value: T): Ok<T> & ResultInstance<T>;
   /**
    * return Err<E>
    *
@@ -164,48 +151,81 @@ export interface StaticResult {
    * assertEquals(array, []);
    * ```
    */
-  err<E>(error: E): Err<E> & Iterable<never> & ResultToOption<never>;
+  err<T = never, E = Error>(error: E): Err<E> & ResultInstance<T>;
 }
 
-/**
- * type Result
- *
- * ### Example
- *
- * ```ts
- * function toUpperCase(obj: any): Result<string> {
- *   if (typeof obj === "string") {
- *     return Result.ok(obj.toUpperCase());
- *   }
- *
- *   return Result.err(new Error("is not string"));
- * }
- *
- * const result = toUpperCase(1);
- * if (result.ok) {
- *   console.log(result.value);
- * } else {
- *   console.error(result.error);
- * }
- * ```
- */
-export type Result<T, E = Error> = Ok<T> | Err<E>;
+/** impl Ok<T> */
+class _Ok<T> implements Ok<T>, ResultInstance<T> {
+  readonly ok = true;
+  constructor(readonly value: T) {}
+
+  toString(): string {
+    return `Ok(${this.value})`;
+  }
+
+  /** impl ResultToOption */
+  toOption(): Some<T> & OptionInstance<T> {
+    return Option.some(this.value);
+  }
+
+  /** impl MapOperator */
+  map<U, E, V extends Result<U, E>>(fn: (v: T) => V): V {
+    return fn(this.value);
+  }
+
+  /** impl Iterable */
+  [Symbol.iterator](): Iterator<T> {
+    let count = 0;
+    const value = this.value;
+    return Object.assign(this, {
+      next(): IteratorResult<T> {
+        return { done: 0 < count++, value };
+      },
+    });
+  }
+}
+
+/** impl Err<E> */
+class _Err<E> implements Err<E>, ResultInstance<never> {
+  readonly ok = false;
+  constructor(readonly error: E) {}
+
+  toString(): string {
+    return `Err(${this.error})`;
+  }
+
+  /** impl ResultToOption */
+  toOption(): None & OptionInstance<never> {
+    return Option.none();
+  }
+
+  /** impl MapOperator */
+  map<U, E, V extends Result<U, E>>(): V {
+    return this as unknown as V;
+  }
+
+  /** impl Iterable */
+  [Symbol.iterator](): Iterator<never> {
+    return Object.assign(this, {
+      next(): IteratorResult<never> {
+        return { done: true, value: undefined };
+      },
+    });
+  }
+}
+
 /** impl StaticResult */
 export const Result:
-  & (<T, E>(
-    result: Result<T, E>,
-  ) => Result<T, E> & Iterable<T> & ResultToOption<T>)
+  & (<T, E>(result: Result<T, E>) => Result<T, E> & ResultInstance<T>)
   & StaticResult = Object.assign(
-    <T, E>(
-      result: Result<T, E>,
-    ): Result<T, E> & Iterable<T> & ResultToOption<T> => {
-      return result.ok ? new _Ok(result.value) : new _Err(result.error);
+    <T, E>(result: Result<T, E>): Result<T, E> & ResultInstance<T> => {
+      return result.ok ? Result.ok(result.value) : Result.err(result.error);
     },
     {
-      ok<T>(value: T): Ok<T> & Iterable<T> & ResultToOption<T> {
+      ok<T>(value: T): Ok<T> & ResultInstance<T> {
         return new _Ok(value);
       },
-      err<E>(error: E): Err<E> & Iterable<never> & ResultToOption<never> {
+      err<E>(error: E): Err<E> & ResultInstance<never> {
         return new _Err(error);
       },
     },

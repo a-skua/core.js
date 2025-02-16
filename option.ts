@@ -1,5 +1,6 @@
-import type { Err, Ok, ResultToOption } from "./result.ts";
+import type { Err, Ok } from "./result.ts";
 import type { MapOperator } from "./types.ts";
+import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
 /**
@@ -70,6 +71,7 @@ export interface None {
  */
 export type Option<T> = Some<T> | None;
 
+/** Option Instance */
 export type OptionInstance<T> =
   & Iterable<T>
   & OptionToResult<T>
@@ -96,9 +98,7 @@ export type OptionInstance<T> =
  */
 export interface OptionToResult<T> {
   /** to Result */
-  toResult<E = Error>(
-    error?: E,
-  ): Result<T, E> & Iterable<T> & ResultToOption<T>;
+  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T>;
 }
 
 /**
@@ -166,7 +166,7 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   }
 
   /** impl OptionToResult */
-  toResult(): Ok<T> & Iterable<T> & ResultToOption<T> {
+  toResult(): Ok<T> & ResultInstance<T> {
     return Result.ok(this.value);
   }
 
@@ -175,6 +175,7 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
     return fn(this.value);
   }
 
+  /** impl Iterable */
   [Symbol.iterator](): Iterator<T> {
     let count = 0;
     const value = this.value;
@@ -197,7 +198,7 @@ class _None<T = never> implements None, OptionInstance<T> {
   /** impl OptionToResult */
   toResult<E = Error>(
     err: E = new Error("None") as E,
-  ): Err<E> & Iterable<T> & ResultToOption<T> {
+  ): Err<E> & ResultInstance<T> {
     return Result.err(err);
   }
 
@@ -206,6 +207,7 @@ class _None<T = never> implements None, OptionInstance<T> {
     return this as unknown as V;
   }
 
+  /** impl Iterable */
   [Symbol.iterator](): Iterator<T> {
     return Object.assign(this, {
       next(): IteratorResult<T> {

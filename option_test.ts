@@ -1,7 +1,7 @@
 import { assertEquals, assertObjectMatch } from "@std/assert";
+import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 import { Result } from "./result.ts";
-import type { MapOperator } from "./types.ts";
 
 Deno.test("Option", async (t) => {
   {
@@ -155,12 +155,10 @@ Deno.test("Option", async (t) => {
     ] as const;
 
     for (const [option, fn, expected] of tests) {
-      type FnType = (
-        n: number,
-      ) => Option<unknown> & MapOperator<unknown, Option<unknown>>;
+      type Fn = (n: number) => Option<unknown> & OptionInstance<unknown>;
 
       await t.step(`${option}.map(${fn}) => ${expected}`, () => {
-        assertEquals(option.map(fn as FnType), expected);
+        assertEquals(option.map(fn as Fn), expected);
       });
     }
   }

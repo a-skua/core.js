@@ -53,3 +53,11 @@ Deno.bench("Result.ok(value).toOption()", () => {
 Deno.bench("Result.err(error).toOption()", () => {
   Result.err("error").toOption();
 });
+
+Deno.bench("Result.ok(value).map(fn)", () => {
+  Result.ok(1).map((v) => Result.ok(v));
+});
+
+Deno.bench("Result.err(err).map(fn)", () => {
+  Result.err<number, number>(0).map((v) => Result.ok(v));
+});
