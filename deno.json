@@ -12,7 +12,7 @@
   "publish": {
     "exclude": [
       ".github",
-      "exampoe.ts"
+      "example.ts"
     ]
   },
   "tasks": {

@@ -69,3 +69,11 @@ Deno.bench("Result.ok(value).map(fn)", () => {
 Deno.bench("Result.err(err).map(fn)", () => {
   Result.err(0).map((v) => v + 1);
 });
+
+Deno.bench("Result.ok(value).unwrap()", () => {
+  Result.ok(1).unwrap();
+});
+
+Deno.bench("Result.err(err).unwrapOr(0)", () => {
+  Result.err<number, number>(0).unwrapOr(0);
+});

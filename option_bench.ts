@@ -77,3 +77,11 @@ Deno.bench("Option.some(value).map(fn)", () => {
 Deno.bench("Option.none().map(fn)", () => {
   Option.none<number>().map((n) => n + 1);
 });
+
+Deno.bench("Option.some(value).unwrap()", () => {
+  Option.some(1).unwrap();
+});
+
+Deno.bench("Option.none().unwrapOr(0)", () => {
+  Option.none<number>().unwrapOr(0);
+});
