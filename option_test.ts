@@ -162,4 +162,19 @@ Deno.test("Option", async (t) => {
       });
     }
   }
+
+  {
+    const tests = [
+      [Option.some(1), (n: number) => n + 1, Option.some(2)],
+      [Option.none<number>(), (n: number) => n + 1, Option.none()],
+    ] as const;
+
+    for (const [option, fn, expected] of tests) {
+      type Fn = (n: number) => number;
+
+      await t.step(`${option}.map(${fn}) => ${expected}`, () => {
+        assertEquals(option.map(fn as Fn), expected);
+      });
+    }
+  }
 });

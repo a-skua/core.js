@@ -3,18 +3,24 @@ import { Result } from "@askua/core/result";
 
 const option = Array.from({ length: 10 }).map(() =>
   Option.some(Math.random())
-    .bind((n) => n > 0.5 ? Option.some(n) : Option.none())
-    .bind((n) => Option.some(n.toFixed(2)))
+    .bind<number>((n) => n > 0.5 ? Option.some(n) : Option.none())
+    .map<string>((n) => n.toFixed(2))
+    .map<string>((s) => s + "!!")
 );
 console.debug("Option");
 console.debug(`> [${option}]`);
 console.debug(`> [${option.map((o) => `[${[...o]}]`)}]`);
 console.debug(`> [${option.map((o) => [...o]).flat()}]`);
 
-const result = Array.from({ length: 10 }).map(() =>
+const result = Array.from({
+  length: 10,
+}).map(() =>
   Result.ok(Math.random())
-    .bind((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
-    .bind((n) => Result.ok(n.toFixed(2)))
+    .bind<number>((n) =>
+      n > 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5"))
+    )
+    .map<string>((n) => n.toFixed(2))
+    .map<string>((s) => s + "!!")
 );
 console.debug("Result");
 console.debug(`> [${result}]`);

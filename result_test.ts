@@ -136,10 +136,31 @@ Deno.test("Result", async (t) => {
     ] as const;
 
     for (const [result, fn, expected] of tests) {
-      type Fn = (n: number) => Result<number, string> & ResultInstance<unknown>;
+      type Fn = (
+        n: number,
+      ) => Result<number, string> & ResultInstance<number, string>;
 
       await t.step(`${result}.bind(${fn}) => ${expected}`, () => {
         assertEquals(result.bind(fn as Fn), expected);
+      });
+    }
+  }
+
+  {
+    const tests = [
+      [Result.ok(1), (n: number) => n + 1, Result.ok(2)],
+      [
+        Result.err("error"),
+        (n: number) => n + 1,
+        Result.err<number, string>("error"),
+      ],
+    ] as const;
+
+    for (const [result, fn, expected] of tests) {
+      type Fn = (n: number) => number;
+
+      await t.step(`${result}.map(${fn}) => ${expected}`, () => {
+        assertEquals(result.map(fn as Fn), expected);
       });
     }
   }

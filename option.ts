@@ -1,5 +1,6 @@
 import type { Err, Ok } from "./result.ts";
-import type { BindOperator } from "./types.ts";
+import type { BindOperator, MapOperator } from "./types.ts";
+import type { Context } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
@@ -69,14 +70,17 @@ export interface None {
  * assertEquals(array, ["is some"]);
  * ```
  */
-export type Option<T> = Some<T> | None;
+export type Option<T> = Context<"Option"> & (Some<T> | None);
 
 /** Option Instance */
-export type OptionInstance<T> =
-  & Iterable<T>
-  & OptionToResult<T>
-  & BindOperator<T, Option<unknown>>;
+export interface OptionInstance<T>
+  extends Iterable<T>, OptionToResult<T>, MapOperator<T>, BindOperator<T> {
+  /** Map Operator */
+  map<U, V = Option<U> & OptionInstance<U>>(fn: (v: T) => U): V;
 
+  /** Bind Operator */
+  bind<U, V = Option<U> & OptionInstance<U>>(fn: (v: T) => V): V;
+}
 /**
  * Option to Result
  *
@@ -98,7 +102,7 @@ export type OptionInstance<T> =
  */
 export interface OptionToResult<T> {
   /** to Result */
-  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T>;
+  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T, E>;
 }
 
 /**
@@ -129,6 +133,7 @@ export interface StaticOption {
   some<T>(
     value: T,
   ):
+    & Context<"Option">
     & Some<T>
     & OptionInstance<T>;
   /**
@@ -152,6 +157,7 @@ export interface StaticOption {
    * assertEquals(array, []);
    */
   none<T = never>():
+    & Context<"Option">
     & None
     & OptionInstance<T>;
 }
@@ -159,20 +165,26 @@ export interface StaticOption {
 /** impl Some */
 class _Some<T> implements Some<T>, OptionInstance<T> {
   readonly some = true;
-  constructor(readonly value: T) {}
+  constructor(readonly value: T) {
+  }
 
   toString(): string {
     return `Some(${this.value})`;
   }
 
   /** impl OptionToResult */
-  toResult(): Ok<T> & ResultInstance<T> {
+  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T, never> {
     return Result.ok(this.value);
   }
 
   /** impl BindOperator */
-  bind<U, V extends Option<U>>(fn: (v: T) => V): V {
+  bind<U>(fn: (v: T) => U): U {
     return fn(this.value);
+  }
+
+  /** impl MapOperator */
+  map<U, V>(fn: (v: T) => U): V {
+    return Option.some(fn(this.value)) as V;
   }
 
   /** impl Iterable */
@@ -190,6 +202,8 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
 /** impl None */
 class _None<T = never> implements None, OptionInstance<T> {
   readonly some = false;
+  constructor() {
+  }
 
   toString(): string {
     return "None";
@@ -198,13 +212,18 @@ class _None<T = never> implements None, OptionInstance<T> {
   /** impl OptionToResult */
   toResult<E = Error>(
     err: E = new Error("None") as E,
-  ): Err<E> & ResultInstance<T> {
+  ): Context<"Result"> & Err<E> & ResultInstance<T, E> {
     return Result.err(err);
   }
 
   /** impl BindOperator */
-  bind<U, V extends Option<U>>(): V {
-    return this as unknown as V;
+  bind<U>(): U {
+    return this as unknown as U;
+  }
+
+  /** impl MapOperator */
+  map<U>(): U {
+    return this as unknown as U;
   }
 
   /** impl Iterable */
@@ -219,23 +238,28 @@ class _None<T = never> implements None, OptionInstance<T> {
 
 /** impl StaticOption */
 export const Option:
-  & (<T>(option: Option<T>) => Option<T> & OptionInstance<T>)
+  & (<T>(option: Some<T> | None) => Option<T> & OptionInstance<T>)
   & StaticOption = Object.assign(
-    <T>(option: Option<T>): Option<T> & OptionInstance<T> => {
+    <T>(option: Some<T> | None): Option<T> & OptionInstance<T> => {
       return option.some ? Option.some(option.value) : Option.none();
     },
     {
       some<T>(
         value: T,
       ):
+        & Context<"Option">
         & Some<T>
         & OptionInstance<T> {
-        return new _Some(value);
+        return new _Some(value) as
+          & Context<"Option">
+          & Some<T>
+          & OptionInstance<T>;
       },
       none<T = never>():
+        & Context<"Option">
         & None
         & OptionInstance<T> {
-        return new _None();
+        return new _None() as Context<"Option"> & None & OptionInstance<T>;
       },
     },
   );

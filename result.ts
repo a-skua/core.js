@@ -1,5 +1,6 @@
 import type { None, Some } from "./option.ts";
-import type { BindOperator } from "./types.ts";
+import type { Context } from "./types.ts";
+import type { BindOperator, MapOperator } from "./types.ts";
 import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 
@@ -63,14 +64,19 @@ export interface Err<E> {
  * }
  * ```
  */
-export type Result<T, E = Error> = Ok<T> | Err<E>;
+export type Result<T, E = Error> = Context<"Result"> & (Ok<T> | Err<E>);
 
 /** Result Instance */
-export type ResultInstance<T> =
-  & Iterable<T>
-  & ResultToOption<T>
-  & BindOperator<T, Result<unknown, unknown>>;
+export interface ResultInstance<T, E = Error>
+  extends Iterable<T>, ResultToOption<T>, BindOperator<T>, MapOperator<T> {
+  /** Bind Operator */
+  bind<U, E = Error, V = Result<U, E> & ResultInstance<U, E>>(
+    fn: (v: T) => V,
+  ): V;
 
+  /** Map Operator */
+  map<U, V = Result<U, E> & ResultInstance<U, E>>(fn: (v: T) => U): V;
+}
 /**
  * Result to Option
  *
@@ -129,7 +135,7 @@ export interface StaticResult {
    * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T>(value: T): Ok<T> & ResultInstance<T>;
+  ok<T, E = never>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T, E>;
   /**
    * return Err<E>
    *
@@ -151,26 +157,34 @@ export interface StaticResult {
    * assertEquals(array, []);
    * ```
    */
-  err<T = never, E = Error>(error: E): Err<E> & ResultInstance<T>;
+  err<T = never, E = Error>(
+    error: E,
+  ): Context<"Result"> & Err<E> & ResultInstance<T, E>;
 }
 
 /** impl Ok<T> */
-class _Ok<T> implements Ok<T>, ResultInstance<T> {
+class _Ok<T, E = never> implements Ok<T>, ResultInstance<T, E> {
   readonly ok = true;
-  constructor(readonly value: T) {}
+  constructor(readonly value: T) {
+  }
 
   toString(): string {
     return `Ok(${this.value})`;
   }
 
   /** impl ResultToOption */
-  toOption(): Some<T> & OptionInstance<T> {
+  toOption(): Context<"Option"> & Some<T> & OptionInstance<T> {
     return Option.some(this.value);
   }
 
   /** impl BindOperator */
-  bind<U, E, V extends Result<U, E>>(fn: (v: T) => V): V {
+  bind<U>(fn: (v: T) => U): U {
     return fn(this.value);
+  }
+
+  /** impl MapOperator */
+  map<U, V>(fn: (v: T) => U): V {
+    return Result.ok(fn(this.value)) as V;
   }
 
   /** impl Iterable */
@@ -186,22 +200,28 @@ class _Ok<T> implements Ok<T>, ResultInstance<T> {
 }
 
 /** impl Err<E> */
-class _Err<E> implements Err<E>, ResultInstance<never> {
+class _Err<T = never, E = Error> implements Err<E>, ResultInstance<T, E> {
   readonly ok = false;
-  constructor(readonly error: E) {}
+  constructor(readonly error: E) {
+  }
 
   toString(): string {
     return `Err(${this.error})`;
   }
 
   /** impl ResultToOption */
-  toOption(): None & OptionInstance<never> {
+  toOption(): Context<"Option"> & None & OptionInstance<never> {
     return Option.none();
   }
 
   /** impl BindOperator */
-  bind<U, E, V extends Result<U, E>>(): V {
-    return this as unknown as V;
+  bind<U>(): U {
+    return this as unknown as U;
+  }
+
+  /** impl MapOperator */
+  map<U>(): U {
+    return this as unknown as U;
   }
 
   /** impl Iterable */
@@ -216,17 +236,23 @@ class _Err<E> implements Err<E>, ResultInstance<never> {
 
 /** impl StaticResult */
 export const Result:
-  & (<T, E>(result: Result<T, E>) => Result<T, E> & ResultInstance<T>)
+  & (<T, E>(result: Ok<T> | Err<E>) => Result<T, E> & ResultInstance<T, E>)
   & StaticResult = Object.assign(
-    <T, E>(result: Result<T, E>): Result<T, E> & ResultInstance<T> => {
+    <T, E>(result: Ok<T> | Err<E>): Result<T, E> & ResultInstance<T, E> => {
       return result.ok ? Result.ok(result.value) : Result.err(result.error);
     },
     {
-      ok<T>(value: T): Ok<T> & ResultInstance<T> {
-        return new _Ok(value);
+      ok<T, E>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T, E> {
+        return new _Ok(value) as
+          & Context<"Result">
+          & Ok<T>
+          & ResultInstance<T, E>;
       },
-      err<E>(error: E): Err<E> & ResultInstance<never> {
-        return new _Err(error);
+      err<T, E>(error: E): Context<"Result"> & Err<E> & ResultInstance<T, E> {
+        return new _Err(error) as unknown as
+          & Context<"Result">
+          & Err<E>
+          & ResultInstance<T, E>;
       },
     },
   );

@@ -59,5 +59,13 @@ Deno.bench("Result.ok(value).bind(fn)", () => {
 });
 
 Deno.bench("Result.err(err).bind(fn)", () => {
-  Result.err<number, number>(0).bind((v) => Result.ok(v));
+  Result.err(0).bind((v) => Result.ok(v));
+});
+
+Deno.bench("Result.ok(value).map(fn)", () => {
+  Result.ok(1).map((v) => v + 1);
+});
+
+Deno.bench("Result.err(err).map(fn)", () => {
+  Result.err(0).map((v) => v + 1);
 });
