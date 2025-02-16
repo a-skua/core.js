@@ -9,6 +9,12 @@
     "./brand": "./brand.ts",
     "./types": "./types.ts"
   },
+  "publish": {
+    "exclude": [
+      ".github",
+      "exampoe.ts"
+    ]
+  },
   "tasks": {
     "version": "jq -r '.version' < deno.json",
     "tests": "deno test && deno test --doc .",
