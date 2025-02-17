@@ -164,6 +164,42 @@ Deno.test("Option", async (t) => {
   {
     const tests: [
       OptionInstance<number>,
+      (n: number) => Promise<Option<unknown> & OptionInstance<unknown>>,
+      Option<unknown>,
+    ][] = [
+      [
+        Option.some(1),
+        (n) => Promise.resolve(Option.some(n + 1)),
+        Option.some(2),
+      ],
+      [Option.some(1), () => Promise.resolve(Option.none()), Option.none()],
+      [
+        Option.none(),
+        (n) => Promise.resolve(Option.some(n + 1)),
+        Option.none(),
+      ],
+      [
+        Option.some(1),
+        (n) => Promise.resolve(Option.some(`${n}`)),
+        Option.some("1"),
+      ],
+      [
+        Option.none(),
+        (n) => Promise.resolve(Option.some(`${n}`)),
+        Option.none(),
+      ],
+    ] as const;
+
+    for (const [option, fn, expected] of tests) {
+      await t.step(`${option}.asyncAndThen(${fn}) => ${expected}`, async () => {
+        assertEquals(await option.asyncAndThen<unknown>(fn), expected);
+      });
+    }
+  }
+
+  {
+    const tests: [
+      OptionInstance<number>,
       Option<unknown> & OptionInstance<unknown>,
       Option<unknown>,
     ][] = [
@@ -245,6 +281,20 @@ Deno.test("Option", async (t) => {
     for (const [option, expected] of tests) {
       await t.step(`${option}.orElse(${fn}) => ${expected}`, () => {
         assertEquals(option.orElse(fn), expected);
+      });
+    }
+  }
+
+  {
+    const fn = () => Promise.resolve(Option.some(0));
+    const tests: [OptionInstance<number>, Option<number>][] = [
+      [Option.some(1), Option.some(1)],
+      [Option.none(), Option.some(0)],
+    ];
+
+    for (const [option, expected] of tests) {
+      await t.step(`${option}.asyncOrElse(${fn}) => ${expected}`, async () => {
+        assertEquals(await option.asyncOrElse(fn), expected);
       });
     }
   }

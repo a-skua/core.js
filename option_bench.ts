@@ -70,6 +70,14 @@ Deno.bench("Option.none().andThen(fn)", () => {
   Option.none<number>().andThen((n) => Option.some(n));
 });
 
+Deno.bench("Option.some(value).asyncAndThen(fn)", () => {
+  Option.some(1).asyncAndThen((n) => Promise.resolve(Option.some(n)));
+});
+
+Deno.bench("Option.none().asyncAndThen(fn)", () => {
+  Option.none<number>().asyncAndThen((n) => Promise.resolve(Option.some(n)));
+});
+
 Deno.bench("Option.some(value).and(other)", () => {
   Option.some(1).and(Option.some(2));
 });
@@ -84,6 +92,14 @@ Deno.bench("Option.some(value).orElse(fn)", () => {
 
 Deno.bench("Option.none().orElse(fn)", () => {
   Option.none<number>().orElse(() => Option.some(0));
+});
+
+Deno.bench("Option.some(value).asyncOrElse(fn)", () => {
+  Option.some(1).asyncOrElse(() => Promise.resolve(Option.some(0)));
+});
+
+Deno.bench("Option.none().asyncOrElse(fn)", () => {
+  Option.none<number>().asyncOrElse(() => Promise.resolve(Option.some(0)));
 });
 
 Deno.bench("Option.some(value).or(other)", () => {

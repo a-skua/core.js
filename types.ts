@@ -39,8 +39,14 @@ export interface AndOperator<T, U = unknown> {
    * ```
    */
   andThen(fn: (v: T) => U): U;
+
   /**
-   * andThen
+   * async andThen
+   */
+  asyncAndThen(fn: (v: T) => Promise<U>): Promise<U>;
+
+  /**
+   * and
    *
    * ## Example
    *
@@ -72,7 +78,7 @@ export interface AndOperator<T, U = unknown> {
  */
 export interface OrOperator<T, U = unknown> {
   /**
-   * Or Operator
+   * orElse
    *
    * ### Example
    *
@@ -88,7 +94,12 @@ export interface OrOperator<T, U = unknown> {
   orElse(fn: () => U): T | U;
 
   /**
-   * Or Operator
+   * async orElse
+   */
+  asyncOrElse(fn: () => Promise<U>): Promise<T | U>;
+
+  /**
+   * or
    *
    * ### Example
    *

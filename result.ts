@@ -96,6 +96,18 @@ export interface ResultInstance<T, E>
     fn: (v: T) => V,
   ): W;
 
+  /** async And Operator */
+  asyncAndThen<
+    U = T,
+    D = E,
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<U, E | D> =
+      & Result<U, D>
+      & ResultInstance<U, E | D>,
+  >(fn: (v: T) => Promise<V>): Promise<W>;
+
   /** And Operator */
   and<
     U = T,
@@ -121,6 +133,18 @@ export interface ResultInstance<T, E>
       | (Result<T, E> & ResultInstance<T, E>)
       | (Result<U, D> & ResultInstance<U, D>),
   >(fn: (error: E) => V): W;
+
+  /** Or Operator */
+  asyncOrElse<
+    U = T,
+    D = E,
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<T, E> | Result<U, D> =
+      | (Result<T, E> & ResultInstance<T, E>)
+      | (Result<U, D> & ResultInstance<U, D>),
+  >(fn: (error: E) => Promise<V>): Promise<W>;
 
   /** Or Operator */
   or<
@@ -250,6 +274,11 @@ class _Ok<T, E> implements Ok<T>, ResultInstance<T, E> {
   }
 
   /** impl AndOperator */
+  asyncAndThen<U, V>(fn: (v: T) => Promise<U>): Promise<V> {
+    return fn(this.value) as unknown as Promise<V>;
+  }
+
+  /** impl AndOperator */
   and<U, V>(result: U): V {
     return result as unknown as V;
   }
@@ -257,6 +286,11 @@ class _Ok<T, E> implements Ok<T>, ResultInstance<T, E> {
   /** impl OrOperator */
   orElse<U>(): U {
     return this as unknown as U;
+  }
+
+  /** impl OrOperator */
+  asyncOrElse<U>(): Promise<U> {
+    return Promise.resolve(this as unknown as U);
   }
 
   /** impl OrOperator */
@@ -312,6 +346,11 @@ class _Err<T, E> implements Err<E>, ResultInstance<T, E> {
   }
 
   /** impl AndOperator */
+  asyncAndThen<U>(): Promise<U> {
+    return Promise.resolve(this as unknown as U);
+  }
+
+  /** impl AndOperator */
   and<U>(): U {
     return this as unknown as U;
   }
@@ -324,6 +363,11 @@ class _Err<T, E> implements Err<E>, ResultInstance<T, E> {
   /** impl OrOperator */
   orElse<U, V>(fn: (error: E) => U): V {
     return fn(this.error) as unknown as V;
+  }
+
+  /** impl OrOperator */
+  asyncOrElse<U, V>(fn: (error: E) => Promise<U>): Promise<V> {
+    return fn(this.error) as unknown as Promise<V>;
   }
 
   /** impl OrOperator */

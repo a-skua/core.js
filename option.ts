@@ -92,6 +92,11 @@ export interface OptionInstance<T>
   ): V;
 
   /** And Operator */
+  asyncAndThen<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
+    fn: (v: T) => Promise<V>,
+  ): Promise<V>;
+
+  /** And Operator */
   and<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(option: V): V;
 
   /** Or Operator */
@@ -104,6 +109,17 @@ export interface OptionInstance<T>
   >(
     fn: () => V,
   ): W;
+
+  /** Or Operator */
+  orElse<
+    U = T,
+    V extends Option<U> = Option<U> & OptionInstance<U>,
+    W extends Option<T> | Option<U> =
+      | (Option<T> & OptionInstance<T>)
+      | (Option<U> & OptionInstance<U>),
+  >(
+    fn: () => Promise<V>,
+  ): Promise<W>;
 
   /** Or Operator */
   or<
@@ -221,6 +237,11 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   }
 
   /** impl AndOperator */
+  asyncAndThen<U>(fn: (v: T) => Promise<U>): Promise<U> {
+    return fn(this.value);
+  }
+
+  /** impl AndOperator */
   and<U>(option: U): U {
     return option;
   }
@@ -228,6 +249,11 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   /** impl OrOperator */
   orElse<U>(): U {
     return this as unknown as U;
+  }
+
+  /** impl OrOperator */
+  asyncOrElse<U>(): Promise<U> {
+    return Promise.resolve(this as unknown as U);
   }
 
   /** impl OrOperator */
@@ -280,18 +306,28 @@ class _None<T> implements None, OptionInstance<T> {
   }
 
   /** impl AndOperator */
-  andThen<U, V = Context<"Option"> & None & OptionInstance<U>>(): V {
-    return this as unknown as V;
+  andThen<U>(): U {
+    return this as unknown as U;
   }
 
   /** impl AndOperator */
-  and<U, V = Context<"Option"> & None & OptionInstance<U>>(): V {
-    return this as unknown as V;
+  asyncAndThen<U>(): Promise<U> {
+    return Promise.resolve(this as unknown as U);
+  }
+
+  /** impl AndOperator */
+  and<U>(): U {
+    return this as unknown as U;
   }
 
   /** impl OrOperator */
   orElse<U, V>(fn: () => U): V {
     return fn() as unknown as V;
+  }
+
+  /** impl OrOperator */
+  asyncOrElse<U, V>(fn: () => Promise<U>): Promise<V> {
+    return fn() as unknown as Promise<V>;
   }
 
   /** impl OrOperator */

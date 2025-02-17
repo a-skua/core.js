@@ -62,6 +62,14 @@ Deno.bench("Result.err(err).andThen(fn)", () => {
   Result.err(0).andThen((v) => Result.ok(v));
 });
 
+Deno.bench("Result.ok(value).asyncAndThen(fn)", () => {
+  Result.ok(1).asyncAndThen((v) => Promise.resolve(Result.ok(v)));
+});
+
+Deno.bench("Result.err(err).asyncAndThen(fn)", () => {
+  Result.err(0).asyncAndThen<number>((v) => Promise.resolve(Result.ok(v)));
+});
+
 Deno.bench("Result.ok(value).and(other)", () => {
   Result.ok(1).and(Result.ok(2));
 });
@@ -76,6 +84,14 @@ Deno.bench("Result.ok(value).orElse(fn)", () => {
 
 Deno.bench("Result.err(err).orElse(fn)", () => {
   Result.err(0).orElse<number>((e) => Result.ok(e));
+});
+
+Deno.bench("Result.ok(value).asyncOrElse(fn)", () => {
+  Result.ok(1).asyncOrElse<number>(() => Promise.resolve(Result.ok(0)));
+});
+
+Deno.bench("Result.err(err).asyncOrElse(fn)", () => {
+  Result.err(0).asyncOrElse<number>(() => Promise.resolve(Result.ok(0)));
 });
 
 Deno.bench("Result.ok(value).or(other)", () => {

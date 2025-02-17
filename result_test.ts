@@ -145,6 +145,32 @@ Deno.test("Result", async (t) => {
   {
     const tests: [
       ResultInstance<number, string>,
+      (n: number) => Promise<Result<number, string>>,
+      Result<number, string>,
+    ][] = [
+      [Result.ok(1), (n) => Promise.resolve(Result.ok(n + 1)), Result.ok(2)],
+      [
+        Result.ok(1),
+        () => Promise.resolve(Result.err("error")),
+        Result.err("error"),
+      ],
+      [
+        Result.err("error"),
+        (n) => Promise.resolve(Result.ok(n + 1)),
+        Result.err("error"),
+      ],
+    ];
+
+    for (const [result, fn, expected] of tests) {
+      await t.step(`${result}.asyncAndThen(${fn}) => ${expected}`, async () => {
+        assertEquals(await result.asyncAndThen(fn), expected);
+      });
+    }
+  }
+
+  {
+    const tests: [
+      ResultInstance<number, string>,
       Result<number, string>,
       Result<number, string>,
     ][] = [
@@ -230,6 +256,23 @@ Deno.test("Result", async (t) => {
     for (const [result, expected] of tests) {
       await t.step(`${result}.orElse(${fn}) => ${expected}`, () => {
         assertEquals(result.orElse<string>(fn), expected);
+      });
+    }
+  }
+
+  {
+    const fn = (e: string) => Promise.resolve(Result.ok(e + "!!"));
+    const tests: [
+      ResultInstance<number, string>,
+      Result<number, string> | Result<string, Error>,
+    ][] = [
+      [Result.ok(1), Result.ok(1)],
+      [Result.err("error"), Result.ok("error!!")],
+    ];
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.asyncOrElse(${fn}) => ${expected}`, async () => {
+        assertEquals(await result.asyncOrElse<string>(fn), expected);
       });
     }
   }
