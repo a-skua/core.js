@@ -107,7 +107,7 @@ export interface OptionInstance<T>
  */
 export interface OptionToResult<T> {
   /** to Result */
-  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T>;
+  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T, E>;
 }
 
 /**
@@ -178,7 +178,7 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
   }
 
   /** impl OptionToResult */
-  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T> {
+  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T, never> {
     return Result.ok(this.value);
   }
 
@@ -215,7 +215,7 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
 }
 
 /** impl None */
-class _None<T = never> implements None, OptionInstance<T> {
+class _None<T> implements None, OptionInstance<T> {
   readonly some = false;
   constructor() {
   }
@@ -227,7 +227,7 @@ class _None<T = never> implements None, OptionInstance<T> {
   /** impl OptionToResult */
   toResult<E = Error>(
     err: E = new Error("None") as E,
-  ): Context<"Result"> & Err<E> & ResultInstance<T> {
+  ): Context<"Result"> & Err<E> & ResultInstance<T, E> {
     return Result.err(err);
   }
 
@@ -275,16 +275,13 @@ export const Option:
         & Context<"Option">
         & Some<T>
         & OptionInstance<T> {
-        return new _Some(value) as
-          & Context<"Option">
-          & Some<T>
-          & OptionInstance<T>;
+        return new _Some(value) as Context<"Option"> & _Some<T>;
       },
-      none<T = never>():
+      none<T>():
         & Context<"Option">
         & None
         & OptionInstance<T> {
-        return new _None() as Context<"Option"> & None & OptionInstance<T>;
+        return new _None() as Context<"Option"> & _None<T>;
       },
     },
   );

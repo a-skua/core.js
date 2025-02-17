@@ -44,7 +44,7 @@ export interface BindOperator<T> {
  *
  * const result: Result<string, string> = Result.ok(Math.random())
  *   .bind<number, string>((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
- *   .map<string, string>((n) => n.toFixed(2));
+ *   .map<string>((n) => n.toFixed(2));
  * console.log(`${result}`);
  * ```
  */

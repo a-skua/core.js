@@ -17,7 +17,7 @@ const result = Array.from({
   length: 10,
 }).map(() =>
   Result.ok(Math.random())
-    .bind<number>((n) =>
+    .bind<number, Error>((n) =>
       n > 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5"))
     )
     .map<string>((n) => n.toFixed(2))
