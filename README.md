@@ -57,8 +57,8 @@ Option.some(value).toResult()                  6.6 ns   151,300,000 (  6.1 ns �
 Option.none().toResult()                       2.0 µs       494,900 (  2.0 µs …   3.4 µs)   2.0 µs   3.4 µs   3.4 µs
 Option.some(value).toResult(error)             6.6 ns   151,600,000 (  6.0 ns …  16.3 ns)   6.4 ns  12.0 ns  12.6 ns
 Option.none().toResult(error)                  6.4 ns   157,000,000 (  6.0 ns …  21.2 ns)   6.2 ns  11.9 ns  12.3 ns
-Option.some(value).bind(fn)                    4.2 ns   235,900,000 (  4.2 ns …   7.5 ns)   4.2 ns   4.7 ns   5.0 ns
-Option.none().bind(fn)                         4.2 ns   238,300,000 (  4.2 ns …   7.5 ns)   4.2 ns   4.8 ns   5.0 ns
+Option.some(value).andThen(fn)                 4.2 ns   235,900,000 (  4.2 ns …   7.5 ns)   4.2 ns   4.7 ns   5.0 ns
+Option.none().andThen(fn)                      4.2 ns   238,300,000 (  4.2 ns …   7.5 ns)   4.2 ns   4.8 ns   5.0 ns
 Option.some(value).map(fn)                     4.2 ns   239,100,000 (  4.1 ns …  11.6 ns)   4.2 ns   4.9 ns   5.1 ns
 Option.none().map(fn)                          4.2 ns   235,900,000 (  4.2 ns …  14.3 ns)   4.2 ns   5.0 ns   5.4 ns
 Option.some(value).unwrap()                    4.2 ns   238,000,000 (  4.1 ns …   8.1 ns)   4.2 ns   4.8 ns   5.1 ns
@@ -81,8 +81,8 @@ Result({ ok: true, value })                   4.3 ns   234,600,000 (  4.2 ns …
 Result({ ok: false, error })                  4.5 ns   224,300,000 (  4.4 ns …  24.1 ns)   4.4 ns   5.3 ns   5.7 ns
 Result.ok(value).toOption()                   6.6 ns   152,300,000 (  6.1 ns …  22.7 ns)   6.3 ns  11.3 ns  11.9 ns
 Result.err(error).toOption()                  6.6 ns   152,400,000 (  6.2 ns …  13.6 ns)   6.3 ns  11.9 ns  12.1 ns
-Result.ok(value).bind(fn)                     4.2 ns   239,500,000 (  4.1 ns …   7.9 ns)   4.2 ns   4.8 ns   5.0 ns
-Result.err(err).bind(fn)                      4.2 ns   239,000,000 (  4.1 ns …   7.7 ns)   4.2 ns   4.9 ns   5.2 ns
+Result.ok(value).andThen(fn)                  4.2 ns   239,500,000 (  4.1 ns …   7.9 ns)   4.2 ns   4.8 ns   5.0 ns
+Result.err(err).andThen(fn)                   4.2 ns   239,000,000 (  4.1 ns …   7.7 ns)   4.2 ns   4.9 ns   5.2 ns
 Result.ok(value).map(fn)                      4.2 ns   239,900,000 (  4.1 ns …   8.0 ns)   4.2 ns   4.6 ns   4.9 ns
 Result.err(err).map(fn)                       4.1 ns   241,200,000 (  4.1 ns …   8.1 ns)   4.1 ns   4.7 ns   5.0 ns
 Result.ok(value).unwrap()                     4.2 ns   236,800,000 (  4.2 ns …   7.5 ns)   4.2 ns   5.0 ns   5.2 ns

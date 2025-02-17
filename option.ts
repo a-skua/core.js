@@ -1,5 +1,5 @@
 import type { Err, Ok } from "./result.ts";
-import type { BindOperator, MapOperator, UnwrapOperator } from "./types.ts";
+import type { AndOperator, MapOperator, UnwrapOperator } from "./types.ts";
 import type { Context } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
@@ -78,13 +78,20 @@ export interface OptionInstance<T>
     Iterable<T>,
     OptionToResult<T>,
     MapOperator<T>,
-    BindOperator<T>,
+    AndOperator<T>,
     UnwrapOperator<T> {
-  /** Map Operator */
-  map<U, V = Option<U> & OptionInstance<U>>(fn: (v: T) => U): V;
+  /** And Operator */
+  andThen<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
+    fn: (v: T) => V,
+  ): V;
 
-  /** Bind Operator */
-  bind<U, V = Option<U> & OptionInstance<U>>(fn: (v: T) => V): V;
+  /** And Operator */
+  and<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(option: V): V;
+
+  /** Map Operator */
+  map<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
+    fn: (v: T) => U,
+  ): V;
 }
 /**
  * Option to Result
@@ -182,9 +189,14 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
     return Result.ok(this.value);
   }
 
-  /** impl BindOperator */
-  bind<U>(fn: (v: T) => U): U {
+  /** impl AndOperator */
+  andThen<U>(fn: (v: T) => U): U {
     return fn(this.value);
+  }
+
+  /** impl AndOperator */
+  and<U>(option: U): U {
+    return option;
   }
 
   /** impl MapOperator */
@@ -231,9 +243,14 @@ class _None<T> implements None, OptionInstance<T> {
     return Result.err(err);
   }
 
-  /** impl BindOperator */
-  bind<U>(): U {
-    return this as unknown as U;
+  /** impl AndOperator */
+  andThen<U, V = Context<"Option"> & None & OptionInstance<U>>(): V {
+    return this as unknown as V;
+  }
+
+  /** impl AndOperator */
+  and<U, V = Context<"Option"> & None & OptionInstance<U>>(): V {
+    return this as unknown as V;
   }
 
   /** impl MapOperator */

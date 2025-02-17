@@ -142,38 +142,58 @@ Deno.test("Option", async (t) => {
   }
 
   {
-    const tests = [
-      [Option.some(1), (n: number) => Option.some(n + 1), Option.some(2)],
-      [Option.some(1), (_: number) => Option.none(), Option.none()],
-      [Option.none<number>(), (n: number) => Option.some(n + 1), Option.none()],
-      [Option.some(1), (n: number) => Option.some(`${n}`), Option.some("1")],
-      [
-        Option.none<number>(),
-        (n: number) => Option.some(`${n}`),
-        Option.none(),
-      ],
+    const tests: [
+      OptionInstance<number>,
+      (n: number) => Option<unknown> & OptionInstance<unknown>,
+      Option<unknown>,
+    ][] = [
+      [Option.some(1), (n) => Option.some(n + 1), Option.some(2)],
+      [Option.some(1), () => Option.none(), Option.none()],
+      [Option.none(), (n) => Option.some(n + 1), Option.none()],
+      [Option.some(1), (n) => Option.some(`${n}`), Option.some("1")],
+      [Option.none(), (n) => Option.some(`${n}`), Option.none()],
     ] as const;
 
     for (const [option, fn, expected] of tests) {
-      type Fn = (n: number) => Option<unknown> & OptionInstance<unknown>;
-
-      await t.step(`${option}.bind(${fn}) => ${expected}`, () => {
-        assertEquals(option.bind(fn as Fn), expected);
+      await t.step(`${option}.andThen(${fn}) => ${expected}`, () => {
+        assertEquals(option.andThen<unknown>(fn), expected);
       });
     }
   }
 
   {
-    const tests = [
-      [Option.some(1), (n: number) => n + 1, Option.some(2)],
-      [Option.none<number>(), (n: number) => n + 1, Option.none()],
+    const tests: [
+      OptionInstance<number>,
+      Option<unknown> & OptionInstance<unknown>,
+      Option<unknown>,
+    ][] = [
+      [Option.some(1), Option.some(2), Option.some(2)],
+      [Option.some(1), Option.none(), Option.none()],
+      [Option.none(), Option.some(2), Option.none()],
+      [Option.some(1), Option.some("1"), Option.some("1")],
+      [Option.none(), Option.some("1"), Option.none()],
+    ] as const;
+
+    for (const [option, value, expected] of tests) {
+      await t.step(`${option}.and(${value}) => ${expected}`, () => {
+        assertEquals(option.and<unknown>(value), expected);
+      });
+    }
+  }
+
+  {
+    const tests: [
+      OptionInstance<number>,
+      (n: number) => number,
+      Option<number>,
+    ][] = [
+      [Option.some(1), (n) => n + 1, Option.some(2)],
+      [Option.none(), (n) => n + 1, Option.none()],
     ] as const;
 
     for (const [option, fn, expected] of tests) {
-      type Fn = (n: number) => number;
-
       await t.step(`${option}.map(${fn}) => ${expected}`, () => {
-        assertEquals(option.map(fn as Fn), expected);
+        assertEquals(option.map(fn), expected);
       });
     }
   }

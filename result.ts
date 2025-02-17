@@ -1,6 +1,6 @@
 import type { None, Some } from "./option.ts";
 import type { Context } from "./types.ts";
-import type { BindOperator, MapOperator, UnwrapOperator } from "./types.ts";
+import type { AndOperator, MapOperator, UnwrapOperator } from "./types.ts";
 import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 
@@ -71,16 +71,38 @@ export interface ResultInstance<T, E>
   extends
     Iterable<T>,
     ResultToOption<T>,
-    BindOperator<T>,
+    AndOperator<T>,
     MapOperator<T>,
     UnwrapOperator<T> {
-  /** Bind Operator */
-  bind<U, D = E, V = Result<U, D> & ResultInstance<U, D>>(
+  /** And Operator */
+  andThen<
+    U = T,
+    D = E,
+    V extends Result<U, E | D> =
+      & Result<U, E | D>
+      & ResultInstance<U, E | D>,
+  >(
     fn: (v: T) => V,
   ): V;
 
+  /** And Operator */
+  and<
+    U = T,
+    D = E,
+    V extends Result<U, E | D> =
+      & Result<U, E | D>
+      & ResultInstance<U, E | D>,
+  >(
+    result: V,
+  ): V;
+
   /** Map Operator */
-  map<U, V = Result<U, E> & ResultInstance<U, E>>(fn: (v: T) => U): V;
+  map<
+    U = T,
+    V extends Result<U, E> =
+      & Result<U, E>
+      & ResultInstance<U, E>,
+  >(fn: (v: T) => U): V;
 }
 /**
  * Result to Option
@@ -140,7 +162,9 @@ export interface StaticResult {
    * assertEquals(array, ["is ok"]);
    * ```
    */
-  ok<T, E = never>(value: T): Context<"Result"> & Ok<T> & ResultInstance<T, E>;
+  ok<T = unknown, E = never>(
+    value: T,
+  ): Context<"Result"> & Ok<T> & ResultInstance<T, E>;
   /**
    * return Err<E>
    *
@@ -182,9 +206,14 @@ class _Ok<T, E> implements Ok<T>, ResultInstance<T, E> {
     return Option.some(this.value);
   }
 
-  /** impl BindOperator */
-  bind<U>(fn: (v: T) => U): U {
+  /** impl AndOperator */
+  andThen<U>(fn: (v: T) => U): U {
     return fn(this.value);
+  }
+
+  /** impl AndOperator */
+  and<U>(result: U): U {
+    return result;
   }
 
   /** impl MapOperator */
@@ -229,8 +258,13 @@ class _Err<T, E> implements Err<E>, ResultInstance<T, E> {
     return Option.none();
   }
 
-  /** impl BindOperator */
-  bind<U>(): U {
+  /** impl AndOperator */
+  andThen<U>(): U {
+    return this as unknown as U;
+  }
+
+  /** impl AndOperator */
+  and<U>(): U {
     return this as unknown as U;
   }
 

@@ -62,12 +62,20 @@ Deno.bench("Option.none().toResult(error)", () => {
   Option.none().toResult("error");
 });
 
-Deno.bench("Option.some(value).bind(fn)", () => {
-  Option.some(1).bind((n) => Option.some(n));
+Deno.bench("Option.some(value).andThen(fn)", () => {
+  Option.some(1).andThen((n) => Option.some(n));
 });
 
-Deno.bench("Option.none().bind(fn)", () => {
-  Option.none<number>().bind((n) => Option.some(n));
+Deno.bench("Option.none().andThen(fn)", () => {
+  Option.none<number>().andThen((n) => Option.some(n));
+});
+
+Deno.bench("Option.some(value).and(other)", () => {
+  Option.some(1).and(Option.some(2));
+});
+
+Deno.bench("Option.none().and(other)", () => {
+  Option.none<number>().and(Option.some(2));
 });
 
 Deno.bench("Option.some(value).map(fn)", () => {

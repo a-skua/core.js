@@ -3,9 +3,9 @@ import { Result } from "@askua/core/result";
 
 const option = Array.from({ length: 10 }).map(() =>
   Option.some(Math.random())
-    .bind<number>((n) => n > 0.5 ? Option.some(n) : Option.none())
-    .map<string>((n) => n.toFixed(2))
-    .map<string>((s) => s + "!!")
+    .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+    .map((n) => n.toFixed(2))
+    .map((s) => s + "!!")
 );
 console.debug("Option");
 console.debug(`> [${option}]`);
@@ -17,11 +17,13 @@ const result = Array.from({
   length: 10,
 }).map(() =>
   Result.ok(Math.random())
-    .bind<number, Error>((n) =>
-      n > 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5"))
+    .andThen<number, string>((n) =>
+      n >= 0.3 ? Result.ok(n) : Result.err("less than 0.3")
     )
-    .map<string>((n) => n.toFixed(2))
-    .map<string>((s) => s + "!!")
+    .andThen<number>((n) =>
+      n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5")
+    )
+    .map((n) => n.toFixed(2))
 );
 console.debug("Result");
 console.debug(`> [${result}]`);

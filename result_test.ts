@@ -125,39 +125,55 @@ Deno.test("Result", async (t) => {
   }
 
   {
-    const tests = [
-      [Result.ok(1), (n: number) => Result.ok(n + 1), Result.ok(2)],
-      [Result.ok(1), (_: number) => Result.err("error"), Result.err("error")],
-      [
-        Result.err("error"),
-        (n: number) => Result.ok(n + 1),
-        Result.err("error"),
-      ],
-    ] as const;
+    const tests: [
+      ResultInstance<number, string>,
+      (n: number) => Result<number, string>,
+      Result<number, string>,
+    ][] = [
+      [Result.ok(1), (n) => Result.ok(n + 1), Result.ok(2)],
+      [Result.ok(1), () => Result.err("error"), Result.err("error")],
+      [Result.err("error"), (n) => Result.ok(n + 1), Result.err("error")],
+    ];
 
     for (const [result, fn, expected] of tests) {
-      type Fn = (
-        n: number,
-      ) => Result<number, string> & ResultInstance<number, string>;
-
-      await t.step(`${result}.bind(${fn}) => ${expected}`, () => {
-        assertEquals(result.bind(fn as Fn), expected);
+      await t.step(`${result}.andThen(${fn}) => ${expected}`, () => {
+        assertEquals(result.andThen(fn), expected);
       });
     }
   }
 
   {
-    const tests = [
-      [Result.ok(1), (n: number) => n + 1, Result.ok(2)],
-      [Result.err("error"), (n: number) => n + 1, Result.err("error")],
-    ] as const;
+    const tests: [
+      ResultInstance<number, string>,
+      Result<number, string>,
+      Result<number, string>,
+    ][] = [
+      [Result.ok(1), Result.ok(2), Result.ok(2)],
+      [Result.ok(1), Result.err("error"), Result.err("error")],
+      [Result.err("error"), Result.ok(2), Result.err("error")],
+    ];
+
+    for (const [result, value, expected] of tests) {
+      await t.step(`${result}.and(${value}) => ${expected}`, () => {
+        assertEquals(result.and(value), expected);
+      });
+    }
+  }
+
+  {
+    const tests: [
+      ResultInstance<number, string>,
+      (n: number) => number,
+      Result<number, string>,
+    ][] = [
+      [Result.ok(1), (n) => n + 1, Result.ok(2)],
+      [Result.err("error"), (n) => n + 1, Result.err("error")],
+    ];
 
     for (const [result, fn, expected] of tests) {
-      type Fn = (n: number) => number;
-
       await t.step(`${result}.map(${fn}) => ${expected}`, () => {
         assertEquals(
-          result.map<number>(fn as Fn),
+          result.map(fn),
           expected as Result<number, string>,
         );
       });
@@ -189,9 +205,9 @@ Deno.test("Result", async (t) => {
   }
 
   {
-    const tests = [
+    const tests: [ResultInstance<number, string>, number, number][] = [
       [Result.ok(1), 0, 1],
-      [Result.err<number>(new Error("error")), 0, 0],
+      [Result.err(new Error("error")), 0, 0],
     ] as const;
 
     for (const [result, defaultValue, expected] of tests) {
