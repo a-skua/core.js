@@ -111,7 +111,7 @@ export interface OptionInstance<T>
   ): W;
 
   /** Or Operator */
-  orElse<
+  asyncOrElse<
     U = T,
     V extends Option<U> = Option<U> & OptionInstance<U>,
     W extends Option<T> | Option<U> =
