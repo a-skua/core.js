@@ -57,6 +57,54 @@ export interface AndOperator<T, U = unknown> {
 }
 
 /**
+ * Or Operator
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { Option } from "./option.ts";
+ *
+ * const option: Option<number | string> = Option.some(Math.random())
+ *   .andThen<number>((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ *   .orElse<string>(() => Option.some("TOO SMALL"));
+ * console.log(`${option}`);
+ * ```
+ */
+export interface OrOperator<T, U = unknown> {
+  /**
+   * Or Operator
+   *
+   * ### Example
+   *
+   * ```ts
+   * import { Result } from "./result.ts";
+   *
+   * const result: Result<number | string, string> = Result.ok(Math.random())
+   *   .andThen<number, string>((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+   *   .orElse<string>((e) => Result.ok(e));
+   * console.log(`${result}`);
+   * ```
+   */
+  orElse(fn: () => U): T | U;
+
+  /**
+   * Or Operator
+   *
+   * ### Example
+   *
+   * ```ts
+   * import { Option } from "./option.ts";
+   *
+   * const option: Option<number | string> = Option.some(Math.random())
+   *   .andThen<number>((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .or<string>(Option.some("TOO SMALL"));
+   * console.log(`${option}`);
+   * ```
+   */
+  or(value: U): T | U;
+}
+
+/**
  * Map Operator
  *
  * ### Example

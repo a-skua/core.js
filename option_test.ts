@@ -234,4 +234,32 @@ Deno.test("Option", async (t) => {
       });
     }
   }
+
+  {
+    const fn = () => Option.some(0);
+    const tests: [OptionInstance<number>, Option<number>][] = [
+      [Option.some(1), Option.some(1)],
+      [Option.none(), Option.some(0)],
+    ];
+
+    for (const [option, expected] of tests) {
+      await t.step(`${option}.orElse(${fn}) => ${expected}`, () => {
+        assertEquals(option.orElse(fn), expected);
+      });
+    }
+  }
+
+  {
+    const value = Option.some(0);
+    const tests: [OptionInstance<number>, Option<number>][] = [
+      [Option.some(1), Option.some(1)],
+      [Option.none(), Option.some(0)],
+    ];
+
+    for (const [option, expected] of tests) {
+      await t.step(`${option}.or(${value}) => ${expected}`, () => {
+        assertEquals(option.or(value), expected);
+      });
+    }
+  }
 });

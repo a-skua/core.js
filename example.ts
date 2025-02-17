@@ -9,6 +9,14 @@ const option = Array.from({ length: 10 }).map(() =>
 );
 console.debug("Option");
 console.debug(`> [${option}]`);
+console.debug(`> [${
+  option.map((r) =>
+    r.orElse(() => {
+      console.debug("None");
+      return Option.some("_");
+    })
+  )
+}]`);
 console.debug(`> [${option.map((o) => o.unwrapOr("_"))}]`);
 console.debug(`> [${option.map((o) => `[${[...o]}]`)}]`);
 console.debug(`> [${option.map((o) => [...o]).flat()}]`);
@@ -27,6 +35,14 @@ const result = Array.from({
 );
 console.debug("Result");
 console.debug(`> [${result}]`);
+console.debug(`> [${
+  result.map((r) =>
+    r.orElse((e) => {
+      console.debug(`Error: ${e}`);
+      return Result.ok("_");
+    })
+  )
+}]`);
 console.debug(`> [${result.map((r) => r.unwrapOr("_"))}]`);
 console.debug(`> [${result.map((r) => `[${[...r]}]`)}]`);
 console.debug(`> [${result.map((r) => [...r]).flat()}]`);

@@ -205,7 +205,7 @@ Deno.test("Result", async (t) => {
   }
 
   {
-    const tests: [ResultInstance<number, string>, number, number][] = [
+    const tests: [ResultInstance<number, Error>, number, number][] = [
       [Result.ok(1), 0, 1],
       [Result.err(new Error("error")), 0, 0],
     ] as const;
@@ -213,6 +213,40 @@ Deno.test("Result", async (t) => {
     for (const [result, defaultValue, expected] of tests) {
       await t.step(`${result}.unwrapOr(${defaultValue}) => ${expected}`, () => {
         assertEquals(result.unwrapOr(defaultValue), expected);
+      });
+    }
+  }
+
+  {
+    const fn = (e: string) => Result.ok(e + "!!");
+    const tests: [
+      ResultInstance<number, string>,
+      Result<number, string> | Result<string, Error>,
+    ][] = [
+      [Result.ok(1), Result.ok(1)],
+      [Result.err("error"), Result.ok("error!!")],
+    ];
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.orElse(${fn}) => ${expected}`, () => {
+        assertEquals(result.orElse<string>(fn), expected);
+      });
+    }
+  }
+
+  {
+    const value = Result.ok(-1);
+    const tests: [
+      ResultInstance<number, string>,
+      Result<number, string> | Result<number, Error>,
+    ][] = [
+      [Result.ok(1), Result.ok(1)],
+      [Result.err("error"), Result.ok(-1)],
+    ];
+
+    for (const [result, expected] of tests) {
+      await t.step(`${result}.or(${value}) => ${expected}`, () => {
+        assertEquals(result.or(value), expected);
       });
     }
   }

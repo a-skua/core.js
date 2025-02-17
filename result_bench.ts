@@ -70,6 +70,22 @@ Deno.bench("Result.err(err).and(other)", () => {
   Result.err<number, number>(0).and(Result.ok(2));
 });
 
+Deno.bench("Result.ok(value).orElse(fn)", () => {
+  Result.ok(1).orElse(() => Result.ok(0));
+});
+
+Deno.bench("Result.err(err).orElse(fn)", () => {
+  Result.err(0).orElse<number>((e) => Result.ok(e));
+});
+
+Deno.bench("Result.ok(value).or(other)", () => {
+  Result.ok(1).or(Result.ok(0));
+});
+
+Deno.bench("Result.err(err).or(other)", () => {
+  Result.err(0).or<number>(Result.ok(0));
+});
+
 Deno.bench("Result.ok(value).map(fn)", () => {
   Result.ok(1).map((v) => v + 1);
 });

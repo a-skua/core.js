@@ -78,6 +78,22 @@ Deno.bench("Option.none().and(other)", () => {
   Option.none<number>().and(Option.some(2));
 });
 
+Deno.bench("Option.some(value).orElse(fn)", () => {
+  Option.some(1).orElse(() => Option.some(0));
+});
+
+Deno.bench("Option.none().orElse(fn)", () => {
+  Option.none<number>().orElse(() => Option.some(0));
+});
+
+Deno.bench("Option.some(value).or(other)", () => {
+  Option.some(1).or(Option.some(0));
+});
+
+Deno.bench("Option.none().or(other)", () => {
+  Option.none<number>().or(Option.some(0));
+});
+
 Deno.bench("Option.some(value).map(fn)", () => {
   Option.some(1).map((n) => n + 1);
 });

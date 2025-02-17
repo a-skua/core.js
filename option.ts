@@ -1,5 +1,10 @@
 import type { Err, Ok } from "./result.ts";
-import type { AndOperator, MapOperator, UnwrapOperator } from "./types.ts";
+import type {
+  AndOperator,
+  MapOperator,
+  OrOperator,
+  UnwrapOperator,
+} from "./types.ts";
 import type { Context } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
@@ -79,6 +84,7 @@ export interface OptionInstance<T>
     OptionToResult<T>,
     MapOperator<T>,
     AndOperator<T>,
+    OrOperator<T>,
     UnwrapOperator<T> {
   /** And Operator */
   andThen<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
@@ -87,6 +93,26 @@ export interface OptionInstance<T>
 
   /** And Operator */
   and<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(option: V): V;
+
+  /** Or Operator */
+  orElse<
+    U = T,
+    V extends Option<U> = Option<U> & OptionInstance<U>,
+    W extends Option<T> | Option<U> =
+      | (Option<T> & OptionInstance<T>)
+      | (Option<U> & OptionInstance<U>),
+  >(
+    fn: () => V,
+  ): W;
+
+  /** Or Operator */
+  or<
+    U = T,
+    V extends Option<U> = Option<U> & OptionInstance<U>,
+    W extends Option<T> | Option<U> =
+      | (Option<T> & OptionInstance<T>)
+      | (Option<U> & OptionInstance<U>),
+  >(option: V): W;
 
   /** Map Operator */
   map<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
@@ -199,6 +225,16 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
     return option;
   }
 
+  /** impl OrOperator */
+  orElse<U>(): U {
+    return this as unknown as U;
+  }
+
+  /** impl OrOperator */
+  or<U>(): U {
+    return this as unknown as U;
+  }
+
   /** impl MapOperator */
   map<U, V>(fn: (v: T) => U): V {
     return Option.some(fn(this.value)) as V;
@@ -251,6 +287,16 @@ class _None<T> implements None, OptionInstance<T> {
   /** impl AndOperator */
   and<U, V = Context<"Option"> & None & OptionInstance<U>>(): V {
     return this as unknown as V;
+  }
+
+  /** impl OrOperator */
+  orElse<U, V>(fn: () => U): V {
+    return fn() as unknown as V;
+  }
+
+  /** impl OrOperator */
+  or<U, V>(option: U): V {
+    return option as unknown as V;
   }
 
   /** impl MapOperator */

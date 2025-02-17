@@ -1,6 +1,11 @@
 import type { None, Some } from "./option.ts";
 import type { Context } from "./types.ts";
-import type { AndOperator, MapOperator, UnwrapOperator } from "./types.ts";
+import type {
+  AndOperator,
+  MapOperator,
+  OrOperator,
+  UnwrapOperator,
+} from "./types.ts";
 import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 
@@ -64,7 +69,9 @@ export interface Err<E> {
  * }
  * ```
  */
-export type Result<T, E = Error> = Context<"Result"> & (Ok<T> | Err<E>);
+export type Result<T = unknown, E = Error> =
+  & Context<"Result">
+  & (Ok<T> | Err<E>);
 
 /** Result Instance */
 export interface ResultInstance<T, E>
@@ -72,29 +79,60 @@ export interface ResultInstance<T, E>
     Iterable<T>,
     ResultToOption<T>,
     AndOperator<T>,
+    OrOperator<T>,
     MapOperator<T>,
     UnwrapOperator<T> {
   /** And Operator */
   andThen<
     U = T,
     D = E,
-    V extends Result<U, E | D> =
-      & Result<U, E | D>
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<U, E | D> =
+      & Result<U, D>
       & ResultInstance<U, E | D>,
   >(
     fn: (v: T) => V,
-  ): V;
+  ): W;
 
   /** And Operator */
   and<
     U = T,
     D = E,
-    V extends Result<U, E | D> =
-      & Result<U, E | D>
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<U, E | D> =
+      & Result<U, D>
       & ResultInstance<U, E | D>,
   >(
     result: V,
-  ): V;
+  ): W;
+
+  /** Or Operator */
+  orElse<
+    U = T,
+    D = E,
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<T, E> | Result<U, D> =
+      | (Result<T, E> & ResultInstance<T, E>)
+      | (Result<U, D> & ResultInstance<U, D>),
+  >(fn: (error: E) => V): W;
+
+  /** Or Operator */
+  or<
+    U = T,
+    D = E,
+    V extends Result<U, D> =
+      & Result<U, D>
+      & ResultInstance<U, D>,
+    W extends Result<T, E> | Result<U, D> =
+      | (Result<T, E> & ResultInstance<T, E>)
+      | (Result<U, D> & ResultInstance<U, D>),
+  >(result: V): W;
 
   /** Map Operator */
   map<
@@ -207,13 +245,23 @@ class _Ok<T, E> implements Ok<T>, ResultInstance<T, E> {
   }
 
   /** impl AndOperator */
-  andThen<U>(fn: (v: T) => U): U {
-    return fn(this.value);
+  andThen<U, V>(fn: (v: T) => U): V {
+    return fn(this.value) as unknown as V;
   }
 
   /** impl AndOperator */
-  and<U>(result: U): U {
-    return result;
+  and<U, V>(result: U): V {
+    return result as unknown as V;
+  }
+
+  /** impl OrOperator */
+  orElse<U>(): U {
+    return this as unknown as U;
+  }
+
+  /** impl OrOperator */
+  or<U>(): U {
+    return this as unknown as U;
   }
 
   /** impl MapOperator */
@@ -271,6 +319,16 @@ class _Err<T, E> implements Err<E>, ResultInstance<T, E> {
   /** impl MapOperator */
   map<U>(): U {
     return this as unknown as U;
+  }
+
+  /** impl OrOperator */
+  orElse<U, V>(fn: (error: E) => U): V {
+    return fn(this.error) as unknown as V;
+  }
+
+  /** impl OrOperator */
+  or<U, V>(result: U): V {
+    return result as unknown as V;
   }
 
   /** impl UnwrapOperator */
