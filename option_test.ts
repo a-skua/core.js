@@ -3,32 +3,7 @@ import type { OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 import { Result } from "./result.ts";
 
-Deno.test("Option", async (t) => {
-  {
-    const tests = [
-      ["value", { some: true, value: "value" }],
-      [1, { some: true, value: 1 }],
-    ] as const;
-
-    for (const [input, expected] of tests) {
-      await t.step(`Option.some(${input}) => ${expected})`, () => {
-        assertObjectMatch(Option.some(input), expected);
-      });
-    }
-  }
-
-  {
-    const tests = [
-      [{ some: false }],
-    ] as const;
-
-    for (const [expected] of tests) {
-      await t.step(`Option.none() => ${expected})`, () => {
-        assertObjectMatch(Option.none(), expected);
-      });
-    }
-  }
-
+Deno.test("OptionInstance", async (t) => {
   {
     const tests = [
       [Option.some("value"), "Some(value)"],
@@ -86,10 +61,10 @@ Deno.test("Option", async (t) => {
   }
 
   {
-    const tests = [
+    const tests: [OptionInstance<string>, Result<string>][] = [
       [Option.some("value"), Result.ok("value")],
       [Option.none(), Result.err(new Error("None"))],
-    ] as const;
+    ];
 
     for (const [option, expected] of tests) {
       await t.step(`${option}.toResult() => ${expected}`, () => {
@@ -99,14 +74,10 @@ Deno.test("Option", async (t) => {
   }
 
   {
-    const tests = [
-      [
-        Option.some("value"),
-        "is none",
-        Result.ok("value") as Result<string, string>,
-      ],
+    const tests: [OptionInstance<string>, string, Result<string, string>][] = [
+      [Option.some("value"), "is none", Result.ok("value")],
       [Option.none(), "is none", Result.err("is none")],
-    ] as const;
+    ];
 
     for (const [option, input, expected] of tests) {
       await t.step(`${option}.toResult(${input}) => ${expected}`, () => {
@@ -156,43 +127,7 @@ Deno.test("Option", async (t) => {
 
     for (const [option, fn, expected] of tests) {
       await t.step(`${option}.andThen(${fn}) => ${expected}`, () => {
-        assertEquals(option.andThen<unknown>(fn), expected);
-      });
-    }
-  }
-
-  {
-    const tests: [
-      OptionInstance<number>,
-      (n: number) => Promise<Option<unknown> & OptionInstance<unknown>>,
-      Option<unknown>,
-    ][] = [
-      [
-        Option.some(1),
-        (n) => Promise.resolve(Option.some(n + 1)),
-        Option.some(2),
-      ],
-      [Option.some(1), () => Promise.resolve(Option.none()), Option.none()],
-      [
-        Option.none(),
-        (n) => Promise.resolve(Option.some(n + 1)),
-        Option.none(),
-      ],
-      [
-        Option.some(1),
-        (n) => Promise.resolve(Option.some(`${n}`)),
-        Option.some("1"),
-      ],
-      [
-        Option.none(),
-        (n) => Promise.resolve(Option.some(`${n}`)),
-        Option.none(),
-      ],
-    ] as const;
-
-    for (const [option, fn, expected] of tests) {
-      await t.step(`${option}.asyncAndThen(${fn}) => ${expected}`, async () => {
-        assertEquals(await option.asyncAndThen<unknown>(fn), expected);
+        assertEquals(option.andThen(fn), expected);
       });
     }
   }
@@ -212,7 +147,7 @@ Deno.test("Option", async (t) => {
 
     for (const [option, value, expected] of tests) {
       await t.step(`${option}.and(${value}) => ${expected}`, () => {
-        assertEquals(option.and<unknown>(value), expected);
+        assertEquals(option.and(value), expected);
       });
     }
   }
@@ -286,20 +221,6 @@ Deno.test("Option", async (t) => {
   }
 
   {
-    const fn = () => Promise.resolve(Option.some(0));
-    const tests: [OptionInstance<number>, Option<number>][] = [
-      [Option.some(1), Option.some(1)],
-      [Option.none(), Option.some(0)],
-    ];
-
-    for (const [option, expected] of tests) {
-      await t.step(`${option}.asyncOrElse(${fn}) => ${expected}`, async () => {
-        assertEquals(await option.asyncOrElse(fn), expected);
-      });
-    }
-  }
-
-  {
     const value = Option.some(0);
     const tests: [OptionInstance<number>, Option<number>][] = [
       [Option.some(1), Option.some(1)],
@@ -311,5 +232,76 @@ Deno.test("Option", async (t) => {
         assertEquals(option.or(value), expected);
       });
     }
+  }
+});
+
+Deno.test("Option.some(...)", async (t) => {
+  const tests = [
+    ["value", { some: true, value: "value" }],
+    [1, { some: true, value: 1 }],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(`Option.some(${input}) => ${expected})`, () => {
+      assertObjectMatch(Option.some(input), expected);
+    });
+  }
+});
+
+Deno.test("Option.none(...)", async (t) => {
+  const tests = [
+    [{ some: false }],
+  ] as const;
+
+  for (const [expected] of tests) {
+    await t.step(`Option.none() => ${expected})`, () => {
+      assertObjectMatch(Option.none(), expected);
+    });
+  }
+});
+
+Deno.test("Option.andThen(...)", async (t) => {
+  const getNumber = () => Option.some(1);
+  const getString = () => Option.some("hello");
+  const asyncGetNumber = () => Promise.resolve(Option.some(1));
+  const asyncGetString = () => Promise.resolve(Option.some("hello"));
+  const getNone = () => Option.none();
+
+  const tests: [() => Promise<Option<unknown>>, Option<unknown>][] = [
+    [() => Option.andThen(getNumber, getString), Option.some([1, "hello"])],
+    [() => Option.andThen(getNumber, getNone, getString), Option.none()],
+    [
+      () => Option.andThen(asyncGetNumber, getString),
+      Option.some([1, "hello"]),
+    ],
+    [() => Option.andThen(asyncGetString, getNone), Option.none()],
+  ];
+
+  for (const [fn, expected] of tests) {
+    await t.step(`(${fn})() => ${expected}`, async () => {
+      assertEquals(await fn(), expected);
+    });
+  }
+});
+
+Deno.test("Option.orElse(...)", async (t) => {
+  const getNumber = () => Option.some(1);
+  const getString = () => Option.some("hello");
+  const asyncGetNumber = () => Promise.resolve(Option.some(1));
+  const asyncGetString = () => Promise.resolve(Option.some("hello"));
+  const getNone = () => Option.none();
+
+  const tests: [() => Promise<Option<unknown>>, Option<unknown>][] = [
+    [() => Option.orElse(getNumber, getString), Option.some(1)],
+    [() => Option.orElse(getNone, getString), Option.some("hello")],
+    [() => Option.orElse(getNone, getNone), Option.none()],
+    [() => Option.orElse(asyncGetNumber, getString), Option.some(1)],
+    [() => Option.orElse(asyncGetString, getNone), Option.some("hello")],
+  ];
+
+  for (const [fn, expected] of tests) {
+    await t.step(`(${fn})() => ${expected}`, async () => {
+      assertEquals(await fn(), expected);
+    });
   }
 });

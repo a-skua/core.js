@@ -1,34 +1,47 @@
+import type { ResultInstance } from "@askua/core/result";
 import { Result } from "@askua/core/result";
 
-const asyncRandom = () => Math.random();
-
-function getNumber(): Result<number> {
-  const num = asyncRandom();
+function getNumber(): ResultInstance<number, Error> {
+  const num = Math.random();
   if (num >= 0.5) {
-    return Result.ok<number>(num);
+    return Result.ok(num);
   }
-  return Result.err<number>(new Error(`Number is less than 0.5: ${num}`));
+  return Result.err(new Error("Number is too small"));
 }
 
-function myProcess(): Result<[number, number, number]> {
-  return Result(getNumber()).andThen<[number, number, number]>(
-    (n1) =>
-      Result(getNumber()).andThen<[number, number, number]>(
-        (n2) =>
-          Result(getNumber()).map<[number, number, number]>((
-            n3,
-          ) => [n1, n2, n3]),
-      ),
-  );
-}
+const getNineNumbers = (
+  retry = 0,
+): readonly [
+  ...string[],
+  { retry: number },
+] =>
+  getNumber().andThen((n1) =>
+    getNumber().andThen((n2) =>
+      getNumber().andThen((n3) =>
+        getNumber().andThen((n4) =>
+          getNumber().andThen((n5) =>
+            getNumber().andThen((n6) =>
+              getNumber().andThen((n7) =>
+                getNumber().andThen((n8) =>
+                  getNumber().andThen((n9) =>
+                    Result.ok(
+                      [
+                        ...[n1, n2, n3, n4, n5, n6, n7, n8, n9].map((n) =>
+                          n.toFixed(2)
+                        ),
+                        { retry },
+                      ] as const,
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ).unwrapOrElse(() => getNineNumbers(retry + 1));
 
-let i = 0;
-while (++i) {
-  const result = myProcess();
-  if (result.ok) {
-    console.log(i, result.value);
-    break;
-  } else {
-    console.error(i, result.error);
-  }
-}
+console.time("getNineNumbers");
+console.debug(getNineNumbers());
+console.timeEnd("getNineNumbers");

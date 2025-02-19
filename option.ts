@@ -1,11 +1,9 @@
-import type { Err, Ok } from "./result.ts";
 import type {
   AndOperator,
   MapOperator,
   OrOperator,
   UnwrapOperator,
 } from "./types.ts";
-import type { Context } from "./types.ts";
 import type { ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
@@ -75,94 +73,75 @@ export interface None {
  * assertEquals(array, ["is some"]);
  * ```
  */
-export type Option<T> = Context<"Option"> & (Some<T> | None);
+export type Option<T> = Some<T> | None;
 
 /** Option Instance */
-export interface OptionInstance<T>
+export type OptionInstance<T> = Option<T> & Context<T>;
+
+/** Option Context */
+export interface Context<T>
   extends
     Iterable<T>,
     OptionToResult<T>,
     MapOperator<T>,
     AndOperator<T>,
-    OrOperator<T>,
+    OrOperator<never>,
     UnwrapOperator<T> {
   /** And Operator */
-  andThen<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
-    fn: (v: T) => V,
-  ): V;
+  andThen<
+    U,
+    Fn extends (v: T) => U,
+    Some extends (
+      ReturnType<Fn> extends Option<infer U> ? U : never
+    ),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(fn: Fn): Return;
 
   /** And Operator */
-  asyncAndThen<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
-    fn: (v: T) => Promise<V>,
-  ): Promise<V>;
-
-  /** And Operator */
-  and<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(option: V): V;
+  and<
+    U,
+    V extends Option<U>,
+    Some extends (
+      V extends Option<infer U> ? U : never
+    ),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(option: V): Return;
 
   /** Or Operator */
   orElse<
-    U = T,
-    V extends Option<U> = Option<U> & OptionInstance<U>,
-    W extends Option<T> | Option<U> =
-      | (Option<T> & OptionInstance<T>)
-      | (Option<U> & OptionInstance<U>),
-  >(
-    fn: () => V,
-  ): W;
-
-  /** Or Operator */
-  asyncOrElse<
-    U = T,
-    V extends Option<U> = Option<U> & OptionInstance<U>,
-    W extends Option<T> | Option<U> =
-      | (Option<T> & OptionInstance<T>)
-      | (Option<U> & OptionInstance<U>),
-  >(
-    fn: () => Promise<V>,
-  ): Promise<W>;
+    U,
+    Fn extends () => U,
+    Some extends (
+      U extends Option<infer U> ? U : never
+    ),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(fn: Fn): Return;
 
   /** Or Operator */
   or<
-    U = T,
-    V extends Option<U> = Option<U> & OptionInstance<U>,
-    W extends Option<T> | Option<U> =
-      | (Option<T> & OptionInstance<T>)
-      | (Option<U> & OptionInstance<U>),
-  >(option: V): W;
+    U,
+    V extends Option<U>,
+    Some extends (
+      V extends Option<infer U> ? U : never
+    ),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(option: V): Return;
 
   /** Map Operator */
-  map<U = T, V extends Option<U> = Option<U> & OptionInstance<U>>(
-    fn: (v: T) => U,
-  ): V;
-}
-/**
- * Option to Result
- *
- * ### Example
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result } from "@askua/core/result";
- *
- * const ok = Option.some("is some").toResult();
- * assertEquals(ok, Result.ok("is some"));
- *
- * const err = Option.none().toResult();
- * assertEquals(err, Result.err(new Error("None")));
- *
- * const customErr = Option.none().toResult("is none");
- * assertEquals(customErr, Result.err("is none"));
- * ```
- */
-export interface OptionToResult<T> {
-  /** to Result */
-  toResult<E = Error>(error?: E): Result<T, E> & ResultInstance<T, E>;
+  map<
+    U,
+    Fn extends (v: T) => U,
+    Some extends (
+      ReturnType<Fn> extends Option<infer U> ? U : never
+    ),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(fn: Fn): Return;
 }
 
 /**
  * type StaticOption
  */
-export interface StaticOption {
+export interface StaticContext {
   /**
    * Create a Some instance.
    *
@@ -184,12 +163,8 @@ export interface StaticOption {
    * assertEquals(array, ["is some"]);
    * ```
    */
-  some<T>(
-    value: T,
-  ):
-    & Context<"Option">
-    & Some<T>
-    & OptionInstance<T>;
+  some<T>(value: T): Some<T> & Context<T>;
+
   /**
    * Create a None instance.
    *
@@ -210,50 +185,87 @@ export interface StaticOption {
    * const array = Array.from(Option.none());
    * assertEquals(array, []);
    */
-  none<T = never>():
-    & Context<"Option">
-    & None
-    & OptionInstance<T>;
+  none<T = never>(): None & Context<T>;
+
+  /** andThen */
+  andThen<
+    T,
+    Fn extends (() => Option<T> | Promise<Option<T>>)[],
+    Some extends ({
+      [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+        : ReturnType<Fn[K]> extends Option<infer T> ? T
+        : never;
+    }),
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(...fn: Fn): Promise<Return>;
+
+  /** orElse */
+  orElse<
+    T,
+    F extends () => Option<T> | Promise<Option<T>>,
+    Fn extends [F, ...F[]],
+    Some extends ({
+      [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+        : ReturnType<Fn[K]> extends Option<infer T> ? T
+        : never;
+    })[number],
+    Return extends Option<Some> = OptionInstance<Some>,
+  >(...fn: Fn): Promise<Return>;
+}
+
+/**
+ * Option to Result
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result } from "@askua/core/result";
+ *
+ * const ok = Option.some("is some").toResult();
+ * assertEquals(ok, Result.ok("is some"));
+ *
+ * const err = Option.none().toResult<Error>();
+ * assertEquals(err, Result.err(new Error("None")));
+ *
+ * const customErr = Option.none().toResult<string>("is none");
+ * assertEquals(customErr, Result.err("is none"));
+ * ```
+ */
+export interface OptionToResult<T> {
+  /** to Result */
+  toResult<E = never, R extends Result<T, E> = ResultInstance<T, E>>(
+    error?: E,
+  ): R;
 }
 
 /** impl Some */
-class _Some<T> implements Some<T>, OptionInstance<T> {
+class _Some<T> implements Some<T>, Context<T> {
   readonly some = true;
-  constructor(readonly value: T) {
-  }
+  constructor(readonly value: T) {}
 
   toString(): string {
     return `Some(${this.value})`;
   }
 
   /** impl OptionToResult */
-  toResult(): Context<"Result"> & Ok<T> & ResultInstance<T, never> {
-    return Result.ok(this.value);
+  toResult<R>(): R {
+    return Result.ok(this.value) as unknown as R;
   }
 
   /** impl AndOperator */
-  andThen<U>(fn: (v: T) => U): U {
-    return fn(this.value);
+  andThen<U, V>(fn: (v: T) => U): V {
+    return fn(this.value) as unknown as V;
   }
 
   /** impl AndOperator */
-  asyncAndThen<U>(fn: (v: T) => Promise<U>): Promise<U> {
-    return fn(this.value);
-  }
-
-  /** impl AndOperator */
-  and<U>(option: U): U {
-    return option;
+  and<U, V>(option: U): V {
+    return option as unknown as V;
   }
 
   /** impl OrOperator */
   orElse<U>(): U {
     return this as unknown as U;
-  }
-
-  /** impl OrOperator */
-  asyncOrElse<U>(): Promise<U> {
-    return Promise.resolve(this as unknown as U);
   }
 
   /** impl OrOperator */
@@ -276,6 +288,11 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
     return this.value;
   }
 
+  /** impl UnwrapOperator */
+  unwrapOrElse<U>(): U {
+    return this.value as unknown as U;
+  }
+
   /** impl Iterable */
   [Symbol.iterator](): Iterator<T> {
     let count = 0;
@@ -289,30 +306,22 @@ class _Some<T> implements Some<T>, OptionInstance<T> {
 }
 
 /** impl None */
-class _None<T> implements None, OptionInstance<T> {
+class _None<T> implements None, Context<T> {
   readonly some = false;
-  constructor() {
-  }
+  constructor() {}
 
   toString(): string {
     return "None";
   }
 
   /** impl OptionToResult */
-  toResult<E = Error>(
-    err: E = new Error("None") as E,
-  ): Context<"Result"> & Err<E> & ResultInstance<T, E> {
-    return Result.err(err);
+  toResult<E, R>(error: E = new Error("None") as E): R {
+    return Result.err(error) as unknown as R;
   }
 
   /** impl AndOperator */
   andThen<U>(): U {
     return this as unknown as U;
-  }
-
-  /** impl AndOperator */
-  asyncAndThen<U>(): Promise<U> {
-    return Promise.resolve(this as unknown as U);
   }
 
   /** impl AndOperator */
@@ -323,11 +332,6 @@ class _None<T> implements None, OptionInstance<T> {
   /** impl OrOperator */
   orElse<U, V>(fn: () => U): V {
     return fn() as unknown as V;
-  }
-
-  /** impl OrOperator */
-  asyncOrElse<U, V>(fn: () => Promise<U>): Promise<V> {
-    return fn() as unknown as Promise<V>;
   }
 
   /** impl OrOperator */
@@ -346,8 +350,23 @@ class _None<T> implements None, OptionInstance<T> {
   }
 
   /** impl UnwrapOperator */
-  unwrapOr(value: T): T {
+  unwrapOr<U>(value: U): U {
     return value;
+  }
+
+  /** impl UnwrapOperator */
+  unwrapOrElse<
+    U,
+    Fn extends () => U | Promise<U>,
+    Return extends
+      | T
+      | (
+        ReturnType<Fn> extends Promise<infer U> ? U
+          : ReturnType<Fn> extends infer U ? U
+          : never
+      ),
+  >(fn: () => ReturnType<Fn>): Return {
+    return fn() as unknown as Return;
   }
 
   /** impl Iterable */
@@ -360,27 +379,63 @@ class _None<T> implements None, OptionInstance<T> {
   }
 }
 
+/** Option to OptionInstance */
+export type ToInstance = <T>(option: Option<T>) => OptionInstance<T>;
+
 /** impl StaticOption */
-export const Option:
-  & (<T>(option: Some<T> | None) => Option<T> & OptionInstance<T>)
-  & StaticOption = Object.assign(
-    <T>(option: Some<T> | None): Option<T> & OptionInstance<T> => {
-      return option.some ? Option.some(option.value) : Option.none();
+export const Option: ToInstance & StaticContext = Object.assign(
+  <T>(option: Option<T>): OptionInstance<T> => {
+    return option.some ? Option.some(option.value) : Option.none();
+  },
+  {
+    some<T>(value: T): Some<T> & Context<T> {
+      return new _Some(value);
     },
-    {
-      some<T>(
-        value: T,
-      ):
-        & Context<"Option">
-        & Some<T>
-        & OptionInstance<T> {
-        return new _Some(value) as Context<"Option"> & _Some<T>;
-      },
-      none<T>():
-        & Context<"Option">
-        & None
-        & OptionInstance<T> {
-        return new _None() as Context<"Option"> & _None<T>;
-      },
+    none<T>(): None & Context<T> {
+      return new _None<T>();
     },
-  );
+    andThen: async <
+      T,
+      Fn extends (() => Option<T> | Promise<Option<T>>)[],
+      Some extends ({
+        [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+          : ReturnType<Fn[K]> extends Option<infer T> ? T
+          : never;
+      }),
+      Return extends Option<Some> = OptionInstance<Some>,
+    >(...fn: Fn): Promise<Return> => {
+      const somes: T[] = new Array(fn.length);
+      for (let i = 0; i < fn.length; i++) {
+        const option = await fn[i]();
+        if (option.some) {
+          somes[i] = option.value;
+        } else {
+          return option as Return;
+        }
+      }
+
+      return Option.some(somes) as unknown as Return;
+    },
+    orElse: async <
+      T,
+      F extends () => Option<T> | Promise<Option<T>>,
+      Fn extends [F, ...F[]],
+      Some extends ({
+        [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+          : ReturnType<Fn[K]> extends Option<infer T> ? T
+          : never;
+      })[number],
+      Return extends Option<Some> = OptionInstance<Some>,
+    >(...fn: Fn): Promise<Return> => {
+      let last;
+      for (let i = 0; i < fn.length; i++) {
+        const option = await fn[i]();
+        if (option.some) {
+          return option as unknown as Return;
+        }
+        last = option;
+      }
+      return last as unknown as Return;
+    },
+  },
+);

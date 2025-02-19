@@ -1,9 +1,3 @@
-import type { Brand } from "./brand.ts";
-
-/** Context */
-export type Context<T extends string> = Brand<T | typeof context, object>;
-const context: unique symbol = Symbol("Context");
-
 /**
  * And Operator
  *
@@ -14,13 +8,13 @@ const context: unique symbol = Symbol("Context");
  * import { Result } from "./result.ts";
  *
  * const option: Option<string> = Option.some(Math.random())
- *   .andThen<number>((n) => n > 0.5 ? Option.some(n) : Option.none())
- *   .andThen<string>((n) => Option.some(n.toFixed(2)));
+ *   .andThen((n) => n > 0.5 ? Option.some(n) : Option.none())
+ *   .andThen((n) => Option.some(n.toFixed(2)));
  * console.log(`${option}`);
  *
  * const result: Result<string, string> = Result.ok(Math.random())
- *   .andThen<number, string>((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
- *   .andThen<string, string>((n) => Result.ok(n.toFixed(2)));
+ *   .andThen((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+ *   .andThen((n) => Result.ok(n.toFixed(2)));
  * console.log(`${result}`);
  * ```
  */
@@ -41,11 +35,6 @@ export interface AndOperator<T, U = unknown> {
   andThen(fn: (v: T) => U): U;
 
   /**
-   * async andThen
-   */
-  asyncAndThen(fn: (v: T) => Promise<U>): Promise<U>;
-
-  /**
    * and
    *
    * ## Example
@@ -55,7 +44,7 @@ export interface AndOperator<T, U = unknown> {
    *
    * const option = Option.some(Math.random())
    *   .andThen((n) => n > 0.5 ? Option.some(n) : Option.none())
-   *   .and<string>(Option.some("TOO LARGE"));
+   *   .and(Option.some("TOO LARGE"));
    * console.log(`${option}`);
    * ```
    */
@@ -71,12 +60,12 @@ export interface AndOperator<T, U = unknown> {
  * import { Option } from "./option.ts";
  *
  * const option: Option<number | string> = Option.some(Math.random())
- *   .andThen<number>((n) => n >= 0.5 ? Option.some(n) : Option.none())
- *   .orElse<string>(() => Option.some("TOO SMALL"));
+ *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ *   .orElse(() => Option.some("TOO SMALL"));
  * console.log(`${option}`);
  * ```
  */
-export interface OrOperator<T, U = unknown> {
+export interface OrOperator<T, U = unknown, V = unknown> {
   /**
    * orElse
    *
@@ -86,17 +75,12 @@ export interface OrOperator<T, U = unknown> {
    * import { Result } from "./result.ts";
    *
    * const result: Result<number | string, string> = Result.ok(Math.random())
-   *   .andThen<number, string>((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
-   *   .orElse<string>((e) => Result.ok(e));
+   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+   *   .orElse((e) => Result.ok(e));
    * console.log(`${result}`);
    * ```
    */
-  orElse(fn: () => U): T | U;
-
-  /**
-   * async orElse
-   */
-  asyncOrElse(fn: () => Promise<U>): Promise<T | U>;
+  orElse(fn: (v: T) => U): V;
 
   /**
    * or
@@ -107,12 +91,12 @@ export interface OrOperator<T, U = unknown> {
    * import { Option } from "./option.ts";
    *
    * const option: Option<number | string> = Option.some(Math.random())
-   *   .andThen<number>((n) => n >= 0.5 ? Option.some(n) : Option.none())
-   *   .or<string>(Option.some("TOO SMALL"));
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .or(Option.some("TOO SMALL"));
    * console.log(`${option}`);
    * ```
    */
-  or(value: U): T | U;
+  or(v: U): V;
 }
 
 /**
@@ -125,13 +109,13 @@ export interface OrOperator<T, U = unknown> {
  * import { Result } from "./result.ts";
  *
  * const option: Option<string> = Option.some(Math.random())
- *   .andThen<number>((n) => n > 0.5 ? Option.some(n) : Option.none())
- *   .map<string>((n) => n.toFixed(2));
+ *   .andThen((n) => n > 0.5 ? Option.some(n) : Option.none())
+ *   .map((n) => n.toFixed(2));
  * console.log(`${option}`);
  *
  * const result: Result<string, string> = Result.ok(Math.random())
- *   .andThen<number, string>((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
- *   .map<string>((n) => n.toFixed(2));
+ *   .andThen((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+ *   .map((n) => n.toFixed(2));
  * console.log(`${result}`);
  * ```
  */
@@ -149,12 +133,12 @@ export interface MapOperator<T, U = unknown, V = unknown> {
  * import { Result } from "./result.ts";
  *
  * const option: number = Option.some(Math.random())
- *   .andThen<number>((n) => n > 0.5 ? Option.some(n) : Option.none())
+ *   .andThen((n) => n > 0.5 ? Option.some(n) : Option.none())
  *   .unwrapOr(0);
  * console.log(option);
  *
- * const result: number = Result.ok(Math.random())
- *   .andThen<number, string>((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+ * const result: number = Result.ok<number, string>(Math.random())
+ *   .andThen((n) => n > 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
  *   .unwrapOr(0);
  * console.log(result);
  * ```
@@ -165,10 +149,25 @@ export interface UnwrapOperator<T> {
    *
    * @throws {Error} if the value is not present
    */
-  unwrap(): T;
+  unwrap<U = T>(): T | U;
 
   /**
    * Unwrap the value or return the default value
    */
-  unwrapOr(defaultValue: T): T;
+  unwrapOr<U = T>(defaultValue: U): T | U;
+
+  /**
+   * Unwrap the value or return the default value
+   */
+  unwrapOrElse<
+    U,
+    Fn extends () => U | Promise<U>,
+    Return extends
+      | T
+      | (
+        ReturnType<Fn> extends Promise<infer U> ? U
+          : ReturnType<Fn> extends infer U ? U
+          : never
+      ),
+  >(fn: Fn): Return;
 }

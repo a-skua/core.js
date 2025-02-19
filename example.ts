@@ -25,12 +25,8 @@ const result = Array.from({
   length: 10,
 }).map(() =>
   Result.ok(Math.random())
-    .andThen<number, string>((n) =>
-      n >= 0.3 ? Result.ok(n) : Result.err("less than 0.3")
-    )
-    .andThen<number>((n) =>
-      n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5")
-    )
+    .andThen((n) => n >= 0.3 ? Result.ok(n) : Result.err("less than 0.3"))
+    .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
     .map((n) => n.toFixed(2))
 );
 console.debug("Result");

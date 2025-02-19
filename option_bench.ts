@@ -70,14 +70,6 @@ Deno.bench("Option.none().andThen(fn)", () => {
   Option.none<number>().andThen((n) => Option.some(n));
 });
 
-Deno.bench("Option.some(value).asyncAndThen(fn)", () => {
-  Option.some(1).asyncAndThen((n) => Promise.resolve(Option.some(n)));
-});
-
-Deno.bench("Option.none().asyncAndThen(fn)", () => {
-  Option.none<number>().asyncAndThen((n) => Promise.resolve(Option.some(n)));
-});
-
 Deno.bench("Option.some(value).and(other)", () => {
   Option.some(1).and(Option.some(2));
 });
@@ -92,14 +84,6 @@ Deno.bench("Option.some(value).orElse(fn)", () => {
 
 Deno.bench("Option.none().orElse(fn)", () => {
   Option.none<number>().orElse(() => Option.some(0));
-});
-
-Deno.bench("Option.some(value).asyncOrElse(fn)", () => {
-  Option.some(1).asyncOrElse(() => Promise.resolve(Option.some(0)));
-});
-
-Deno.bench("Option.none().asyncOrElse(fn)", () => {
-  Option.none<number>().asyncOrElse(() => Promise.resolve(Option.some(0)));
 });
 
 Deno.bench("Option.some(value).or(other)", () => {
@@ -124,4 +108,44 @@ Deno.bench("Option.some(value).unwrap()", () => {
 
 Deno.bench("Option.none().unwrapOr(0)", () => {
   Option.none<number>().unwrapOr(0);
+});
+
+const getNumber = () => Option.some(1);
+const getString = () => Option.some("hello");
+const asyncGetNumber = () => Promise.resolve(Option.some(1));
+const asyncGetString = () => Promise.resolve(Option.some("hello"));
+const getNone = () => Option.none();
+
+Deno.bench("Option.andThen(...sync)", async () => {
+  await Option.andThen(getNumber, getString, getNone);
+});
+
+Deno.bench("Option.andThen(...async)", async () => {
+  await Option.andThen(asyncGetNumber, asyncGetString, getNone);
+});
+
+Deno.bench("Option.orElse(...sync)", async () => {
+  await Option.orElse(getNone, getNone, getNumber);
+});
+
+Deno.bench("Option.orElse(...async)", async () => {
+  await Option.orElse(getNone, getNone, asyncGetNumber);
+});
+
+const fn1 = Array.from(
+  { length: 1000 },
+  (_, i) => () => Promise.resolve(Option.some(i)),
+);
+const fn2 = Array.from(
+  { length: 1000 },
+  () => () => Promise.resolve(Option.none()),
+);
+
+Deno.bench("Option.andThen(...async[len=1000])", async () => {
+  await Option.andThen(...fn1);
+});
+
+type Fn = typeof fn2[number];
+Deno.bench("Option.orElse(...async[len=1000])", async () => {
+  await Option.orElse(...fn2 as [Fn, ...Fn[]]);
 });

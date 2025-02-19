@@ -1,34 +1,36 @@
 import { Result } from "@askua/core/result";
 
-const asyncRandom = () => Promise.resolve(Math.random());
+const getRandom = () => Promise.resolve(Math.random());
 
-async function getNumber(): Promise<Result<number>> {
-  const num = await asyncRandom();
+async function getNumber(): Promise<Result<number, Error>> {
+  const num = await getRandom();
   if (num >= 0.5) {
-    return Result.ok<number>(num);
+    return Result.ok(num);
   }
-  return Result.err<number>(new Error(`Number is less than 0.5: ${num}`));
+  return Result.err(new Error("Number is too small"));
 }
 
-async function myProcess(): Promise<Result<[number, number, number]>> {
-  return Result(await getNumber()).asyncAndThen<[number, number, number]>(
-    async (n1) =>
-      Result(await getNumber()).asyncAndThen<[number, number, number]>(
-        async (n2) =>
-          Result(await getNumber()).map<[number, number, number]>((
-            n3,
-          ) => [n1, n2, n3]),
-      ),
-  );
-}
+const getNineNumbers = async (
+  retry = 0,
+): Promise<
+  readonly [
+    ...string[],
+    { retry: number },
+  ]
+> =>
+  (await Result.andThen(
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+    getNumber,
+  )).map((nums) => [...nums.map((n) => n.toFixed(2)), { retry }] as const)
+    .unwrapOrElse(() => getNineNumbers(retry + 1));
 
-let i = 0;
-while (++i) {
-  const result = await myProcess();
-  if (result.ok) {
-    console.log(i, result.value);
-    break;
-  } else {
-    console.error(i, result.error);
-  }
-}
+console.time("getNineNumbers");
+console.debug(await getNineNumbers());
+console.timeEnd("getNineNumbers");

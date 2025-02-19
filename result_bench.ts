@@ -62,14 +62,6 @@ Deno.bench("Result.err(err).andThen(fn)", () => {
   Result.err(0).andThen((v) => Result.ok(v));
 });
 
-Deno.bench("Result.ok(value).asyncAndThen(fn)", () => {
-  Result.ok(1).asyncAndThen((v) => Promise.resolve(Result.ok(v)));
-});
-
-Deno.bench("Result.err(err).asyncAndThen(fn)", () => {
-  Result.err(0).asyncAndThen<number>((v) => Promise.resolve(Result.ok(v)));
-});
-
 Deno.bench("Result.ok(value).and(other)", () => {
   Result.ok(1).and(Result.ok(2));
 });
@@ -83,15 +75,7 @@ Deno.bench("Result.ok(value).orElse(fn)", () => {
 });
 
 Deno.bench("Result.err(err).orElse(fn)", () => {
-  Result.err(0).orElse<number>((e) => Result.ok(e));
-});
-
-Deno.bench("Result.ok(value).asyncOrElse(fn)", () => {
-  Result.ok(1).asyncOrElse<number>(() => Promise.resolve(Result.ok(0)));
-});
-
-Deno.bench("Result.err(err).asyncOrElse(fn)", () => {
-  Result.err(0).asyncOrElse<number>(() => Promise.resolve(Result.ok(0)));
+  Result.err(0).orElse((e) => Result.ok(e));
 });
 
 Deno.bench("Result.ok(value).or(other)", () => {
@@ -99,7 +83,7 @@ Deno.bench("Result.ok(value).or(other)", () => {
 });
 
 Deno.bench("Result.err(err).or(other)", () => {
-  Result.err(0).or<number>(Result.ok(0));
+  Result.err(0).or(Result.ok(0));
 });
 
 Deno.bench("Result.ok(value).map(fn)", () => {
@@ -107,7 +91,7 @@ Deno.bench("Result.ok(value).map(fn)", () => {
 });
 
 Deno.bench("Result.err(err).map(fn)", () => {
-  Result.err(0).map((v) => v + 1);
+  Result.err<number, number>(0).map((v) => v + 1);
 });
 
 Deno.bench("Result.ok(value).unwrap()", () => {
@@ -116,4 +100,44 @@ Deno.bench("Result.ok(value).unwrap()", () => {
 
 Deno.bench("Result.err(err).unwrapOr(0)", () => {
   Result.err<number, number>(0).unwrapOr(0);
+});
+
+const getNumber = () => Result.ok<number>(1);
+const getString = () => Result.ok<string>("hello");
+const asyncGetNumber = () => Promise.resolve(Result.ok<number>(1));
+const asyncGetString = () => Promise.resolve(Result.ok<string>("hello"));
+const getError = () => Result.err("Error!!");
+
+Deno.bench("Result.andThen(...sync)", async () => {
+  await Result.andThen(getNumber, getString, getError);
+});
+
+Deno.bench("Result.andThen(...async)", async () => {
+  await Result.andThen(asyncGetNumber, asyncGetString, getError);
+});
+
+Deno.bench("Result.orElse(...sync)", async () => {
+  await Result.orElse(getNumber, getString, getError);
+});
+
+Deno.bench("Result.orElse(...async)", async () => {
+  await Result.orElse(asyncGetNumber, asyncGetString, getNumber);
+});
+
+const fn1 = Array.from(
+  { length: 1000 },
+  (_, i) => () => Promise.resolve(Result.ok(i)),
+);
+const fn2 = Array.from(
+  { length: 1000 },
+  (_, i) => () => Promise.resolve(Result.err(i)),
+);
+
+Deno.bench("Result.andThen(...async[len=1000])", async () => {
+  await Result.andThen(...fn1);
+});
+
+type Fn = typeof fn2[number];
+Deno.bench("Result.orElse(...async[len=1000])", async () => {
+  await Result.orElse(...fn2 as [Fn, ...Fn[]]);
 });
