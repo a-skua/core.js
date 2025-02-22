@@ -15,21 +15,25 @@ Published to [JSR](https://jsr.io/@askua/core)
 ```ts
 import { Option, Result } from "@askua/core";
 
-function toUpperCase(obj: any): Result<string> {
-  if (typeof obj === "string") {
-    return Result.ok(obj.toUpperCase());
-  }
+const getNumber = () =>
+  Result.ok(Math.random())
+    .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+    .map((n) => n * 100)
+    .map((n) => n.toFixed(2));
 
-  return Result.err(new Error("is not string"));
-}
+const result = getNumber().unwrapOrElse((e) => {
+  console.error(`Error: ${e}`);
+  return "50.00";
+});
+console.log(`Result: ${result}`);
+// Output: 50.00 ~ 100.00
 
-function toUpperCaseOption(obj: any): Option<string> {
-  if (typeof obj === "string") {
-    return Option.some(obj.toUpperCase());
-  }
-
-  return Option.none();
-}
+const option = await Option.andThen(
+  () => getNumber().toOption(),
+  () => getNumber().toOption(),
+);
+console.log(`${option}`);
+// Output: Some([number, number]) or None
 ```
 
 ## Benchmark

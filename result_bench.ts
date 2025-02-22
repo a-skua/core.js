@@ -1,5 +1,11 @@
 import { Result } from "./result.ts";
 
+const getNumber = () => Result.ok<number>(1);
+const getString = () => Result.ok<string>("hello");
+const asyncGetNumber = () => Promise.resolve(Result.ok<number>(1));
+const asyncGetString = () => Promise.resolve(Result.ok<string>("hello"));
+const getError = () => Result.err("Error!!");
+
 Deno.bench("Result.ok(value)", () => {
   Result.ok("value");
 });
@@ -55,7 +61,13 @@ Deno.bench("Result.err(error).toOption()", () => {
 });
 
 Deno.bench("Result.ok(value).andThen(fn)", () => {
-  Result.ok(1).andThen((v) => Result.ok(v));
+  Result.ok(1).andThen(
+    (v) => Result.ok(v),
+  ).andThen(
+    (v) => Result.ok(v),
+  ).andThen(
+    (v) => Result.ok(v),
+  );
 });
 
 Deno.bench("Result.err(err).andThen(fn)", () => {
@@ -75,7 +87,13 @@ Deno.bench("Result.ok(value).orElse(fn)", () => {
 });
 
 Deno.bench("Result.err(err).orElse(fn)", () => {
-  Result.err(0).orElse((e) => Result.ok(e));
+  Result.err(0).orElse(
+    (e) => Result.err(e),
+  ).orElse(
+    (e) => Result.err(e),
+  ).orElse(
+    (e) => Result.ok(e),
+  );
 });
 
 Deno.bench("Result.ok(value).or(other)", () => {
@@ -101,12 +119,6 @@ Deno.bench("Result.ok(value).unwrap()", () => {
 Deno.bench("Result.err(err).unwrapOr(0)", () => {
   Result.err<number, number>(0).unwrapOr(0);
 });
-
-const getNumber = () => Result.ok<number>(1);
-const getString = () => Result.ok<string>("hello");
-const asyncGetNumber = () => Promise.resolve(Result.ok<number>(1));
-const asyncGetString = () => Promise.resolve(Result.ok<string>("hello"));
-const getError = () => Result.err("Error!!");
 
 Deno.bench("Result.andThen(...sync)", async () => {
   await Result.andThen(getNumber, getString, getError);

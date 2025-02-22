@@ -1,5 +1,11 @@
 import { Option } from "./option.ts";
 
+const getNumber = () => Option.some(1);
+const getString = () => Option.some("hello");
+const asyncGetNumber = () => Promise.resolve(Option.some(1));
+const asyncGetString = () => Promise.resolve(Option.some("hello"));
+const getNone = () => Option.none();
+
 Deno.bench("Option.some(value)", () => {
   Option.some("value");
 });
@@ -63,7 +69,13 @@ Deno.bench("Option.none().toResult(error)", () => {
 });
 
 Deno.bench("Option.some(value).andThen(fn)", () => {
-  Option.some(1).andThen((n) => Option.some(n));
+  Option.some(1).andThen(
+    (n) => Option.some(n),
+  ).andThen(
+    (n) => Option.some(n * 10),
+  ).andThen(
+    (n) => Option.some(n * 10),
+  );
 });
 
 Deno.bench("Option.none().andThen(fn)", () => {
@@ -83,7 +95,13 @@ Deno.bench("Option.some(value).orElse(fn)", () => {
 });
 
 Deno.bench("Option.none().orElse(fn)", () => {
-  Option.none<number>().orElse(() => Option.some(0));
+  Option.none<number>().orElse(
+    () => Option.none(),
+  ).orElse(
+    () => Option.none(),
+  ).orElse(
+    () => Option.some(0),
+  );
 });
 
 Deno.bench("Option.some(value).or(other)", () => {
@@ -109,12 +127,6 @@ Deno.bench("Option.some(value).unwrap()", () => {
 Deno.bench("Option.none().unwrapOr(0)", () => {
   Option.none<number>().unwrapOr(0);
 });
-
-const getNumber = () => Option.some(1);
-const getString = () => Option.some("hello");
-const asyncGetNumber = () => Promise.resolve(Option.some(1));
-const asyncGetString = () => Promise.resolve(Option.some("hello"));
-const getNone = () => Option.none();
 
 Deno.bench("Option.andThen(...sync)", async () => {
   await Option.andThen(getNumber, getString, getNone);

@@ -1,4 +1,4 @@
-import type { ResultInstance } from "@askua/core/result";
+import type { Instance as ResultInstance } from "@askua/core/result";
 import { Result } from "@askua/core/result";
 
 function getNumber(): ResultInstance<number, Error> {

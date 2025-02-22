@@ -1,5 +1,5 @@
 import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
-import type { OptionInstance } from "./option.ts";
+import type { Instance as OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
 import { Result } from "./result.ts";
 

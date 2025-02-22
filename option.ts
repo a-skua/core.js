@@ -1,147 +1,262 @@
-import type {
-  AndOperator,
-  MapOperator,
-  OrOperator,
-  UnwrapOperator,
-} from "./types.ts";
-import type { ResultInstance } from "./result.ts";
+import type * as c from "./context.ts";
+import type { Instance as ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
 /**
- * type Some
+ * Some
  *
  * ### Example
  *
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { assertObjectMatch } from "@std/assert";
  *
  * const option = Option.some("is some");
- * assertEquals([...option], ["is some"]);
+ * assertObjectMatch(option, {
+ *   some: true,
+ *   value: "is some",
+ * });
  * ```
  */
 export interface Some<T> {
-  /** true */
+  /** som: true */
   readonly some: true;
-  /** value */
+  /** value: T */
   readonly value: T;
 }
 
 /**
- * type None
+ * None
  *
  * ### Example
  *
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { assertObjectMatch } from "@std/assert";
  *
  * const option = Option.none();
- * assertEquals([...option], []);
+ * assertObjectMatch(option, {
+ *   some: false,
+ * });
  * ```
  */
 export interface None {
-  /** false */
+  /** some: alse */
   readonly some: false;
 }
 
-/**
- * type Option
- *
- * ### Example
- *
- * ```ts
- * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
- *
- * assertObjectMatch(
- *   Option.some("is some"),
- *   { some: true, value: "is some" },
- * );
- *
- * assertObjectMatch(
- *   Option.none(),
- *   { some: false },
- * );
- *
- * for (const value of Option.some("is some")) {
- *   assertEquals(value, "is some");
- * }
- *
- * for (const _ of Option.none()) {
- *   assert(false);
- * }
- *
- * const array = Array.from(Option.some("is some"));
- * assertEquals(array, ["is some"]);
- * ```
- */
+/** type Option */
 export type Option<T> = Some<T> | None;
 
-/** Option Instance */
-export type OptionInstance<T> = Option<T> & Context<T>;
+/** type Instance */
+export type Instance<T> = Option<T> & Context<T>;
 
-/** Option Context */
+/** Context */
 export interface Context<T>
   extends
     Iterable<T>,
     OptionToResult<T>,
-    MapOperator<T>,
-    AndOperator<T>,
-    OrOperator<never>,
-    UnwrapOperator<T> {
-  /** And Operator */
+    c.And<T>,
+    c.Or<never>,
+    c.Map<T>,
+    c.Unwrap<T> {
+  /**
+   * andThen
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).andThen");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
   andThen<
     U,
     Fn extends (v: T) => U,
     Some extends (
       ReturnType<Fn> extends Option<infer U> ? U : never
     ),
-    Return extends Option<Some> = OptionInstance<Some>,
+    Return extends Option<Some> = Instance<Some>,
   >(fn: Fn): Return;
 
-  /** And Operator */
+  /**
+   * and
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).and");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .and(Option.some("TOO LARGE"));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
   and<
     U,
     V extends Option<U>,
     Some extends (
       V extends Option<infer U> ? U : never
     ),
-    Return extends Option<Some> = OptionInstance<Some>,
+    Return extends Option<Some> = Instance<Some>,
   >(option: V): Return;
 
-  /** Or Operator */
+  /**
+   * orElse
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).orElse");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)))
+   *   .orElse(() => Option.some("0.00"));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
   orElse<
     U,
     Fn extends () => U,
     Some extends (
       U extends Option<infer U> ? U : never
     ),
-    Return extends Option<Some> = OptionInstance<Some>,
+    Return extends Option<Some> = Instance<Some>,
   >(fn: Fn): Return;
 
-  /** Or Operator */
+  /**
+   * or
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).or");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)))
+   *   .or(Option.some("0.00"));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
   or<
     U,
     V extends Option<U>,
     Some extends (
       V extends Option<infer U> ? U : never
     ),
-    Return extends Option<Some> = OptionInstance<Some>,
+    Return extends Option<Some> = Instance<Some>,
   >(option: V): Return;
 
-  /** Map Operator */
+  /**
+   * map
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).map");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .map((n) => n.toFixed(2));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
   map<
     U,
     Fn extends (v: T) => U,
     Some extends (
       ReturnType<Fn> extends Option<infer U> ? U : never
     ),
-    Return extends Option<Some> = OptionInstance<Some>,
+    Return extends Option<Some> = Instance<Some>,
   >(fn: Fn): Return;
+
+  /**
+   * unwrap
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).unwrap");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)))
+   *   .or(Option.some("0.00"))
+   *   .unwrap();
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
+  unwrap(): T;
+
+  /**
+   * unwrapOr
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).unwrapOr");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)))
+   *   .unwrapOr("0.00");
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
+  unwrapOr<U>(defaultValue: U): T | U;
+
+  /**
+   * unwrapOrElse
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] (Option).unwrapOrElse");
+   *
+   * const fn = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+   *   .andThen((n) => Option.some(n.toFixed(2)))
+   *   .unwrapOrElse(() => "0.00");
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
+  unwrapOrElse<U>(fn: () => U): T | U;
+
+  /**
+   * toString
+   *
+   * ### Example
+   *
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const some = Option.some("is some");
+   * assertEquals(some.toString(), "Some(is some)");
+   *
+   * const none = Option.none();
+   * assertEquals(none.toString(), "None");
+   * ```
+   */
+  toString(): string;
 }
 
 /**
  * type StaticOption
  */
-export interface StaticContext {
+export interface Static {
   /**
    * Create a Some instance.
    *
@@ -163,7 +278,7 @@ export interface StaticContext {
    * assertEquals(array, ["is some"]);
    * ```
    */
-  some<T>(value: T): Some<T> & Context<T>;
+  some: typeof some;
 
   /**
    * Create a None instance.
@@ -185,55 +300,75 @@ export interface StaticContext {
    * const array = Array.from(Option.none());
    * assertEquals(array, []);
    */
-  none<T = never>(): None & Context<T>;
+  none: typeof none;
 
-  /** andThen */
-  andThen<
-    T,
-    Fn extends (() => Option<T> | Promise<Option<T>>)[],
-    Some extends ({
-      [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
-        : ReturnType<Fn[K]> extends Option<infer T> ? T
-        : never;
-    }),
-    Return extends Option<Some> = OptionInstance<Some>,
-  >(...fn: Fn): Promise<Return>;
+  /**
+   * andThen
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] Option.andThen");
+   *
+   * const getNumber = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.2 ? Option.some(n) : Option.none())
+   *   .map((n) => n.toFixed(2));
+   *
+   * const fn = () => Option.andThen(
+   *   () => getNumber(),
+   *   () => getNumber(),
+   *   () => getNumber(),
+   * );
+   *
+   * console.log(`Option: ${await fn()}`);
+   * ```
+   */
+  andThen: typeof andThen;
 
-  /** orElse */
-  orElse<
-    T,
-    F extends () => Option<T> | Promise<Option<T>>,
-    Fn extends [F, ...F[]],
-    Some extends ({
-      [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
-        : ReturnType<Fn[K]> extends Option<infer T> ? T
-        : never;
-    })[number],
-    Return extends Option<Some> = OptionInstance<Some>,
-  >(...fn: Fn): Promise<Return>;
+  /**
+   * orElse
+   *
+   * ### Example
+   *
+   * ```ts
+   * console.log("[Example] Option.orElse");
+   *
+   * const getNumber = () => Option.some(Math.random())
+   *   .andThen((n) => n >= 0.8 ? Option.some(n) : Option.none())
+   *   .map((n) => n.toFixed(2));
+   *
+   * const fn = () => Option.orElse(
+   *   () => getNumber(),
+   *   () => getNumber(),
+   *   () => getNumber(),
+   * );
+   *
+   * console.log(`Option: ${await fn()}`);
+   * ```
+   */
+  orElse: typeof orElse;
 }
 
-/**
- * Option to Result
- *
- * ### Example
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result } from "@askua/core/result";
- *
- * const ok = Option.some("is some").toResult();
- * assertEquals(ok, Result.ok("is some"));
- *
- * const err = Option.none().toResult<Error>();
- * assertEquals(err, Result.err(new Error("None")));
- *
- * const customErr = Option.none().toResult<string>("is none");
- * assertEquals(customErr, Result.err("is none"));
- * ```
- */
+/** OptionToResult */
 export interface OptionToResult<T> {
-  /** to Result */
+  /** toResult
+   *
+   * ### Example
+   *
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   * import { Result } from "@askua/core/result";
+   *
+   * const ok = Option.some("is some").toResult();
+   * assertEquals(ok, Result.ok("is some"));
+   *
+   * const err = Option.none().toResult<Error>();
+   * assertEquals(err, Result.err(new Error("None")));
+   *
+   * const customErr = Option.none().toResult<string>("is none");
+   * assertEquals(customErr, Result.err("is none"));
+   * ```
+   */
   toResult<E = never, R extends Result<T, E> = ResultInstance<T, E>>(
     error?: E,
   ): R;
@@ -248,52 +383,42 @@ class _Some<T> implements Some<T>, Context<T> {
     return `Some(${this.value})`;
   }
 
-  /** impl OptionToResult */
   toResult<R>(): R {
     return Result.ok(this.value) as unknown as R;
   }
 
-  /** impl AndOperator */
   andThen<U, V>(fn: (v: T) => U): V {
     return fn(this.value) as unknown as V;
   }
 
-  /** impl AndOperator */
   and<U, V>(option: U): V {
     return option as unknown as V;
   }
 
-  /** impl OrOperator */
   orElse<U>(): U {
     return this as unknown as U;
   }
 
-  /** impl OrOperator */
   or<U>(): U {
     return this as unknown as U;
   }
 
-  /** impl MapOperator */
   map<U, V>(fn: (v: T) => U): V {
     return Option.some(fn(this.value)) as V;
   }
 
-  /** impl UnwrapOperator */
   unwrap(): T {
     return this.value;
   }
 
-  /** impl UnwrapOperator */
   unwrapOr(): T {
     return this.value;
   }
 
-  /** impl UnwrapOperator */
   unwrapOrElse<U>(): U {
     return this.value as unknown as U;
   }
 
-  /** impl Iterable */
   [Symbol.iterator](): Iterator<T> {
     let count = 0;
     const value = this.value;
@@ -314,59 +439,40 @@ class _None<T> implements None, Context<T> {
     return "None";
   }
 
-  /** impl OptionToResult */
   toResult<E, R>(error: E = new Error("None") as E): R {
     return Result.err(error) as unknown as R;
   }
 
-  /** impl AndOperator */
   andThen<U>(): U {
     return this as unknown as U;
   }
 
-  /** impl AndOperator */
   and<U>(): U {
     return this as unknown as U;
   }
 
-  /** impl OrOperator */
   orElse<U, V>(fn: () => U): V {
     return fn() as unknown as V;
   }
 
-  /** impl OrOperator */
   or<U, V>(option: U): V {
     return option as unknown as V;
   }
 
-  /** impl MapOperator */
   map<U>(): U {
     return this as unknown as U;
   }
 
-  /** impl UnwrapOperator */
   unwrap(): T {
     throw new Error("None");
   }
 
-  /** impl UnwrapOperator */
   unwrapOr<U>(value: U): U {
     return value;
   }
 
-  /** impl UnwrapOperator */
-  unwrapOrElse<
-    U,
-    Fn extends () => U | Promise<U>,
-    Return extends
-      | T
-      | (
-        ReturnType<Fn> extends Promise<infer U> ? U
-          : ReturnType<Fn> extends infer U ? U
-          : never
-      ),
-  >(fn: () => ReturnType<Fn>): Return {
-    return fn() as unknown as Return;
+  unwrapOrElse<U>(fn: () => U): U {
+    return fn();
   }
 
   /** impl Iterable */
@@ -379,63 +485,68 @@ class _None<T> implements None, Context<T> {
   }
 }
 
-/** Option to OptionInstance */
-export type ToInstance = <T>(option: Option<T>) => OptionInstance<T>;
+function toInstance<T>(option: Option<T>): Instance<T> {
+  return option.some ? Option.some(option.value) : Option.none();
+}
+
+function some<T>(value: T): Some<T> & Context<T> {
+  return new _Some(value);
+}
+
+function none<T = never>(): None & Context<T> {
+  return new _None<T>();
+}
+
+async function andThen<
+  T,
+  Fn extends (() => Option<T> | Promise<Option<T>>)[],
+  Some extends ({
+    [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+      : ReturnType<Fn[K]> extends Option<infer T> ? T
+      : never;
+  }),
+  Return extends Option<Some> = Instance<Some>,
+>(...fn: Fn): Promise<Return> {
+  const somes: T[] = new Array(fn.length);
+  for (let i = 0; i < fn.length; i++) {
+    const option = await fn[i]();
+    if (option.some) {
+      somes[i] = option.value;
+    } else {
+      return option as Return;
+    }
+  }
+
+  return Option.some(somes) as unknown as Return;
+}
+
+async function orElse<
+  T,
+  F extends () => Option<T> | Promise<Option<T>>,
+  Fn extends [F, ...F[]],
+  Some extends ({
+    [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
+      : ReturnType<Fn[K]> extends Option<infer T> ? T
+      : never;
+  })[number],
+  Return extends Option<Some> = Instance<Some>,
+>(...fn: Fn): Promise<Return> {
+  let last;
+  for (let i = 0; i < fn.length; i++) {
+    const option = await fn[i]();
+    if (option.some) {
+      return option as unknown as Return;
+    }
+    last = option;
+  }
+  return last as unknown as Return;
+}
+
+/** type ToInstance */
+export type ToInstance = <T>(option: Option<T>) => Instance<T>;
 
 /** impl StaticOption */
-export const Option: ToInstance & StaticContext = Object.assign(
-  <T>(option: Option<T>): OptionInstance<T> => {
-    return option.some ? Option.some(option.value) : Option.none();
-  },
-  {
-    some<T>(value: T): Some<T> & Context<T> {
-      return new _Some(value);
-    },
-    none<T>(): None & Context<T> {
-      return new _None<T>();
-    },
-    andThen: async <
-      T,
-      Fn extends (() => Option<T> | Promise<Option<T>>)[],
-      Some extends ({
-        [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
-          : ReturnType<Fn[K]> extends Option<infer T> ? T
-          : never;
-      }),
-      Return extends Option<Some> = OptionInstance<Some>,
-    >(...fn: Fn): Promise<Return> => {
-      const somes: T[] = new Array(fn.length);
-      for (let i = 0; i < fn.length; i++) {
-        const option = await fn[i]();
-        if (option.some) {
-          somes[i] = option.value;
-        } else {
-          return option as Return;
-        }
-      }
-
-      return Option.some(somes) as unknown as Return;
-    },
-    orElse: async <
-      T,
-      F extends () => Option<T> | Promise<Option<T>>,
-      Fn extends [F, ...F[]],
-      Some extends ({
-        [K in keyof Fn]: ReturnType<Fn[K]> extends Promise<Option<infer T>> ? T
-          : ReturnType<Fn[K]> extends Option<infer T> ? T
-          : never;
-      })[number],
-      Return extends Option<Some> = OptionInstance<Some>,
-    >(...fn: Fn): Promise<Return> => {
-      let last;
-      for (let i = 0; i < fn.length; i++) {
-        const option = await fn[i]();
-        if (option.some) {
-          return option as unknown as Return;
-        }
-        last = option;
-      }
-      return last as unknown as Return;
-    },
-  },
+export const Option: ToInstance & Static = Object.assign(
+  toInstance,
+  { some, none, andThen, orElse },
 );

@@ -1,6 +1,6 @@
 import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
 import { Result } from "./result.ts";
-import type { ResultInstance } from "./result.ts";
+import type { Instance as ResultInstance } from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("ResultInstance", async (t) => {
