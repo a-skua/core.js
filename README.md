@@ -17,7 +17,9 @@ import { Option, Result } from "@askua/core";
 
 const getNumber = () =>
   Result.ok(Math.random())
-    .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
+    .andThen((n) =>
+      n >= 0.5 ? Result.ok(n) : Result.err<number, string>("less than 0.5")
+    )
     .map((n) => n * 100)
     .map((n) => n.toFixed(2));
 

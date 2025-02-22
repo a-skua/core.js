@@ -161,3 +161,11 @@ type Fn = typeof fn2[number];
 Deno.bench("Option.orElse(...async[len=1000])", async () => {
   await Option.orElse(...fn2 as [Fn, ...Fn[]]);
 });
+
+Deno.bench("Result.lazy().eval()", async () => {
+  await Option.lazy(Option.some(1))
+    .map((n) => n + 1)
+    .andThen((): Option<string> => Option.none())
+    .orElse((): Option<number | Error> => Option.some(1))
+    .eval();
+});
