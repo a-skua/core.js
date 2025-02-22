@@ -79,12 +79,13 @@ export interface Context<T, E>
    * ```
    */
   andThen<
-    Fn extends (value: T) => Result<unknown, unknown>,
+    U extends Result<unknown, unknown>,
+    Fn extends (value: T) => U,
     Ok extends ReturnType<Fn> extends Result<infer Ok, infer _> ? Ok : never,
     Err extends ReturnType<Fn> extends Result<infer _, infer Err> ? E | Err
       : never,
-    Return extends Result<Ok, Err> = ReturnType<Fn> extends
-      Instance<infer _, infer __> ? Instance<Ok, Err>
+    Return extends ReturnType<Fn> extends Instance<infer _, infer __>
+      ? Instance<Ok, Err>
       : Result<Ok, Err>,
   >(fn: Fn): Return;
 
@@ -104,13 +105,12 @@ export interface Context<T, E>
    * ```
    */
   and<
-    U extends Result<unknown, unknown>,
-    Ok extends U extends Result<infer Ok, infer _> ? Ok : never,
-    Err extends U extends Result<infer _, infer Err> ? E | Err : never,
-    Return extends Result<Ok, Err> = U extends Instance<infer _, infer __>
-      ? Instance<Ok, Err>
+    R extends Result<unknown, unknown>,
+    Ok extends R extends Result<infer Ok, infer _> ? Ok : never,
+    Err extends R extends Result<infer _, infer Err> ? E | Err : never,
+    Return extends R extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>,
-  >(result: U): Return;
+  >(result: R): Return;
 
   /**
    * orElse
@@ -132,13 +132,14 @@ export interface Context<T, E>
    * ```
    */
   orElse<
-    Fn extends (error: E) => Result<unknown, unknown>,
+    U extends Result<unknown, unknown>,
+    Fn extends (error: E) => U,
     Ok extends ReturnType<Fn> extends Result<infer Ok, infer _> ? T | Ok
       : never,
     Err extends ReturnType<Fn> extends Result<infer _, infer Err> ? E | Err
       : never,
-    Return extends Result<Ok, Err> = ReturnType<Fn> extends
-      Instance<infer _, infer __> ? Instance<Ok, Err>
+    Return extends ReturnType<Fn> extends Instance<infer _, infer __>
+      ? Instance<Ok, Err>
       : Result<Ok, Err>,
   >(fn: Fn): Return;
 
@@ -159,13 +160,12 @@ export interface Context<T, E>
    * ```
    */
   or<
-    U extends Result<unknown, unknown>,
-    Ok extends U extends Result<infer Ok, unknown> ? T | Ok : never,
-    Err extends U extends Result<unknown, infer Err> ? E | Err : never,
-    Return extends Result<Ok, Err> = U extends Instance<infer _, infer __>
-      ? Instance<Ok, Err>
+    R extends Result<unknown, unknown>,
+    Ok extends R extends Result<infer Ok, unknown> ? T | Ok : never,
+    Err extends R extends Result<unknown, infer Err> ? E | Err : never,
+    Return extends R extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>,
-  >(result: U): Return;
+  >(result: R): Return;
 
   /**
    * map
@@ -184,7 +184,8 @@ export interface Context<T, E>
    * ```
    */
   map<
-    Fn extends (value: T) => unknown,
+    U extends unknown,
+    Fn extends (value: T) => U,
     Ok extends ReturnType<Fn>,
     Err extends E,
     Return extends Result<Ok, Err> = Instance<Ok, Err>,
@@ -300,20 +301,18 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    * ```
    */
   andThen<
-    Fn extends (
-      v: T,
-    ) => Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
+    U extends Result<unknown, unknown>,
+    Fn extends (v: T) => Promise<U> | U,
     Ok extends Awaited<ReturnType<Fn>> extends Result<infer Ok, infer _> ? Ok
       : never,
     Err extends Awaited<ReturnType<Fn>> extends Result<infer _, infer Err>
       ? E | Err
       : never,
-    Z extends Result<Ok, Err> = Awaited<ReturnType<Fn>> extends
-      Instance<infer _, infer __>
+    Z extends Awaited<ReturnType<Fn>> extends Instance<infer _, infer __>
       ? Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>
       : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z> = Lazy<Ok, Err, Z>,
+    Return extends Lazy<Ok, Err, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -335,15 +334,16 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    * ```
    */
   and<
-    U extends Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
-    Ok extends Awaited<U> extends Result<infer Ok, infer _> ? Ok : never,
-    Err extends Awaited<U> extends Result<infer _, infer Err> ? E | Err : never,
-    Z extends Result<Ok, Err> = Awaited<U> extends Instance<infer _, infer __>
+    U extends Result<unknown, unknown>,
+    R extends Promise<U> | U,
+    Ok extends Awaited<R> extends Result<infer Ok, infer _> ? Ok : never,
+    Err extends Awaited<R> extends Result<infer _, infer Err> ? E | Err : never,
+    Z extends Awaited<R> extends Instance<infer _, infer __>
       ? Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>
       : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z> = Lazy<Ok, Err, Z>,
-  >(result: U): Return;
+    Return extends Lazy<Ok, Err, Z>,
+  >(result: R): Return;
 
   /**
    * orElse
@@ -368,21 +368,19 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    * ```
    */
   orElse<
-    Fn extends (
-      error: E,
-    ) => Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
+    U extends Result<unknown, unknown>,
+    Fn extends (error: E) => Promise<U> | U,
     Ok extends Awaited<ReturnType<Fn>> extends Result<infer Ok, infer _>
       ? T | Ok
       : never,
     Err extends Awaited<ReturnType<Fn>> extends Result<infer _, infer Err>
       ? E | Err
       : never,
-    Z extends Result<Ok, Err> = Awaited<ReturnType<Fn>> extends
-      Instance<infer _, infer __>
+    Z extends Awaited<ReturnType<Fn>> extends Instance<infer _, infer __>
       ? Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>
       : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z> = Lazy<Ok, Err, Z>,
+    Return extends Lazy<Ok, Err, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -405,15 +403,16 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    * ```
    */
   or<
-    U extends Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
-    Ok extends Awaited<U> extends Result<infer Ok, infer _> ? T | Ok : never,
-    Err extends Awaited<U> extends Result<infer _, infer Err> ? E | Err : never,
-    Z extends Result<Ok, Err> = Awaited<U> extends Instance<infer _, infer __>
+    U extends Result<unknown, unknown>,
+    R extends Promise<U> | U,
+    Ok extends Awaited<R> extends Result<infer Ok, infer _> ? T | Ok : never,
+    Err extends Awaited<R> extends Result<infer _, infer Err> ? E | Err : never,
+    Z extends Awaited<R> extends Instance<infer _, infer __>
       ? Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>
       : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z> = Lazy<Ok, Err, Z>,
-  >(result: U): Return;
+    Return extends Lazy<Ok, Err, Z>,
+  >(result: R): Return;
 
   /**
    * map
@@ -434,13 +433,13 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    * ```
    */
   map<
-    Fn extends (value: T) => Promise<unknown> | unknown,
+    U extends unknown,
+    Fn extends (value: T) => Promise<U> | U,
     Ok extends Awaited<ReturnType<Fn>> extends infer Ok ? Ok : never,
     Err extends E,
-    Z extends Result<Ok, Err> = Eval extends Instance<infer _, infer __>
-      ? Instance<Ok, Err>
+    Z extends Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
       : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z> = Lazy<Ok, Err, Z>,
+    Return extends Lazy<Ok, Err, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -810,9 +809,8 @@ function err<Ok, Err = Error>(error: Err): Instance<Ok, Err> {
 }
 
 async function andThen<
-  Fn extends (() =>
-    | Result<unknown, unknown>
-    | Promise<Result<unknown, unknown>>)[],
+  U extends Result<unknown, unknown>,
+  Fn extends (() => Promise<U> | U)[],
   Ok extends ({
     [K in keyof Fn]: Awaited<ReturnType<Fn[K]>> extends
       Result<infer Ok, infer _> ? Ok
@@ -823,7 +821,7 @@ async function andThen<
       Result<infer _, infer Err> ? Err
       : never;
   })[number],
-  Return extends Result<Ok, Err> = Awaited<ReturnType<Fn[number]>> extends
+  Return extends Awaited<ReturnType<Fn[number]>> extends
     Instance<infer _, infer __> ? Instance<Ok, Err>
     : Result<Ok, Err>,
 >(
@@ -842,7 +840,8 @@ async function andThen<
 }
 
 async function orElse<
-  F extends () => Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
+  U extends Result<unknown, unknown>,
+  F extends () => Promise<U> | U,
   Fn extends [F, ...F[]],
   Ok extends ({
     [K in keyof Fn]: Awaited<ReturnType<Fn[K]>> extends
@@ -854,7 +853,7 @@ async function orElse<
       Result<infer _, infer Err> ? Err
       : never;
   })[number],
-  Return extends Result<Ok, Err> = Awaited<ReturnType<Fn[number]>> extends
+  Return extends Awaited<ReturnType<Fn[number]>> extends
     Instance<infer _, infer __> ? Instance<Ok, Err>
     : Result<Ok, Err>,
 >(...fn: Fn): Promise<Return> {
@@ -870,13 +869,14 @@ async function orElse<
 }
 
 function lazy<
-  R extends Promise<Result<unknown, unknown>> | Result<unknown, unknown>,
-  Eval extends Result<unknown, unknown> = Awaited<R> extends
-    Instance<infer Ok, infer Err> ? Instance<Ok, Err>
+  U extends Result<unknown, unknown>,
+  R extends Promise<U> | U,
+  Eval extends Awaited<R> extends Instance<infer Ok, infer Err>
+    ? Instance<Ok, Err>
     : Awaited<R> extends Result<infer Ok, infer Err> ? Result<Ok, Err>
     : never,
-  Ok = Awaited<R> extends Result<infer Ok, infer _> ? Ok : never,
-  Err = Awaited<R> extends Result<infer _, infer Err> ? Err : never,
+  Ok extends Awaited<R> extends Result<infer Ok, infer _> ? Ok : never,
+  Err extends Awaited<R> extends Result<infer _, infer Err> ? Err : never,
 >(
   result: R,
 ): Lazy<Ok, Err, Eval> {
