@@ -140,6 +140,7 @@ const fn1 = Array.from(
   { length: 1000 },
   (_, i) => () => Promise.resolve(Result.ok(i)),
 );
+
 const fn2 = Array.from(
   { length: 1000 },
   (_, i) => () => Promise.resolve(Result.err(i)),
@@ -149,7 +150,15 @@ Deno.bench("Result.andThen(...async[len=1000])", async () => {
   await Result.andThen(...fn1);
 });
 
-type Fn = typeof fn2[number];
 Deno.bench("Result.orElse(...async[len=1000])", async () => {
+  type Fn = typeof fn2[number];
   await Result.orElse(...fn2 as [Fn, ...Fn[]]);
+});
+
+Deno.bench("Result.lazy().eval()", async () => {
+  await Result.lazy(Result.ok(1))
+    .map((n) => n + 1)
+    .andThen((n): Result<string, number> => Result.err<string, number>(n))
+    .orElse((e): Result<number | Error, Error> => Result.ok(e))
+    .eval();
 });
