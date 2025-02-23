@@ -4,7 +4,7 @@ const getNumber = () => Option.some(1);
 const getString = () => Option.some("hello");
 const asyncGetNumber = () => Promise.resolve(Option.some(1));
 const asyncGetString = () => Promise.resolve(Option.some("hello"));
-const getNone = () => Option.none();
+const getNone = () => Option.none<string>();
 
 Deno.bench("Option.some(value)", () => {
   Option.some("value");

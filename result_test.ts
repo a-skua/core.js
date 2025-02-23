@@ -5,7 +5,7 @@ import {
   assertThrows,
 } from "@std/assert";
 import { Result } from "./result.ts";
-import type { Instance as Instance } from "./result.ts";
+import type { Instance } from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("Instance", async (t) => {

@@ -615,6 +615,7 @@ export interface Static {
    *
    * const result = await Result.lazy(() => Result.ok(1))
    *   .and(Result.ok(2))
+   *   .map((n) => n.toFixed(2))
    *   .eval();
    *
    * console.log(`Result: ${result}`);
@@ -879,7 +880,7 @@ async function andThen<
     if (result.ok) {
       oks[i] = result.value;
     } else {
-      return result as unknown as Return;
+      return result as Return;
     }
   }
   return Result.ok(oks) as unknown as Return;
@@ -912,28 +913,27 @@ async function orElse<
       ? await f()
       : await f;
     if (result.ok) {
-      return result as unknown as Return;
+      return result as Return;
     }
     last = result;
   }
-  return last as unknown as Return;
+  return last as Return;
 }
 
 function lazy<
   U extends Result<unknown, unknown>,
   R extends (() => Promise<U> | U) | Promise<U> | U,
   Ok extends R extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer Ok, infer _> ? Ok
-      : (Awaited<R> extends Result<infer Ok, infer _> ? Ok : never))
+    ? (Awaited<R> extends
+      Instance<infer Ok, infer _> | Result<infer Ok, infer _> ? Ok : never)
     : never,
   Err extends R extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer _, infer Err> ? Err
-      : (Awaited<R> extends Result<infer _, infer Err> ? Err : never))
+    ? (Awaited<R> extends
+      Instance<infer _, infer Err> | Result<infer _, infer Err> ? Err : never)
     : never,
   Eval extends R extends (() => infer R) | infer R
     ? (Awaited<R> extends Instance<infer Ok, infer Err> ? Instance<Ok, Err>
-      : (Awaited<R> extends Result<infer Ok, infer Err> ? Result<Ok, Err>
-        : never))
+      : Result<Ok, Err>)
     : never,
 >(
   result: R,

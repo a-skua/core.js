@@ -146,8 +146,8 @@ export interface Context<T>
   or<
     O extends Option<unknown>,
     Some extends O extends Instance<infer Some> ? T | Some
-      : O extends Option<infer Some> ? Some
-      : never,
+      : (O extends Option<infer Some> ? Some
+        : never),
     Return extends O extends Instance<infer _> ? Instance<Some>
       : Option<Some>,
   >(option: O): Return;
@@ -513,6 +513,19 @@ export interface Static {
    *
    * console.log(`Option: ${await fn()}`);
    * ```
+   *
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const option = await Option.andThen(
+   *   Option.some(1),
+   *   () => Option.some(2),
+   *   Promise.resolve(Option.some(3)),
+   *   () => Promise.resolve(Option.some(4)),
+   * ).then((o) => o.unwrap().join(", "));
+   *
+   * assertEquals(option, "1, 2, 3, 4");
+   * ```
    */
   andThen: typeof andThen;
 
@@ -536,6 +549,19 @@ export interface Static {
    *
    * console.log(`Option: ${await fn()}`);
    * ```
+   *
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const option = await Option.orElse(
+   *   Option.none<number>(),
+   *   Promise.resolve(Option.none<number>()),
+   *   () => Option.none<number>(),
+   *   () => Promise.resolve(Option.some(4)),
+   * ).then((o) => o.unwrap().toFixed(2));
+   *
+   * assertEquals(option, "4.00");
+   * ```
    */
   orElse: typeof orElse;
 
@@ -549,6 +575,17 @@ export interface Static {
    *
    * const option = await Option.lazy(Option.some(1))
    *   .and(Option.some(2))
+   *   .eval();
+   *
+   * console.log(`Option: ${option}`);
+   * ```
+   *
+   * ```ts
+   * console.log("[Example] Option.lazy");
+   *
+   * const option = await Option.lazy(() => Option.some(1))
+   *   .and(Option.some(2))
+   *   .map((n) => n.toFixed(2))
    *   .eval();
    *
    * console.log(`Option: ${option}`);
@@ -711,7 +748,9 @@ type Op<T, U> =
 class _Lazy<T, Eval extends Option<unknown>> implements Lazy<T, Eval> {
   readonly op: Op<unknown, unknown>[] = [];
 
-  constructor(private readonly first: Promise<Eval> | Eval) {}
+  constructor(
+    private readonly first: (() => Promise<Eval> | Eval) | Promise<Eval> | Eval,
+  ) {}
 
   andThen<U, Op>(andThen: Op): U {
     this.op.push({ andThen } as typeof this.op[number]);
@@ -739,7 +778,9 @@ class _Lazy<T, Eval extends Option<unknown>> implements Lazy<T, Eval> {
   }
 
   async eval(): Promise<Eval> {
-    let option: Option<unknown> = await this.first;
+    let option: Option<unknown> = typeof this.first === "function"
+      ? await this.first()
+      : await this.first;
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
       if ("andThen" in op && option.some) {
@@ -783,23 +824,29 @@ function none<Some = never>(): Instance<Some> {
 
 async function andThen<
   U extends Option<unknown>,
-  Fn extends (() => Promise<U> | U)[],
+  F extends (() => Promise<U> | U) | Promise<U> | U,
+  Fn extends F[],
   Some extends ({
-    [K in keyof Fn]: Awaited<ReturnType<Fn[K]>> extends Option<infer Some>
-      ? Some
+    [K in keyof Fn]: Fn[K] extends (() => infer O) | infer O
+      ? (Awaited<O> extends Option<infer Some> ? Some
+        : never)
       : never;
   }),
-  Return extends Awaited<ReturnType<Fn[number]>> extends Instance<infer _>
-    ? Instance<Some>
-    : Option<Some>,
+  Return extends Fn[number] extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer _> ? Instance<Some>
+      : Option<Some>)
+    : never,
 >(...fn: Fn): Promise<Return> {
   const somes: unknown[] = new Array(fn.length);
   for (let i = 0; i < fn.length; i++) {
-    const option = await fn[i]();
+    const f = fn[i];
+    const option: Option<unknown> = typeof f === "function"
+      ? await f()
+      : await f;
     if (option.some) {
       somes[i] = option.value;
     } else {
-      return option as unknown as Return;
+      return option as Return;
     }
   }
 
@@ -808,35 +855,44 @@ async function andThen<
 
 async function orElse<
   U extends Option<unknown>,
-  F extends () => Promise<U> | U,
+  F extends (() => Promise<U> | U) | Promise<U> | U,
   Fn extends [F, ...F[]],
   Some extends ({
-    [K in keyof Fn]: Awaited<ReturnType<Fn[K]>> extends Option<infer Some>
-      ? Some
+    [K in keyof Fn]: Fn[K] extends (() => infer O) | infer O
+      ? (Awaited<O> extends Option<infer Some> ? Some
+        : never)
       : never;
   })[number],
-  Return extends Awaited<ReturnType<Fn[number]>> extends Instance<infer _>
-    ? Instance<Some>
-    : Option<Some>,
+  Return extends Fn[number] extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer _> ? Instance<Some>
+      : Option<Some>)
+    : never,
 >(...fn: Fn): Promise<Return> {
   let last;
   for (let i = 0; i < fn.length; i++) {
-    const option = await fn[i]();
+    const f = fn[i];
+    const option: Option<unknown> = typeof f === "function"
+      ? await f()
+      : await f;
     if (option.some) {
-      return option as unknown as Return;
+      return option as Return;
     }
     last = option;
   }
-  return last as unknown as Return;
+  return last as Return;
 }
 
 function lazy<
   U extends Option<unknown>,
-  O extends Promise<U> | U,
-  Eval extends Awaited<O> extends Instance<infer Some> ? Instance<Some>
-    : Awaited<O> extends Option<infer Some> ? Option<Some>
+  O extends (() => Promise<U> | U) | Promise<U> | U,
+  Some extends O extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer Some> | Option<infer Some> ? Some
+      : never)
     : never,
-  Some extends Awaited<O> extends Option<infer Some> ? Some : never,
+  Eval extends O extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer Some> ? Instance<Some>
+      : Option<Some>)
+    : never,
 >(option: O): Lazy<Some, Eval> {
   return new _Lazy(option as unknown as Eval);
 }

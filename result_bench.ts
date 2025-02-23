@@ -4,7 +4,7 @@ const getNumber = () => Result.ok<number>(1);
 const getString = () => Result.ok<string>("hello");
 const asyncGetNumber = () => Promise.resolve(Result.ok<number>(1));
 const asyncGetString = () => Promise.resolve(Result.ok<string>("hello"));
-const getError = () => Result.err("Error!!");
+const getError = () => Result.err<number, string>("Error!!");
 
 Deno.bench("Result.ok(value)", () => {
   Result.ok("value");
