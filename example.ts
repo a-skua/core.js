@@ -1,44 +1,34 @@
-import { Option } from "@askua/core/option";
-import { Result } from "@askua/core/result";
+import { Option, Result } from "@askua/core";
 
-const option = Array.from({ length: 10 }).map(() =>
+const getNumber = () =>
   Option.some(Math.random())
-    .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
-    .map((n) => n.toFixed(2))
-    .map((s) => s + "!!")
-);
-console.debug("Option");
-console.debug(`> [${option}]`);
-console.debug(`> [${
-  option.map((r) =>
-    r.orElse(() => {
-      console.debug("None");
-      return Option.some("_");
-    })
-  )
-}]`);
-console.debug(`> [${option.map((o) => o.unwrapOr("_"))}]`);
-console.debug(`> [${option.map((o) => `[${[...o]}]`)}]`);
-console.debug(`> [${option.map((o) => [...o]).flat()}]`);
+    .map((n) => Math.floor(n * 100))
+    .andThen((n) => n >= 50 ? Option.some(n) : Option.none<number>());
 
-const result = Array.from({
-  length: 10,
-}).map(() =>
-  Result.ok(Math.random())
-    .andThen((n) => n >= 0.3 ? Result.ok(n) : Result.err("less than 0.3"))
-    .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err("less than 0.5"))
-    .map((n) => n.toFixed(2))
-);
-console.debug("Result");
-console.debug(`> [${result}]`);
-console.debug(`> [${
-  result.map((r) =>
-    r.orElse((e) => {
-      console.debug(`Error: ${e}`);
-      return Result.ok("_");
-    })
-  )
-}]`);
-console.debug(`> [${result.map((r) => r.unwrapOr("_"))}]`);
-console.debug(`> [${result.map((r) => `[${[...r]}]`)}]`);
-console.debug(`> [${result.map((r) => [...r]).flat()}]`);
+const option = await Option
+  .lazy(Option.andThen(
+    getNumber,
+    getNumber,
+    getNumber,
+  ))
+  .or(Option.some([0, 0, 0] as const))
+  .map(([a, b, c]) => [a.toFixed(2), b.toFixed(2), c.toFixed(2)] as const)
+  .map((n) => n.join(", "))
+  .eval();
+
+console.log(option.unwrap()); // 0.00, 0.00, 0.00
+
+const result = await Result
+  .lazy(Result.orElse(
+    () => getNumber().toResult(),
+    () => getNumber().toResult(),
+    () => getNumber().toResult(),
+  ))
+  .orElse((err) => {
+    console.error(`${err}`); // Error: None
+    return Result.ok<number>(0);
+  })
+  .map((n) => n.toFixed(2))
+  .eval();
+
+console.log(result.unwrap()); // 0.00
