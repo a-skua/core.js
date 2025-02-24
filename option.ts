@@ -3,10 +3,9 @@ import type { Instance as ResultInstance } from "./result.ts";
 import { Result } from "./result.ts";
 
 /**
- * Some
+ * Option element Some
  *
- * ### Example
- *
+ * @example
  * ```ts
  * import { assertObjectMatch } from "@std/assert";
  *
@@ -16,19 +15,18 @@ import { Result } from "./result.ts";
  *   value: "is some",
  * });
  * ```
+ *
+ * @typeParam T - value type
  */
 export interface Some<T> {
-  /** som: true */
   readonly some: true;
-  /** value: T */
   readonly value: T;
 }
 
 /**
- * None
+ * Option element None
  *
- * ### Example
- *
+ * @example
  * ```ts
  * import { assertObjectMatch } from "@std/assert";
  *
@@ -37,23 +35,82 @@ export interface Some<T> {
  *   some: false,
  * });
  * ```
+ *
+ * @typeParam _ - value type
  */
 export interface None<_> {
-  /** some: alse */
   readonly some: false;
 }
 
-/** type Option */
+/**
+ * Option
+ *
+ * @example
+ * ```ts
+ * const some: Option<number> = Option.some(1);
+ * const none: Option<number> = Option.none();
+ * ```
+ *
+ * @typeParam T - value type
+ */
 export type Option<T> = Some<T> | None<T>;
 
-/** type Instance */
+/**
+ * impl Option
+ *
+ * @example
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ *
+ * const option = Option({ some: true, value: 1 })
+ *   .map((n) => n + 1);
+ *
+ * assertEquals(option, Option.some(2));
+ * ```
+ */
+export const Option: ToInstance & Static = Object.assign(
+  toInstance,
+  { some, none, andThen, orElse, lazy },
+);
+
+/**
+ * Option ToInstance
+ *
+ * @example
+ * ```ts
+ * const some: Option<number> = Option({ some: true, value: 1 });
+ * const none: Option<number> = Option({ some: false });
+ * ```
+ */
+export type ToInstance = <T>(option: Option<T>) => Instance<T>;
+
+/**
+ * Option Instance
+ *
+ * @example
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ *
+ * const value = Option.none()
+ *   .map((n) => n + 1)
+ *   .unwrapOr(0);
+ *
+ * assertEquals(value, 0);
+ * ```
+ *
+ * @typeParam T - value type
+ */
 export type Instance<T> = Option<T> & Context<T>;
 
-/** Context */
+/**
+ * Option Context
+ *
+ * @typeParam T - value type
+ */
 export interface Context<T>
   extends
     Iterable<T>,
-    OptionToResult<T>,
+    ToResult<T>,
     c.And<T>,
     c.Or<never>,
     c.Map<T>,
@@ -61,8 +118,7 @@ export interface Context<T>
   /**
    * andThen
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).andThen");
    *
@@ -84,8 +140,7 @@ export interface Context<T>
   /**
    * and
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).and");
    *
@@ -106,8 +161,7 @@ export interface Context<T>
   /**
    * orElse
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).orElse");
    *
@@ -130,8 +184,7 @@ export interface Context<T>
   /**
    * or
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).or");
    *
@@ -155,8 +208,7 @@ export interface Context<T>
   /**
    * map
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).map");
    *
@@ -177,8 +229,7 @@ export interface Context<T>
   /**
    * unwrap
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).unwrap");
    *
@@ -196,8 +247,7 @@ export interface Context<T>
   /**
    * unwrapOr
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).unwrapOr");
    *
@@ -214,8 +264,7 @@ export interface Context<T>
   /**
    * unwrapOrElse
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Option).unwrapOrElse");
    *
@@ -232,12 +281,14 @@ export interface Context<T>
   /**
    * lazy
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
-   * const option = await Option.some(1).lazy().and(Option.some(2)).eval();
+   * const option = await Option.some(1)
+   *   .lazy()
+   *   .and(Option.some(2))
+   *   .eval();
    * assertEquals(option, Option.some(2));
    * ```
    */
@@ -246,8 +297,7 @@ export interface Context<T>
   /**
    * toString
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -261,14 +311,18 @@ export interface Context<T>
   toString(): string;
 }
 
-/** Lazy */
+/**
+ * Option Lazy eval
+ *
+ * @typeParam T - value type
+ * @typeParam Eval - eval Option
+ */
 export interface Lazy<T, Eval extends Option<unknown>>
   extends c.And<T>, c.Or<never>, c.Map<T> {
   /**
    * andThen
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).andThen");
    *
@@ -296,8 +350,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * and
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).and");
    *
@@ -324,8 +377,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * orElse
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).orElse");
    *
@@ -354,8 +406,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * or
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).or");
    *
@@ -383,8 +434,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * map
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).map");
    *
@@ -410,8 +460,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * eval
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] (Lazy).eval");
    *
@@ -425,8 +474,7 @@ export interface Lazy<T, Eval extends Option<unknown>>
   /**
    * toString
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -445,14 +493,13 @@ export interface Lazy<T, Eval extends Option<unknown>>
 }
 
 /**
- * type StaticOption
+ * Static Option
  */
 export interface Static {
   /**
-   * Create a Some instance.
+   * Create a Option instance.
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
@@ -472,10 +519,9 @@ export interface Static {
   some: typeof some;
 
   /**
-   * Create a None instance.
+   * Create a Option instance.
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
@@ -496,8 +542,7 @@ export interface Static {
   /**
    * andThen
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] Option.andThen");
    *
@@ -514,6 +559,7 @@ export interface Static {
    * console.log(`Option: ${await fn()}`);
    * ```
    *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -532,8 +578,7 @@ export interface Static {
   /**
    * orElse
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] Option.orElse");
    *
@@ -550,6 +595,7 @@ export interface Static {
    * console.log(`Option: ${await fn()}`);
    * ```
    *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -568,8 +614,7 @@ export interface Static {
   /**
    * lazy
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * console.log("[Example] Option.lazy");
    *
@@ -580,6 +625,7 @@ export interface Static {
    * console.log(`Option: ${option}`);
    * ```
    *
+   * @example
    * ```ts
    * console.log("[Example] Option.lazy");
    *
@@ -594,12 +640,14 @@ export interface Static {
   lazy: typeof lazy;
 }
 
-/** OptionToResult */
-export interface OptionToResult<T> {
-  /** toResult
+/**
+ * Option ToResult
+ */
+export interface ToResult<T> {
+  /**
+   * toResult
    *
-   * ### Example
-   *
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Result } from "@askua/core/result";
@@ -619,7 +667,9 @@ export interface OptionToResult<T> {
   ): R;
 }
 
-/** impl Some */
+/**
+ * impl Some<T>
+ */
 class _Some<T> implements Some<T>, Context<T> {
   readonly some = true;
   constructor(readonly value: T) {}
@@ -679,7 +729,9 @@ class _Some<T> implements Some<T>, Context<T> {
   }
 }
 
-/** impl None<T> */
+/**
+ * impl None<T>
+ */
 class _None<T> implements None<T>, Context<T> {
   readonly some = false;
   constructor() {}
@@ -737,6 +789,9 @@ class _None<T> implements None<T>, Context<T> {
   }
 }
 
+/**
+ * Lazy Operation
+ */
 type Op<T, U> =
   | { andThen: (value: T) => Promise<Option<U>> }
   | { and: Promise<Option<U>> }
@@ -744,7 +799,9 @@ type Op<T, U> =
   | { or: Promise<Option<U>> }
   | { map: (value: T) => Promise<U> };
 
-/** impl Lazy<T, Eval> */
+/**
+ * impl Lazy<T, Eval>
+ */
 class _Lazy<T, Eval extends Option<unknown>> implements Lazy<T, Eval> {
   readonly op: Op<unknown, unknown>[] = [];
 
@@ -826,18 +883,30 @@ class _Lazy<T, Eval extends Option<unknown>> implements Lazy<T, Eval> {
   }
 }
 
+/**
+ * impl ToInstance<<T>
+ */
 function toInstance<T>(option: Option<T>): Instance<T> {
   return option.some ? Option.some(option.value) : Option.none();
 }
 
+/**
+ * impl Static.some
+ */
 function some<Some>(value: Some): Instance<Some> {
   return new _Some(value);
 }
 
+/**
+ * impl Static.none
+ */
 function none<Some = never>(): Instance<Some> {
   return new _None<Some>();
 }
 
+/**
+ * impl Static.andThen
+ */
 async function andThen<
   U extends Option<unknown>,
   F extends (() => Promise<U> | U) | Promise<U> | U,
@@ -869,6 +938,9 @@ async function andThen<
   return Option.some(somes) as unknown as Return;
 }
 
+/**
+ * impl Static.orElse
+ */
 async function orElse<
   U extends Option<unknown>,
   F extends (() => Promise<U> | U) | Promise<U> | U,
@@ -898,6 +970,9 @@ async function orElse<
   return last as Return;
 }
 
+/**
+ * impl Static.lazy
+ */
 function lazy<
   U extends Option<unknown>,
   O extends (() => Promise<U> | U) | Promise<U> | U,
@@ -912,12 +987,3 @@ function lazy<
 >(option: O): Lazy<Some, Eval> {
   return new _Lazy(option as unknown as Eval);
 }
-
-/** type ToInstance */
-export type ToInstance = <T>(option: Option<T>) => Instance<T>;
-
-/** impl StaticOption */
-export const Option: ToInstance & Static = Object.assign(
-  toInstance,
-  { some, none, andThen, orElse, lazy },
-);
