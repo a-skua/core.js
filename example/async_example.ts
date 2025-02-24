@@ -1,23 +1,51 @@
-import { Result } from "@askua/core";
+import { type Instance, Result } from "@askua/core/result";
 
-const getN = () =>
-  Promise.resolve(
-    Result.ok(Math.random())
-      .map((n) => Math.floor(n * 100))
-      .andThen((n) =>
-        n >= 50 ? Result.ok(n) : Result.err<number>(new Error("Too low"))
-      ),
-  );
+async function test(name: string, fn: () => Promise<unknown>) {
+  console.time(name);
+  const result = await fn();
+  console.timeEnd(name);
 
-const getNumbers = (
-  retry = 0,
-): Promise<{ numbers: string; retry: number }> =>
+  console.log(`${name}: ${result}`);
+}
+
+const getNumber = (): Promise<Instance<number>> =>
+  new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(
+        Result.ok(Math.random())
+          .andThen((n) =>
+            n >= 0.1
+              ? Result.ok<number>(n)
+              : Result.err<number>(new Error("Number is less than 0.1"))
+          ),
+      );
+    }, 200);
+  });
+
+test("Result.andThen(...Promise[])", () =>
   Result
-    .lazy(Result.andThen(getN, getN, getN, getN, getN, getN, getN, getN, getN))
-    .map((n) => n.map((n) => n.toFixed(2)).join(", "))
-    .map((numbers) => ({ numbers, retry }))
-    .eval().then((result) => result.unwrapOrElse(() => getNumbers(retry + 1)));
+    .lazy(Result.andThen(getNumber(), getNumber(), getNumber()))
+    .map((n) => n.reduce((v, n) => v + n) * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
 
-console.time("getNumbers");
-console.debug(await getNumbers());
-console.timeEnd("getNumbers");
+test("Result.andThen(...() => Promise[])", () =>
+  Result
+    .lazy(Result.andThen(getNumber, getNumber, getNumber))
+    .map((n) => n.reduce((v, n) => v + n) * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
+
+test("Result.orElse(...Promise[])", () =>
+  Result
+    .lazy(Result.orElse(getNumber(), getNumber(), getNumber()))
+    .map((n) => n * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
+
+test("Result.orElse(...() => Promise[])", () =>
+  Result
+    .lazy(Result.orElse(getNumber, getNumber, getNumber))
+    .map((n) => n * 100)
+    .map((n) => n.toFixed(2))
+    .eval());

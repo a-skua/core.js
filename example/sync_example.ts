@@ -1,18 +1,41 @@
-import { Option } from "@askua/core";
+import { Option } from "@askua/core/option";
 
-const getN = () =>
+async function test(name: string, fn: () => Promise<unknown>) {
+  console.time(name);
+  const result = await fn();
+  console.timeEnd(name);
+
+  console.log(`${name}: ${result}`);
+}
+
+const getNumber = () =>
   Option.some(Math.random())
-    .map((n) => n * 100)
-    .andThen((n) => n >= 99.5 ? Option.some(n) : Option.none<number>());
+    .andThen((n) => n >= 0.1 ? Option.some<number>(n) : Option.none<number>());
 
-const getNumber = (
-  retry = 0,
-): { number: string; retry: number } =>
-  getN()
+test("Option.andThen(...Promise[])", () =>
+  Option
+    .lazy(Option.andThen(getNumber(), getNumber(), getNumber()))
+    .map((n) => n.reduce((v, n) => v + n) * 100)
     .map((n) => n.toFixed(2))
-    .map((number) => ({ number, retry }))
-    .unwrapOrElse(() => getNumber(retry + 1));
+    .eval());
 
-console.time("getNumber");
-console.debug(getNumber());
-console.timeEnd("getNumber");
+test("Option.andThen(...() => Promise[])", () =>
+  Option
+    .lazy(Option.andThen(getNumber, getNumber, getNumber))
+    .map((n) => n.reduce((v, n) => v + n) * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
+
+test("Option.orElse(...Promise[])", () =>
+  Option
+    .lazy(Option.orElse(getNumber(), getNumber(), getNumber()))
+    .map((n) => n * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
+
+test("Option.orElse(...() => Promise[])", () =>
+  Option
+    .lazy(Option.orElse(getNumber, getNumber, getNumber))
+    .map((n) => n * 100)
+    .map((n) => n.toFixed(2))
+    .eval());
