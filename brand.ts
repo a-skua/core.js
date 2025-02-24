@@ -1,4 +1,19 @@
 /**
+ * @example
+ * ```ts
+ * import { Brand } from "@askua/core/brand";
+ *
+ * type MyID = Brand<number, "MyID">;
+ * const MyID = Brand<number, "MyID">;
+ *
+ * const id: MyID = MyID(1);
+ * console.log(id); // 1
+ * ```
+ *
+ * @module
+ */
+
+/**
  * type Brand
  *
  * ### Example

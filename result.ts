@@ -1,3 +1,17 @@
+/**
+ * @example
+ * ```ts
+ * import { type Instance, Result } from "@askua/core/result";
+ *
+ * const n: Instance<number> = Result.ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")));
+ *
+ * console.log(n.map((n) => n.toFixed(2)).unwrapOr("0.00"));
+ * ```
+ *
+ * @module
+ */
+
 import type * as c from "./context.ts";
 import type { Instance as OptionInstance } from "./option.ts";
 import { Option } from "./option.ts";
