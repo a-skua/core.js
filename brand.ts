@@ -1,24 +1,30 @@
 /**
- * Brand type
- */
-export type Brand<ID extends string | symbol, Type> =
-  & Type
-  & { [Key in ID]: never };
-
-/**
- * Value as Brand type
+ * type Brand
  *
  * ### Example
  *
  * ```ts
- * type ID = Brand<"MyID", number>;
- * const ID = Brand<"MyID", number>;
- *
- * const id: ID = ID(1);
+ * type MyID = Brand<number, "MyID">;
  * ```
  */
-export function Brand<ID extends string | symbol, Type>(
-  v: Type,
-): Brand<ID, Type> {
-  return v as Brand<ID, Type>;
+export type Brand<Type, ID extends string | symbol> =
+  & Type
+  & { [Key in ID]: never };
+
+/**
+ * value as Brand
+ *
+ * ### Example
+ *
+ * ```ts
+ * type MyID = Brand<number, "MyID">;
+ * const MyID = Brand<number, "MyID">;
+ *
+ * const id: MyID = MyID(1);
+ * ```
+ */
+export function Brand<Type, ID extends string | symbol>(
+  value: Type,
+): Brand<Type, ID> {
+  return value as Brand<Type, ID>;
 }

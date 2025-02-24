@@ -1,9 +1,12 @@
-import { Option, Result } from "@askua/core";
+import { Brand, Option, Result } from "@askua/core";
+
+const PassedNumber = Brand<number, "Passed">;
 
 const getNumber = () =>
   Option.some(Math.random())
     .map((n) => n * 100)
-    .andThen((n) => n >= 50 ? Option.some(n) : Option.none<number>());
+    .andThen((n) => n >= 50 ? Option.some(n) : Option.none<number>())
+    .map((n) => PassedNumber(n));
 
 const option = await Option
   .lazy(Option.andThen(
@@ -27,7 +30,7 @@ const result = await Result
   ))
   .orElse((err) => {
     console.error(`${err}`); // Error: None
-    return Result.ok<number>(0);
+    return Result.ok(PassedNumber(0));
   })
   .map((n) => n.toFixed(2))
   .eval();
