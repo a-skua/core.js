@@ -2,7 +2,7 @@ import { Option, Result } from "@askua/core";
 
 const getNumber = () =>
   Option.some(Math.random())
-    .map((n) => Math.floor(n * 100))
+    .map((n) => n * 100)
     .andThen((n) => n >= 50 ? Option.some(n) : Option.none<number>());
 
 const option = await Option
@@ -11,12 +11,13 @@ const option = await Option
     getNumber,
     getNumber,
   ))
-  .or(Option.some([0, 0, 0] as const))
-  .map(([a, b, c]) => [a.toFixed(2), b.toFixed(2), c.toFixed(2)] as const)
-  .map((n) => n.join(", "))
+  .map((n) => n.reduce((acc, n) => acc + n, 0))
+  .orElse(() => Option.some(0))
+  .map((n) => n.toFixed(2))
+  .map((sum) => ({ sum }))
   .eval();
 
-console.log(option.unwrap()); // 0.00, 0.00, 0.00
+console.log(option.unwrap()); // { sum: "0.00" }
 
 const result = await Result
   .lazy(Result.orElse(

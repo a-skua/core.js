@@ -154,7 +154,7 @@ Deno.bench("Result.andThen(...[len=1000])", async (t) => {
   t.end();
 });
 
-Deno.bench("Result.orElse(...async[len=1000])", async (t) => {
+Deno.bench("Result.orElse(...[len=1000])", async (t) => {
   const args = Array.from(
     { length: 1000 },
     (_, i) => {

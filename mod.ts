@@ -1,5 +1,3 @@
-import { Result } from "./result.ts";
-import { Option } from "./option.ts";
-
-export * from "./brand.ts";
-export { Option, Result };
+export { Result } from "./result.ts";
+export { Option } from "./option.ts";
+export { Brand } from "./brand.ts";
