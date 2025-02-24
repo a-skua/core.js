@@ -11,8 +11,11 @@
   "publish": {
     "exclude": [
       ".github",
-      "example.ts",
-      "example/*"
+      "*_example.ts",
+      "example/*",
+      "bench/*",
+      "*_bench.ts",
+      "*_test.ts"
     ]
   },
   "tasks": {

@@ -1,4 +1,4 @@
-import { Option } from "./option.ts";
+import { Option } from "@askua/core/option";
 
 Deno.bench("Option => Some(1)", () => {
   Option({ some: true, value: 1 });

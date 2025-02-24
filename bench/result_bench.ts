@@ -1,4 +1,4 @@
-import { Result } from "./result.ts";
+import { Result } from "@askua/core/result";
 
 Deno.bench("Result => Ok(1)", () => {
   Result({ ok: true, value: 1 });
