@@ -807,21 +807,37 @@ class _Lazy<T, E, Eval extends Result<unknown, unknown>>
   }
 
   async eval(): Promise<Eval> {
-    let result: Result<unknown, unknown> = typeof this.first === "function"
-      ? await this.first()
-      : await this.first;
+    const p = typeof this.first === "function" ? this.first() : this.first;
+    let result: Result<unknown, unknown> = p instanceof Promise ? await p : p;
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
+
       if ("andThen" in op && result.ok) {
-        result = await op.andThen(result.value);
-      } else if ("and" in op && result.ok) {
-        result = await op.and;
-      } else if ("orElse" in op && !result.ok) {
-        result = await op.orElse(result.error);
-      } else if ("or" in op && !result.ok) {
-        result = await op.or;
-      } else if ("map" in op && result.ok) {
-        result = Result.ok(await op.map(result.value));
+        const p = op.andThen(result.value);
+        result = p instanceof Promise ? await p : p;
+        continue;
+      }
+
+      if ("and" in op && result.ok) {
+        result = op.and instanceof Promise ? await op.and : op.and;
+        continue;
+      }
+
+      if ("orElse" in op && !result.ok) {
+        const p = op.orElse(result.error);
+        result = p instanceof Promise ? await p : p;
+        continue;
+      }
+
+      if ("or" in op && !result.ok) {
+        result = op.or instanceof Promise ? await op.or : op.or;
+        continue;
+      }
+
+      if ("map" in op && result.ok) {
+        const p = op.map(result.value);
+        result = Result.ok(p instanceof Promise ? await p : p);
+        continue;
       }
     }
     return result as Eval;
@@ -874,9 +890,9 @@ async function andThen<
   const oks: unknown[] = new Array(fn.length);
   for (let i = 0; i < fn.length; i++) {
     const f = fn[i];
-    const result: Result<unknown, unknown> = typeof f === "function"
-      ? await f()
-      : await f;
+    const p: Promise<Result<unknown, unknown>> | Result<unknown, unknown> =
+      typeof f === "function" ? f() : f;
+    const result = p instanceof Promise ? await p : p;
     if (result.ok) {
       oks[i] = result.value;
     } else {
@@ -909,9 +925,9 @@ async function orElse<
   let last;
   for (let i = 0; i < fn.length; i++) {
     const f = fn[i];
-    const result: Result<unknown, unknown> = typeof f === "function"
-      ? await f()
-      : await f;
+    const p: Promise<Result<unknown, unknown>> | Result<unknown, unknown> =
+      typeof f === "function" ? f() : f;
+    const result = p instanceof Promise ? await p : p;
     if (result.ok) {
       return result as Return;
     }

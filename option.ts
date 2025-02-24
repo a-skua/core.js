@@ -778,21 +778,37 @@ class _Lazy<T, Eval extends Option<unknown>> implements Lazy<T, Eval> {
   }
 
   async eval(): Promise<Eval> {
-    let option: Option<unknown> = typeof this.first === "function"
-      ? await this.first()
-      : await this.first;
+    const p = typeof this.first === "function" ? this.first() : this.first;
+    let option: Option<unknown> = p instanceof Promise ? await p : p;
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
+
       if ("andThen" in op && option.some) {
-        option = await op.andThen(option.value);
-      } else if ("and" in op && option.some) {
-        option = await op.and;
-      } else if ("orElse" in op && !option.some) {
-        option = await op.orElse();
-      } else if ("or" in op && !option.some) {
-        option = await op.or;
-      } else if ("map" in op && option.some) {
-        option = Option.some(await op.map(option.value));
+        const p = op.andThen(option.value);
+        option = p instanceof Promise ? await p : p;
+        continue;
+      }
+
+      if ("and" in op && option.some) {
+        option = op.and instanceof Promise ? await op.and : op.and;
+        continue;
+      }
+
+      if ("orElse" in op && !option.some) {
+        const p = op.orElse();
+        option = p instanceof Promise ? await p : p;
+        continue;
+      }
+
+      if ("or" in op && !option.some) {
+        option = op.or instanceof Promise ? await op.or : op.or;
+        continue;
+      }
+
+      if ("map" in op && option.some) {
+        const p = op.map(option.value);
+        option = Option.some(p instanceof Promise ? await p : p);
+        continue;
       }
     }
     return option as Eval;
@@ -840,9 +856,9 @@ async function andThen<
   const somes: unknown[] = new Array(fn.length);
   for (let i = 0; i < fn.length; i++) {
     const f = fn[i];
-    const option: Option<unknown> = typeof f === "function"
-      ? await f()
-      : await f;
+    const p: Promise<Option<unknown>> | Option<unknown> =
+      typeof f === "function" ? f() : f;
+    const option = p instanceof Promise ? await p : p;
     if (option.some) {
       somes[i] = option.value;
     } else {
@@ -871,9 +887,9 @@ async function orElse<
   let last;
   for (let i = 0; i < fn.length; i++) {
     const f = fn[i];
-    const option: Option<unknown> = typeof f === "function"
-      ? await f()
-      : await f;
+    const p: Promise<Option<unknown>> | Option<unknown> =
+      typeof f === "function" ? f() : f;
+    const option = p instanceof Promise ? await p : p;
     if (option.some) {
       return option as Return;
     }
