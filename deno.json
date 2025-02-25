@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.0.1-1",
+  "version": "1.1.0-1",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
@@ -19,7 +19,7 @@
     ]
   },
   "tasks": {
-    "version": "jq -r '.version' < deno.json",
+    "version": "jq -r .version < deno.json",
     "tests": "deno test && deno test --doc .",
     "bench": "deno bench | sed s:$(dirname $(pwd))::",
     "check": "deno fmt && deno lint && deno check . && deno task tests && deno publish --dry-run"
