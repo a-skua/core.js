@@ -1,6 +1,5 @@
 import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
-import type { Instance } from "./option.ts";
-import { Option } from "./option.ts";
+import { Instance, Option } from "./option.ts";
 import { Result } from "./result.ts";
 
 Deno.test("Instance", async (t) => {
@@ -310,6 +309,124 @@ Deno.test("Option.lazy", async (t) => {
       `Option.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
         assertEquals(await Option.lazy(input).map(fn).eval(), expected);
+      },
+    );
+  }
+});
+
+Deno.test("Instance.some", async (t) => {
+  const tests = [
+    ["value", { some: true, value: "value" }],
+    [1, { some: true, value: 1 }],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(`Instance.some(${input}) => ${expected})`, () => {
+      const actual = Instance.some(input);
+      assertObjectMatch(actual, expected);
+      assertEquals(Object.keys(actual).length, Object.keys(expected).length);
+    });
+  }
+});
+
+Deno.test("Instance.none", async (t) => {
+  const tests = [
+    [{ some: false }],
+  ] as const;
+
+  for (const [expected] of tests) {
+    await t.step(`Instance.none() => ${expected})`, () => {
+      const actual = Instance.none();
+      assertObjectMatch(actual, expected);
+      assertEquals(Object.keys(actual).length, Object.keys(expected).length);
+    });
+  }
+});
+
+Deno.test("Instance.andThen", async (t) => {
+  type Arg =
+    | Promise<Instance<unknown>>
+    | Instance<unknown>
+    | (() => Promise<Instance<unknown>>)
+    | (() => Instance<unknown>);
+
+  const tests: [Arg[], Instance<unknown>][] = [
+    [
+      [Instance.some(1), Promise.resolve(Instance.some("hello"))],
+      Instance.some([1, "hello"]),
+    ],
+    [[
+      Instance.some(1),
+      Promise.resolve(Instance.some(2)),
+      () => Promise.resolve(Instance.some(3)),
+      () => Instance.some(4),
+    ], Instance.some([1, 2, 3, 4])],
+    [[
+      Instance.some(1),
+      Promise.resolve(Instance.some(2)),
+      () => Promise.resolve(Instance.some(3)),
+      () => Instance.none(),
+    ], Instance.none()],
+  ];
+
+  for (const [args, expected] of tests) {
+    await t.step(`Instance.andThen(${args})() => ${expected}`, async () => {
+      assertEquals(await Instance.andThen(...args), expected);
+    });
+  }
+});
+
+Deno.test("Instance.orElse", async (t) => {
+  type Arg =
+    | Promise<Instance<unknown>>
+    | Instance<unknown>
+    | (() => Promise<Instance<unknown>>)
+    | (() => Instance<unknown>);
+
+  const tests: [[Arg, ...Arg[]], Instance<unknown>][] = [
+    [[
+      Instance.none(),
+      Promise.resolve(Instance.some(1)),
+    ], Instance.some(1)],
+    [[
+      () => Instance.none(),
+      () => Promise.resolve(Instance.some("hello")),
+    ], Instance.some("hello")],
+    [[
+      Instance.none(),
+      Promise.resolve(Instance.none()),
+      () => Instance.none(),
+      () => Promise.resolve(Instance.none()),
+    ], Instance.none()],
+    [[
+      Instance.none(),
+      Promise.resolve(Instance.none()),
+      () => Promise.resolve(Instance.some(1)),
+      () => Instance.none(),
+    ], Instance.some(1)],
+  ];
+
+  for (const [args, expected] of tests) {
+    await t.step(`(Instance.orElse(${args}) => ${expected}`, async () => {
+      assertEquals(await Instance.orElse(...args), expected);
+    });
+  }
+});
+
+Deno.test("Instance.lazy", async (t) => {
+  const fn = (n: number) => n.toFixed(2);
+  const tests = [
+    [Instance.some(1), Instance.some("1.00")],
+    [() => Instance.some(2), Instance.some("2.00")],
+    [Promise.resolve(Instance.some(3)), Instance.some("3.00")],
+    [() => Promise.resolve(Instance.some(4)), Instance.some("4.00")],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Instance.lazy(${input}).map(${fn}).eval() => ${expected}`,
+      async () => {
+        assertEquals(await Instance.lazy(input).map(fn).eval(), expected);
       },
     );
   }

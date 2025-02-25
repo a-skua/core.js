@@ -117,6 +117,20 @@ export type ToInstance = <T>(option: Option<T>) => Instance<T>;
 export type Instance<T> = Option<T> & Context<T>;
 
 /**
+ * impl Instance
+ *
+ * @example
+ * ```ts
+ * const some: Option<number> = Instance({ some: true, value: 1 });
+ * const none: Option<number> = Instance({ some: false });
+ * ```
+ */
+export const Instance: ToInstance & Static = Object.assign(
+  toInstance,
+  { some, none, andThen, orElse, lazy },
+);
+
+/**
  * Option Context
  *
  * @typeParam T - value type
