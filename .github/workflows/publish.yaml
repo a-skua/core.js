@@ -1,4 +1,5 @@
 name: Publish
+run-name: Publish ${{ github.ref_name }}
 
 on:
   push:
@@ -13,4 +14,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - run: echo "VERSION=$(jq -r .version < deno.json)" >> $GITHUB_ENV
+      - run: exit 1
+        if: ${{ github.ref_name != env.VERSION }}
       - run: npx jsr publish
