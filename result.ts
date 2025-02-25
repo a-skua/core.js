@@ -95,19 +95,6 @@ export const Result: ToInstance & Static = Object.assign(
 );
 
 /**
- * Result ToInstance
- *
- * @example
- * ```ts
- * const ok: Result<number> = Result({ ok: true, value: 1 });
- * const err: Result<number> = Result({ ok: false, error: new Error("error") });
- * ```
- */
-export type ToInstance = <Ok, Err>(
-  result: Result<Ok, Err>,
-) => Instance<Ok, Err>;
-
-/**
  * Result Instance
  *
  * @example
@@ -135,10 +122,20 @@ export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
  * const err: Result<number> = Instance({ ok: false, error: new Error("error") });
  * ```
  */
-export const Instance: ToInstance & Static = Object.assign(
-  toInstance,
-  { ok, err, andThen, orElse, lazy },
-);
+export const Instance: ToInstance & Static = Result;
+
+/**
+ * Result ToInstance
+ *
+ * @example
+ * ```ts
+ * const ok: Result<number> = Result({ ok: true, value: 1 });
+ * const err: Result<number> = Result({ ok: false, error: new Error("error") });
+ * ```
+ */
+export type ToInstance = <Ok, Err>(
+  result: Result<Ok, Err>,
+) => Instance<Ok, Err>;
 
 /**
  * Result Context

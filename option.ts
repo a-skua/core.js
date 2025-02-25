@@ -88,17 +88,6 @@ export const Option: ToInstance & Static = Object.assign(
 );
 
 /**
- * Option ToInstance
- *
- * @example
- * ```ts
- * const some: Option<number> = Option({ some: true, value: 1 });
- * const none: Option<number> = Option({ some: false });
- * ```
- */
-export type ToInstance = <T>(option: Option<T>) => Instance<T>;
-
-/**
  * Option Instance
  *
  * @example
@@ -125,10 +114,18 @@ export type Instance<T> = Option<T> & Context<T>;
  * const none: Option<number> = Instance({ some: false });
  * ```
  */
-export const Instance: ToInstance & Static = Object.assign(
-  toInstance,
-  { some, none, andThen, orElse, lazy },
-);
+export const Instance: ToInstance & Static = Option;
+
+/**
+ * Option ToInstance
+ *
+ * @example
+ * ```ts
+ * const some: Option<number> = Option({ some: true, value: 1 });
+ * const none: Option<number> = Option({ some: false });
+ * ```
+ */
+export type ToInstance = <T>(option: Option<T>) => Instance<T>;
 
 /**
  * Option Context
