@@ -127,6 +127,20 @@ export type ToInstance = <Ok, Err>(
 export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
 
 /**
+ * impl Instance
+ *
+ * @example
+ * ```ts
+ * const ok: Result<number> = Instance({ ok: true, value: 1 });
+ * const err: Result<number> = Instance({ ok: false, error: new Error("error") });
+ * ```
+ */
+export const Instance: ToInstance & Static = Object.assign(
+  toInstance,
+  { ok, err, andThen, orElse, lazy },
+);
+
+/**
  * Result Context
  *
  * @typeParam T - value type

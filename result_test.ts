@@ -4,8 +4,7 @@ import {
   assertObjectMatch,
   assertThrows,
 } from "@std/assert";
-import { Result } from "./result.ts";
-import type { Instance } from "./result.ts";
+import { Instance, Result } from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("Instance", async (t) => {
@@ -341,6 +340,128 @@ Deno.test("Result.lazy", async (t) => {
       `Result.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
         assertEquals(await Result.lazy(input).map(fn).eval(), expected);
+      },
+    );
+  }
+});
+
+Deno.test("Instance.ok", async (t) => {
+  const tests = [
+    ["value", { ok: true, value: "value" }],
+    [1, { ok: true, value: 1 }],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(`Instance.ok(${input}) => ${expected})`, () => {
+      const actual = Instance.ok(input);
+      assertObjectMatch(actual, expected);
+      assertEquals(Object.keys(actual).length, Object.keys(expected).length);
+    });
+  }
+});
+
+Deno.test("Instance.err", async (t) => {
+  const tests = [
+    ["error", { ok: false, error: "error" }],
+    [1, { ok: false, error: 1 }],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(`Instance.err(${input}) => ${expected})`, () => {
+      const actual = Instance.err(input);
+      assertObjectMatch(actual, expected);
+      assertEquals(Object.keys(actual).length, Object.keys(expected).length);
+    });
+  }
+});
+
+Deno.test("Instance.andThen", async (t) => {
+  type Arg =
+    | Promise<Instance<unknown, unknown>>
+    | Instance<unknown, unknown>
+    | (() => Promise<Instance<unknown, unknown>>)
+    | (() => Instance<unknown, unknown>);
+
+  const tests: [
+    Arg[],
+    Instance<unknown, unknown>,
+  ][] = [
+    [[
+      Instance.ok(1),
+      Promise.resolve(Instance.ok(2)),
+      () => Promise.resolve(Instance.ok(3)),
+      () => Instance.ok(4),
+    ], Instance.ok([1, 2, 3, 4])],
+    [[
+      Instance.ok(1),
+      Promise.resolve(Instance.ok(2)),
+      () => Promise.resolve(Instance.err("Error")),
+      () => Instance.ok(4),
+    ], Instance.err("Error")],
+    [[
+      Instance.err("1"),
+      Promise.resolve(Instance.err("2")),
+      () => Promise.resolve(Instance.err("3")),
+      () => Instance.err("4"),
+    ], Instance.err("1")],
+  ];
+
+  for (const [args, expected] of tests) {
+    await t.step(`Instance.andThen(${args}) => ${expected}`, async () => {
+      assertEquals(await Instance.andThen(...args), expected);
+    });
+  }
+});
+
+Deno.test("Instance.orElse", async (t) => {
+  type Arg =
+    | Promise<Instance<unknown, unknown>>
+    | Instance<unknown, unknown>
+    | (() => Promise<Instance<unknown, unknown>>)
+    | (() => Instance<unknown, unknown>);
+
+  const tests: [[Arg, ...Arg[]], Instance<unknown, unknown>][] = [
+    [[
+      Instance.err("Error"),
+      Promise.resolve(Instance.ok(1)),
+      () => Instance.ok(2),
+      () => Instance.ok(3),
+    ], Instance.ok(1)],
+    [[
+      () => Instance.err("Error"),
+      () => Instance.ok(1),
+      Instance.ok(2),
+      Promise.resolve(Instance.ok(3)),
+    ], Instance.ok(1)],
+    [[
+      Instance.err("1"),
+      Promise.resolve(Instance.err("2")),
+      () => Instance.err("3"),
+      () => Promise.resolve(Instance.err("4")),
+    ], Instance.err("4")],
+  ];
+
+  for (const [args, expected] of tests) {
+    await t.step(`Instance.orElse(${args}) => ${expected}`, async () => {
+      assertEquals(await Instance.orElse(...args), expected);
+    });
+  }
+});
+
+Deno.test("Instance.lazy", async (t) => {
+  const fn = (n: number) => n.toFixed(2);
+  const tests = [
+    [Instance.ok(1), Instance.ok("1.00")],
+    [() => Instance.ok(2), Instance.ok("2.00")],
+    [Promise.resolve(Instance.ok(3)), Instance.ok("3.00")],
+    [() => Promise.resolve(Instance.ok(4)), Instance.ok("4.00")],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Instance.lazy(${input}).map(${fn}).eval() => ${expected}`,
+      async () => {
+        assertEquals(await Instance.lazy(input).map(fn).eval(), expected);
       },
     );
   }
