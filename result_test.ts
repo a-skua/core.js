@@ -4,7 +4,7 @@ import {
   assertObjectMatch,
   assertThrows,
 } from "@std/assert";
-import { Instance, Result } from "./result.ts";
+import { Instance, type Lazy, Result } from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("Instance", async (t) => {
@@ -327,19 +327,23 @@ Deno.test("Result.orElse", async (t) => {
 });
 
 Deno.test("Result.lazy", async (t) => {
-  const fn = (n: number) => n.toFixed(2);
-  const tests = [
+  type TestLazy = Lazy<number, Error, Result<number>>;
+
+  const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
+
+  const tests: [Parameters<typeof Result.lazy>[0], Result<string>][] = [
     [Result.ok(1), Result.ok("1.00")],
     [() => Result.ok(2), Result.ok("2.00")],
     [Promise.resolve(Result.ok(3)), Result.ok("3.00")],
     [() => Promise.resolve(Result.ok(4)), Result.ok("4.00")],
-  ] as const;
+  ];
 
   for (const [input, expected] of tests) {
     await t.step(
       `Result.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
-        assertEquals(await Result.lazy(input).map(fn).eval(), expected);
+        const lazy = Result.lazy(input) as TestLazy;
+        assertEquals(await lazy.map(fn).eval(), expected);
       },
     );
   }
@@ -449,19 +453,22 @@ Deno.test("Instance.orElse", async (t) => {
 });
 
 Deno.test("Instance.lazy", async (t) => {
-  const fn = (n: number) => n.toFixed(2);
-  const tests = [
+  type TestLazy = Lazy<number, Error, Result<number>>;
+
+  const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
+  const tests: [Parameters<typeof Instance.lazy>[0], Result<string>][] = [
     [Instance.ok(1), Instance.ok("1.00")],
     [() => Instance.ok(2), Instance.ok("2.00")],
     [Promise.resolve(Instance.ok(3)), Instance.ok("3.00")],
     [() => Promise.resolve(Instance.ok(4)), Instance.ok("4.00")],
-  ] as const;
+  ];
 
   for (const [input, expected] of tests) {
     await t.step(
       `Instance.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
-        assertEquals(await Instance.lazy(input).map(fn).eval(), expected);
+        const lazy = Instance.lazy(input) as TestLazy;
+        assertEquals(await lazy.map(fn).eval(), expected);
       },
     );
   }
@@ -473,7 +480,7 @@ Deno.test("Lazy", async (t) => {
       .andThen((n) => Promise.resolve(Result.ok(n + 1)))
       .andThen((n) => Result.ok(n + 1));
 
-    const expected = Result.ok(3);
+    const expected = Result.ok(3) as Instance<number>;
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });
@@ -484,7 +491,7 @@ Deno.test("Lazy", async (t) => {
       .and(Promise.resolve(Result.ok(2)))
       .and(Result.ok(3));
 
-    const expected = Result.ok(3);
+    const expected = Result.ok(3) as Instance<number>;
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });
@@ -517,7 +524,7 @@ Deno.test("Lazy", async (t) => {
       .map((n) => n + 1)
       .map((n) => n + 1);
 
-    const expected = Result.ok(3);
+    const expected = Result.ok(3) as Instance<number>;
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });

@@ -1,12 +1,57 @@
 /**
+ * Result
+ *
  * @example
  * ```ts
- * import { type Instance, Result } from "@askua/core/result";
+ * import { Instance as Result } from "@askua/core/result";
  *
- * const n: Instance<number> = Result.ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")));
+ * const ok: Result<number> = Result.ok(1).map((n) => n + 1);
+ * console.log(ok.unwrap());
  *
- * console.log(n.map((n) => n.toFixed(2)).unwrapOr("0.00"));
+ * const err: Result<number> = Result.err<number>(new Error("error")).map((n) => n + 1);
+ * console.log(err.unwrapOr(0));
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { type Ok, type Err, Instance as Result } from "@askua/core/result";
+ *
+ * function ok<T>(value: T): Ok<T> {
+ *   return Result.ok(value);
+ * }
+ *
+ * function err<E>(error: E): Err<E> {
+ *   return Result.err(error);
+ * }
+ *
+ * console.log(ok(1));
+ * console.log(err(new Error("error")));
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { Result } from "@askua/core/result";
+ *
+ * const getNumber = (): Result<number> => ({ ok: true, value: 1 });
+ *
+ * const result = getNumber();
+ *
+ * if (result.ok) {
+ *   console.log(`ok = ${result.value}`);
+ * } else {
+ *   console.error(`error = ${result.error}`);
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { Result } from "@askua/core/result";
+ *
+ * const ok = Result({ ok: true, value: 1 }).map((n) => n + 1);
+ * console.log(ok.unwrap());
+ *
+ * const err = Result({ ok: false, error: new Error("error")}).map((n) => n + 1);
+ * console.log(err.unwrapOr(0));
  * ```
  *
  * @module
@@ -34,7 +79,7 @@ import { Option } from "./option.ts";
  * @typeParam T - value type
  * @typeParam E - error type
  */
-export interface Ok<T, _> {
+export interface Ok<T> {
   readonly ok: true;
   readonly value: T;
 }
@@ -57,7 +102,7 @@ export interface Ok<T, _> {
  * @typeParam _ - value type
  * @typeParam E - error type
  */
-export interface Err<_, E> {
+export interface Err<E> {
   readonly ok: false;
   readonly error: E;
 }
@@ -68,13 +113,13 @@ export interface Err<_, E> {
  * @example
  * ```ts
  * const ok: Result<number> = Result.ok(1);
- * const err: Result<number> = Result.err(new Error("error"));
+ * const err: Result<number> = Result.err<number>(new Error("error"));
  * ```
  *
  * @typeParam T - value type
  * @typeParam E - error type (default: Error)
  */
-export type Result<T, E = Error> = Ok<T, E> | Err<T, E>;
+export type Result<T, E = Error> = Ok<T> | Err<E>;
 
 /**
  * impl Result
@@ -118,8 +163,14 @@ export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
  *
  * @example
  * ```ts
- * const ok: Result<number> = Instance({ ok: true, value: 1 });
- * const err: Result<number> = Instance({ ok: false, error: new Error("error") });
+ * import { assertEquals } from "@std/assert";
+ * import { Instance as Result } from "@askua/core/result";
+ *
+ * const ok: Result<number> = Result({ ok: true, value: 1 });
+ * assertEquals(ok.unwrap(), 1);
+ *
+ * const err: Result<number> = Result({ ok: false, error: new Error("error") });
+ * assertEquals(err.unwrapOr(0), 0);
  * ```
  */
 export const Instance: ToInstance & Static = Result;
@@ -133,9 +184,19 @@ export const Instance: ToInstance & Static = Result;
  * const err: Result<number> = Result({ ok: false, error: new Error("error") });
  * ```
  */
-export type ToInstance = <Ok, Err>(
-  result: Result<Ok, Err>,
-) => Instance<Ok, Err>;
+export type ToInstance = <
+  T extends R extends Ok<infer T> ? T
+    : (R extends Err<infer _> ? never
+      : (R extends Result<infer T, infer _> ? T
+        : never)),
+  E extends R extends Ok<infer _> ? never
+    : (R extends Err<infer E> ? E
+      : (R extends Result<infer _, infer E> ? E
+        : never)),
+  R extends Result<unknown, unknown> = Result<T, E>,
+>(
+  result: R,
+) => Instance<T, E>;
 
 /**
  * Result Context
@@ -162,12 +223,19 @@ export interface Context<T, E>
   andThen<
     U extends Result<unknown, unknown>,
     Fn extends (value: T) => U,
-    Ok extends ReturnType<Fn> extends Result<infer Ok, infer _> ? Ok : never,
-    Err extends ReturnType<Fn> extends Result<infer _, infer Err> ? E | Err
+    T2 extends ReturnType<Fn> extends infer R ? (R extends Ok<infer T2> ? T2
+        : (R extends Err<infer _> ? never
+          : (R extends Result<infer T2, infer _> ? T2
+            : never)))
       : never,
-    Return extends ReturnType<Fn> extends Instance<infer _, infer __>
-      ? Instance<Ok, Err>
-      : Result<Ok, Err>,
+    E2 extends ReturnType<Fn> extends infer R ? (R extends Ok<infer _> ? E
+        : (R extends Err<infer E2> ? E | E2
+          : (R extends Result<infer _, infer E2> ? E | E2
+            : never)))
+      : never,
+    Return extends ReturnType<Fn> extends Instance<infer _, infer _>
+      ? Instance<T2, E2>
+      : Result<T2, E2>,
   >(fn: Fn): Return;
 
   /**
@@ -186,10 +254,16 @@ export interface Context<T, E>
    */
   and<
     R extends Result<unknown, unknown>,
-    Ok extends R extends Result<infer Ok, infer _> ? Ok : never,
-    Err extends R extends Result<infer _, infer Err> ? E | Err : never,
-    Return extends R extends Instance<infer _, infer __> ? Instance<Ok, Err>
-      : Result<Ok, Err>,
+    T2 extends R extends Ok<infer T2> ? T2
+      : (R extends Err<infer _> ? never
+        : (R extends Result<infer T2, infer _> ? T2
+          : never)),
+    E2 extends R extends Ok<infer _> ? E
+      : (R extends Err<infer E2> ? E | E2
+        : (R extends Result<infer _, infer E2> ? E | E2
+          : never)),
+    Return extends R extends Instance<infer _, infer _> ? Instance<T2, E2>
+      : Result<T2, E2>,
   >(result: R): Return;
 
   /**
@@ -213,13 +287,19 @@ export interface Context<T, E>
   orElse<
     U extends Result<unknown, unknown>,
     Fn extends (error: E) => U,
-    Ok extends ReturnType<Fn> extends Result<infer Ok, infer _> ? T | Ok
+    T2 extends ReturnType<Fn> extends infer R ? (R extends Ok<infer T2> ? T | T2
+        : (R extends Err<infer _> ? T
+          : (R extends Result<infer T2, infer _> ? T | T2
+            : never)))
       : never,
-    Err extends ReturnType<Fn> extends Result<infer _, infer Err> ? E | Err
+    E2 extends ReturnType<Fn> extends infer R ? (R extends Ok<infer _> ? E
+        : (R extends Err<infer E2> ? E | E2
+          : (R extends Result<infer _, infer E2> ? E | E2
+            : never)))
       : never,
-    Return extends ReturnType<Fn> extends Instance<infer _, infer __>
-      ? Instance<Ok, Err>
-      : Result<Ok, Err>,
+    Return extends ReturnType<Fn> extends Instance<infer _, infer _>
+      ? Instance<T2, E2>
+      : Result<T2, T2>,
   >(fn: Fn): Return;
 
   /**
@@ -239,10 +319,16 @@ export interface Context<T, E>
    */
   or<
     R extends Result<unknown, unknown>,
-    Ok extends R extends Result<infer Ok, unknown> ? T | Ok : never,
-    Err extends R extends Result<unknown, infer Err> ? E | Err : never,
-    Return extends R extends Instance<infer _, infer __> ? Instance<Ok, Err>
-      : Result<Ok, Err>,
+    T2 extends R extends Ok<infer T2> ? T | T2
+      : (R extends Err<infer _> ? T
+        : (R extends Result<infer T2, infer _> ? T | T2
+          : never)),
+    E2 extends R extends Ok<infer _> ? E
+      : (R extends Err<infer E2> ? E | E2
+        : (R extends Result<infer _, infer E2> ? E | E2
+          : never)),
+    Return extends R extends Instance<infer _, infer __> ? Instance<T2, E2>
+      : Result<T2, E2>,
   >(result: R): Return;
 
   /**
@@ -263,9 +349,9 @@ export interface Context<T, E>
   map<
     U extends unknown,
     Fn extends (value: T) => U,
-    Ok extends ReturnType<Fn>,
-    Err extends E,
-    Return extends Result<Ok, Err> = Instance<Ok, Err>,
+    T2 extends ReturnType<Fn>,
+    E2 extends E,
+    Return extends Instance<T2, E2>,
   >(fn: Fn): Return;
 
   /**
@@ -300,7 +386,7 @@ export interface Context<T, E>
    *
    * console.log(`Result: ${fn()}`);
    */
-  unwrapOr<Ok>(value: Ok): T | Ok;
+  unwrapOr<T2>(value: T2): T | T2;
 
   /**
    * unwrapOrElse
@@ -320,7 +406,7 @@ export interface Context<T, E>
    * console.log(`Result: ${fn()}`);
    * ```
    */
-  unwrapOrElse<Ok>(fn: (error: E) => Ok): T | Ok;
+  unwrapOrElse<T2>(fn: (error: E) => T2): T | T2;
 
   /**
    * toString
@@ -349,7 +435,7 @@ export interface Context<T, E>
    * assertEquals(result, Result.ok(2));
    * ```
    */
-  lazy<Eval extends Result<T, E> = Instance<T, E>>(): Lazy<T, E, Eval>;
+  lazy<Eval extends Instance<T, E>>(): Lazy<T, E, Eval>;
 }
 
 /**
@@ -380,17 +466,28 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
    */
   andThen<
     U extends Result<unknown, unknown>,
-    Fn extends (v: T) => Promise<U> | U,
-    Ok extends Awaited<ReturnType<Fn>> extends Result<infer Ok, infer _> ? Ok
+    Fn extends (value: T) => Promise<U> | U,
+    T2 extends Fn extends (() => infer R) | ((value: T) => infer R)
+      ? (Awaited<R> extends infer R ? (R extends Ok<infer T2> ? T2
+          : (R extends Err<infer _> ? never
+            : (R extends Result<infer T2, infer _> ? T2
+              : never)))
+        : never)
       : never,
-    Err extends Awaited<ReturnType<Fn>> extends Result<infer _, infer Err>
-      ? E | Err
+    E2 extends Fn extends (() => infer R) | ((value: T) => infer R)
+      ? (Awaited<R> extends infer R ? (R extends Ok<infer _> ? E
+          : (R extends Err<infer E2> ? E | E2
+            : (R extends Result<infer _, infer E2> ? E | E2
+              : never)))
+        : never)
       : never,
-    Z extends Awaited<ReturnType<Fn>> extends Instance<infer _, infer __>
-      ? (Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
-        : Result<Ok, Err>)
-      : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z>,
+    Z extends Fn extends (() => infer R) | ((value: T) => infer R)
+      ? (Awaited<R> extends Instance<infer _, infer _>
+        ? (Eval extends Instance<infer _, infer _> ? Instance<T2, E2>
+          : Result<T2, E2>)
+        : Result<T2, E2>)
+      : never,
+    Return extends Lazy<T2, E2, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -413,13 +510,21 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
   and<
     U extends Result<unknown, unknown>,
     R extends Promise<U> | U,
-    Ok extends Awaited<R> extends Result<infer Ok, infer _> ? Ok : never,
-    Err extends Awaited<R> extends Result<infer _, infer Err> ? E | Err : never,
-    Z extends Awaited<R> extends Instance<infer _, infer __>
-      ? (Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
-        : Result<Ok, Err>)
-      : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z>,
+    T2 extends Awaited<R> extends infer R ? (R extends Ok<infer T2> ? T2
+        : (R extends Err<infer _> ? never
+          : (R extends Result<infer T2, infer _> ? T2
+            : never)))
+      : never,
+    E2 extends Awaited<R> extends infer R ? (R extends Ok<infer _> ? E
+        : (R extends Err<infer E2> ? E | E2
+          : (R extends Result<infer _, infer E2> ? E | E2
+            : never)))
+      : never,
+    Z extends Awaited<R> extends Instance<infer _, infer _>
+      ? (Eval extends Instance<infer _, infer _> ? Instance<T2, E2>
+        : Result<T2, E2>)
+      : Result<T2, E2>,
+    Return extends Lazy<T2, E2, Z>,
   >(result: R): Return;
 
   /**
@@ -446,17 +551,27 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
   orElse<
     U extends Result<unknown, unknown>,
     Fn extends (error: E) => Promise<U> | U,
-    Ok extends Awaited<ReturnType<Fn>> extends Result<infer Ok, infer _>
-      ? T | Ok
+    T2 extends Fn extends (() => infer R) | ((error: E) => infer R)
+      ? (Awaited<R> extends infer R ? (R extends Ok<infer T2> ? T | T2
+          : (R extends Err<infer _> ? T
+            : (R extends Result<infer T2, infer _> ? T | T2
+              : never)))
+        : never)
       : never,
-    Err extends Awaited<ReturnType<Fn>> extends Result<infer _, infer Err>
-      ? E | Err
+    E2 extends Fn extends (() => infer R) | ((error: E) => infer R)
+      ? (Awaited<R> extends infer R ? (R extends Ok<infer _> ? E
+          : (R extends Err<infer E2> ? E | E2
+            : (R extends Result<infer _, infer E2> ? E | E2
+              : never)))
+        : never)
       : never,
-    Z extends Awaited<ReturnType<Fn>> extends Instance<infer _, infer __>
-      ? (Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
-        : Result<Ok, Err>)
-      : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z>,
+    Z extends Fn extends (() => infer R) | ((error: E) => infer R)
+      ? (Awaited<R> extends Instance<infer _, infer _>
+        ? (Eval extends Instance<infer _, infer _> ? Instance<T2, E2>
+          : Result<T2, E2>)
+        : Result<T2, E2>)
+      : never,
+    Return extends Lazy<T2, E2, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -480,13 +595,21 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
   or<
     U extends Result<unknown, unknown>,
     R extends Promise<U> | U,
-    Ok extends Awaited<R> extends Result<infer Ok, infer _> ? T | Ok : never,
-    Err extends Awaited<R> extends Result<infer _, infer Err> ? E | Err : never,
-    Z extends Awaited<R> extends Instance<infer _, infer __>
-      ? (Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
-        : Result<Ok, Err>)
-      : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z>,
+    T2 extends Awaited<R> extends infer R ? (R extends Ok<infer T2> ? T | T2
+        : (R extends Err<infer _> ? T
+          : (R extends Result<infer T2, infer _> ? T | T2
+            : never)))
+      : never,
+    E2 extends Awaited<R> extends infer R ? (R extends Ok<infer _> ? E
+        : (R extends Err<infer E2> ? E | E2
+          : (R extends Result<infer _, infer E2> ? E | E2
+            : never)))
+      : never,
+    Z extends Awaited<R> extends Instance<infer _, infer _>
+      ? (Eval extends Instance<infer _, infer _> ? Instance<T2, E2>
+        : Result<T2, E2>)
+      : Result<T2, E2>,
+    Return extends Lazy<T2, E2, Z>,
   >(result: R): Return;
 
   /**
@@ -509,11 +632,12 @@ export interface Lazy<T, E, Eval extends Result<unknown, unknown>>
   map<
     U extends unknown,
     Fn extends (value: T) => Promise<U> | U,
-    Ok extends Awaited<ReturnType<Fn>> extends infer Ok ? Ok : never,
-    Err extends E,
-    Z extends Eval extends Instance<infer _, infer __> ? Instance<Ok, Err>
-      : Result<Ok, Err>,
-    Return extends Lazy<Ok, Err, Z>,
+    T2 extends Fn extends (() => infer R) | ((value: T) => infer R) ? Awaited<R>
+      : never,
+    E2 extends E,
+    Z extends Eval extends Instance<infer _, infer _> ? Instance<T2, E2>
+      : Result<T2, E2>,
+    Return extends Lazy<T2, E2, Z>,
   >(fn: Fn): Return;
 
   /**
@@ -659,7 +783,7 @@ export interface Static {
    *   Result.err<number>(new Error("1")),
    *   () => Result.err<number>(new Error("2")),
    *   Promise.resolve(Result.err<number>(new Error("3"))),
-   *   () => Promise.resolve(Result.ok(4)),
+   *   () => Promise.resolve(Result.ok<number>(4)),
    * ).then((r) => r.map((n) => n.toFixed(2)).unwrap());
    *
    * assertEquals(result, "4.00");
@@ -720,7 +844,7 @@ export interface ToOption<T> {
 /**
  * impl Ok<T, E>
  */
-class _Ok<T, E> implements Ok<T, E>, Context<T, E> {
+class _Ok<T, E> implements Ok<T>, Context<T, E> {
   readonly ok = true;
   constructor(readonly value: T) {
   }
@@ -783,7 +907,7 @@ class _Ok<T, E> implements Ok<T, E>, Context<T, E> {
 /**
  * impl Err<T, E>
  */
-class _Err<T, E> implements Err<T, E>, Context<T, E> {
+class _Err<T, E> implements Err<E>, Context<T, E> {
   readonly ok = false;
   constructor(readonly error: E) {}
 
@@ -935,21 +1059,25 @@ class _Lazy<T, E, Eval extends Result<unknown, unknown>>
 /**
  * impl ToInstance
  */
-function toInstance<Ok, Err>(result: Result<Ok, Err>): Instance<Ok, Err> {
-  return result.ok ? Result.ok(result.value) : Result.err(result.error);
+function toInstance<R extends Result<unknown, unknown>, T, E>(
+  result: R,
+): Instance<T, E> {
+  return (result.ok
+    ? Result.ok(result.value)
+    : Result.err(result.error)) as Instance<T, E>;
 }
 
 /**
  * impl Static.ok
  */
-function ok<Ok, Err = Error>(value: Ok): Instance<Ok, Err> {
+function ok<T, E = Error>(value: T): Ok<T> & Context<T, E> {
   return new _Ok(value);
 }
 
 /**
  * impl Static.err
  */
-function err<Ok, Err = Error>(error: Err): Instance<Ok, Err> {
+function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
   return new _Err(error);
 }
 
@@ -960,19 +1088,23 @@ async function andThen<
   U extends Result<unknown, unknown>,
   F extends (() => Promise<U> | U) | Promise<U> | U,
   Fn extends F[],
-  Ok extends ({
+  T extends ({
     [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<infer Ok, infer _> ? Ok : never)
+      ? (Awaited<R> extends Ok<infer T> ? T
+        : (Awaited<R> extends Err<infer _> ? never
+          : (Awaited<R> extends Result<infer T, infer _> ? T : never)))
       : never;
   }),
-  Err extends ({
+  E extends ({
     [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<infer _, infer Err> ? Err : never)
+      ? (Awaited<R> extends Ok<infer _> ? never
+        : (Awaited<R> extends Err<infer E> ? E
+          : (Awaited<R> extends Result<infer _, infer E> ? E : never)))
       : never;
   })[number],
   Return extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer _, infer __> ? Instance<Ok, Err>
-      : Result<Ok, Err>)
+    ? (Awaited<R> extends Instance<infer _, infer _> ? Instance<T, E>
+      : Result<T, E>)
     : never,
 >(
   ...fn: Fn
@@ -999,19 +1131,25 @@ async function orElse<
   U extends Result<unknown, unknown>,
   F extends (() => Promise<U> | U) | Promise<U> | U,
   Fn extends [F, ...F[]],
-  Ok extends ({
+  T extends ({
     [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<infer Ok, infer _> ? Ok : never)
+      ? (Awaited<R> extends Ok<infer T> ? T
+        : (Awaited<R> extends Err<infer _> ? never
+          : (Awaited<R> extends Result<infer T, infer _> ? T
+            : never)))
       : never;
   })[number],
-  Err extends ({
+  E extends ({
     [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<infer _, infer Err> ? Err : never)
+      ? (Awaited<R> extends Ok<infer _> ? never
+        : (Awaited<R> extends Err<infer E> ? E
+          : (Awaited<R> extends Result<infer _, infer E> ? E
+            : never)))
       : never;
   })[number],
   Return extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer _, infer __> ? Instance<Ok, Err>
-      : (Awaited<R> extends Result<infer _, infer __> ? Result<Ok, Err>
+    ? (Awaited<R> extends Instance<infer _, infer _> ? Instance<T, E>
+      : (Awaited<R> extends Result<infer _, infer _> ? Result<T, E>
         : never))
     : never,
 >(...fn: Fn): Promise<Return> {
@@ -1035,20 +1173,24 @@ async function orElse<
 function lazy<
   U extends Result<unknown, unknown>,
   R extends (() => Promise<U> | U) | Promise<U> | U,
-  Ok extends R extends (() => infer R) | infer R
-    ? (Awaited<R> extends
-      Instance<infer Ok, infer _> | Result<infer Ok, infer _> ? Ok : never)
+  T extends R extends (() => infer R) | infer R
+    ? (Awaited<R> extends Ok<infer T> ? T
+      : (Awaited<R> extends Err<infer _> ? never
+        : (Awaited<R> extends Result<infer T, infer _> ? T
+          : never)))
     : never,
-  Err extends R extends (() => infer R) | infer R
-    ? (Awaited<R> extends
-      Instance<infer _, infer Err> | Result<infer _, infer Err> ? Err : never)
+  E extends R extends (() => infer R) | infer R
+    ? (Awaited<R> extends Ok<infer _> ? never
+      : (Awaited<R> extends Err<infer E> ? E
+        : (Awaited<R> extends Result<infer _, infer E> ? E
+          : never)))
     : never,
   Eval extends R extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer Ok, infer Err> ? Instance<Ok, Err>
-      : Result<Ok, Err>)
+    ? (Awaited<R> extends Instance<infer _, infer __> ? Instance<T, E>
+      : Result<T, E>)
     : never,
 >(
   result: R,
-): Lazy<Ok, Err, Eval> {
+): Lazy<T, E, Eval> {
   return new _Lazy(result as unknown as Eval);
 }
