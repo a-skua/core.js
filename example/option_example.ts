@@ -8,11 +8,14 @@ Option(foo());
 
 Option({ some: false })
   .map((n) => n + 1)
+  .and<Option<number>>(Option.none())
   .and(Option.none())
+  // .and({ some: false })
+  // .and({ some: true, value: 1 })
   .and(Option.some(1))
   // .and(({ some: true, value: 1 }))
   // .and(({ some: false }))
-  .andThen(() => Option.none())
+  .andThen<Option<string>>(() => Option.none())
   .andThen(() => Option.some(1))
   // .andThen(() => ({ some: true, value: 1 }))
   // .andThen(() => ({ some: false }))
@@ -20,13 +23,17 @@ Option({ some: false })
   .and(Option.some(0))
   .lazy()
   .map((n) => n + 1)
-  .and(Option.none())
-  .and(Option.some(""))
+  .and<Option<number>>(Promise.resolve(Option.none()))
+  .and(Promise.resolve(Option.some("")))
   // .and(({ some: true, value: 1 }))
   // .and(({ some: false }))
-  .andThen((s) => s.length > 0 ? Option.some(s) : Option.none<number>())
+  .andThen<Option<number | string>>((s) =>
+    s.length > 0 ? Option.some(s) : Option.none<number>()
+  )
   .andThen(() => ({ some: true, value: 1 }))
   .andThen(() => ({ some: false }))
+  .andThen(() => Promise.resolve(Option.some(1)))
+  .andThen<Option<number>>(() => Promise.resolve(Option.none()))
   .eval();
 
 Option.some(null)
@@ -40,20 +47,20 @@ Option.some(null)
   // .orElse(() => ({ some: true, value: 1 }))
   // .orElse(() => ({ some: false }))
   .orElse(() => Option.some(1))
-  .orElse(() => Option.none())
+  .orElse<Option<number>>(() => Option.none())
   .lazy()
   .eval();
 
 Option.some(null)
   .lazy()
   .or(Option.some(""))
-  .or(Option.none())
+  .or<Option<number>>(Option.none())
   .map(() => Promise.resolve(1))
   .map((n) => Promise.resolve(!!n))
   .or({ some: true, value: 1 })
   .or({ some: false })
   .orElse(() => Option.some(1))
-  .orElse(() => Option.none())
+  .orElse<Option<symbol>>(() => Option.none())
   .orElse(() => ({ some: true, value: "" }))
   .orElse(() => ({ some: false }))
   .eval();
@@ -69,6 +76,15 @@ Option.orElse(
   Option.none(),
   { some: true, value: null },
   { some: false },
+  foo,
+  foo(),
+);
+
+Option.orElse<Option<number | string>>(
+  Option.some(1),
+  Option.none(),
+  foo,
+  foo(),
 );
 
 Option.andThen(
@@ -78,6 +94,13 @@ Option.andThen(
   Option.none(),
   { some: true, value: null },
   { some: false },
+  foo,
+  foo(),
+);
+
+Option.andThen<Option<[string, number]>>(
+  Option.some(1), // FIXME is error
+  Option.none(),
 );
 
 Option.lazy(Option.some(1)).eval();
@@ -124,3 +147,6 @@ Option.lazy(Option.orElse(
   foo(),
   foo,
 )).eval();
+
+Option.lazy(Option.some(1)).eval();
+Option.lazy<Option<string>>(Option.none()).eval();

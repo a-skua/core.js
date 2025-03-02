@@ -203,16 +203,16 @@ export interface Context<T>
    * ```
    */
   andThen<
-    U extends Option<unknown>,
-    Fn extends (value: T) => U,
-    T2 extends ReturnType<Fn> extends infer O ? (O extends Some<infer T2> ? T2
+    O extends Option<T2>,
+    Fn extends (value: T) => O = (value: T) => O,
+    T2 = ReturnType<Fn> extends infer O ? (O extends Some<infer T2> ? T2
         : (O extends None ? never
           : (O extends Option<infer T2> ? T2
             : never)))
       : never,
-    Return extends ReturnType<Fn> extends Instance<infer _> ? Instance<T2>
-      : Option<T2>,
-  >(fn: Fn): Return;
+  >(
+    fn: Fn,
+  ): ReturnType<Fn> extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * and
@@ -229,14 +229,12 @@ export interface Context<T>
    * ```
    */
   and<
-    O extends Option<unknown>,
-    T2 extends O extends Some<infer T2> ? T2
+    O extends Option<T2>,
+    T2 = O extends Some<infer T2> ? T2
       : (O extends None ? never
         : (O extends Option<infer T2> ? T2
           : never)),
-    Return extends O extends Instance<infer _> ? Instance<T2>
-      : Option<T2>,
-  >(option: O): Return;
+  >(option: O): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * orElse
@@ -254,17 +252,16 @@ export interface Context<T>
    * ```
    */
   orElse<
-    U extends Option<unknown>,
-    Fn extends () => U,
-    T2 extends ReturnType<Fn> extends infer O
-      ? (O extends Some<infer T2> ? T | T2
+    O extends Option<T2>,
+    Fn extends () => O = () => O,
+    T2 = ReturnType<Fn> extends infer O ? (O extends Some<infer T2> ? T | T2
         : (O extends None ? T
           : (O extends Option<infer T2> ? T | T2
             : never)))
       : never,
-    Return extends ReturnType<Fn> extends Instance<infer _> ? Instance<T2>
-      : Option<T2>,
-  >(fn: Fn): Return;
+  >(
+    fn: Fn,
+  ): ReturnType<Fn> extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * or
@@ -282,14 +279,12 @@ export interface Context<T>
    * ```
    */
   or<
-    O extends Option<unknown>,
-    T2 extends O extends Some<infer T2> ? T | T2
+    O extends Option<T2>,
+    T2 = O extends Some<infer T2> ? T | T2
       : (O extends None ? T
         : (O extends Option<infer T2> ? T | T2
           : never)),
-    Return extends O extends Instance<infer _> ? Instance<T2>
-      : Option<T2>,
-  >(option: O): Return;
+  >(option: O): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * map
@@ -305,12 +300,7 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  map<
-    U extends unknown,
-    Fn extends (value: T) => U,
-    T2 extends ReturnType<Fn>,
-    Return extends Option<T2> = Instance<T2>,
-  >(fn: Fn): Return;
+  map<T2>(fn: (value: T) => T2): Instance<T2>;
 
   /**
    * unwrap
@@ -378,7 +368,7 @@ export interface Context<T>
    * assertEquals(option, Option.some(2));
    * ```
    */
-  lazy<Eval extends Instance<T>>(): Lazy<T, Eval>;
+  lazy(): Lazy<T, Instance<T>>;
 
   /**
    * toString
@@ -423,22 +413,22 @@ export interface Lazy<T, Eval extends Option<unknown>>
    * ```
    */
   andThen<
-    U extends Option<unknown>,
-    Fn extends (value: T) => Promise<U> | U,
-    T2 extends Fn extends (() => infer O) | ((value: T) => infer O)
+    O extends Option<T2>,
+    PO extends Promise<O> | O = Promise<O> | O,
+    Fn extends (value: T) => PO = (value: T) => PO,
+    T2 = Fn extends (() => infer O) | ((value: T) => infer O)
       ? (Awaited<O> extends infer O ? (O extends Some<infer T2> ? T2
           : (O extends None ? never
             : (O extends Option<infer T2> ? T2
               : never)))
         : never)
       : never,
-    Z extends Fn extends (() => infer O) | ((value: T) => infer O)
-      ? Awaited<O> extends Instance<infer _>
-        ? Eval extends Instance<infer _> ? Instance<T2> : Option<T2>
-      : Option<T2>
+    Z extends Option<T2> = Fn extends (() => infer O) | ((value: T) => infer O)
+      ? (Awaited<O> extends Instance<infer _>
+        ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
+        : Option<T2>)
       : never,
-    Return extends Lazy<T2, Z>,
-  >(fn: Fn): Return;
+  >(fn: Fn): Lazy<T2, Z>;
 
   /**
    * and
@@ -458,18 +448,17 @@ export interface Lazy<T, Eval extends Option<unknown>>
    * ```
    */
   and<
-    U extends Option<unknown>,
-    O extends Promise<U> | U,
-    T2 extends Awaited<O> extends infer O ? (O extends Some<infer T2> ? T2
+    O extends Option<T2>,
+    PO extends Promise<O> | O = Promise<O> | O,
+    T2 = Awaited<PO> extends infer O ? (O extends Some<infer T2> ? T2
         : (O extends None ? never
           : (O extends Option<infer T2> ? T2
             : never)))
       : never,
-    Z extends Awaited<O> extends Instance<infer _>
-      ? Eval extends Instance<infer _> ? Instance<T2> : Option<T2>
+    Z extends Option<T2> = Awaited<PO> extends Instance<infer _>
+      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
       : Option<T2>,
-    Return extends Lazy<T2, Z>,
-  >(option: O): Return;
+  >(option: PO): Lazy<T2, Z>;
 
   /**
    * orElse
@@ -490,22 +479,22 @@ export interface Lazy<T, Eval extends Option<unknown>>
    * ```
    */
   orElse<
-    U extends Option<unknown>,
-    Fn extends () => Promise<U> | U,
-    T2 extends Fn extends () => infer O
+    O extends Option<T2>,
+    PO extends Promise<O> | O = Promise<O> | O,
+    Fn extends () => PO = () => PO,
+    T2 = Fn extends () => infer O
       ? (Awaited<O> extends infer O ? (O extends Some<infer T2> ? T | T2
           : (O extends None ? T
             : (O extends Option<infer T2> ? T | T2
               : never)))
         : never)
       : never,
-    Z extends Fn extends () => infer O
+    Z extends Option<T2> = Fn extends () => infer O
       ? (Awaited<O> extends Instance<infer _>
         ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
         : Option<T2>)
       : never,
-    Return extends Lazy<T2, Z>,
-  >(fn: Fn): Return;
+  >(fn: Fn): Lazy<T2, Z>;
 
   /**
    * or
@@ -526,18 +515,17 @@ export interface Lazy<T, Eval extends Option<unknown>>
    * ```
    */
   or<
-    U extends Option<unknown>,
-    O extends Promise<U> | U,
-    T2 extends Awaited<O> extends infer O ? (O extends Some<infer T2> ? T | T2
+    O extends Option<T2>,
+    PO extends Promise<O> | O = Promise<O> | O,
+    T2 = Awaited<PO> extends infer O ? (O extends Some<infer T2> ? T | T2
         : (O extends None ? T
           : (O extends Option<infer T2> ? T | T2
             : never)))
       : never,
-    Z extends Awaited<O> extends Instance<infer _>
-      ? Eval extends Instance<infer _> ? Instance<T2> : Option<T2>
+    Z extends Option<T2> = Awaited<PO> extends Instance<infer _>
+      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
       : Option<T2>,
-    Return extends Lazy<T2, Z>,
-  >(option: O): Return;
+  >(option: PO): Lazy<T2, Z>;
 
   /**
    * map
@@ -557,14 +545,12 @@ export interface Lazy<T, Eval extends Option<unknown>>
    * ```
    */
   map<
-    U extends unknown,
-    Fn extends (value: T) => Promise<U> | U,
-    T2 extends Fn extends (() => infer O) | ((value: T) => infer O) ? Awaited<O>
+    Fn extends (value: T) => Promise<T2> | T2,
+    T2 = Fn extends (() => infer O) | ((value: T) => infer O) ? Awaited<O>
       : never,
-    Z extends Eval extends Instance<infer _> ? Instance<T2>
+    Z extends Option<T2> = Eval extends Instance<infer _> ? Instance<T2>
       : Option<T2>,
-    Return extends Lazy<T2, Z>,
-  >(fn: Fn): Return;
+  >(fn: Fn): Lazy<T2, Z>;
 
   /**
    * eval
@@ -771,9 +757,9 @@ export interface ToResult<T> {
    * assertEquals(customErr, Result.err("is none"));
    * ```
    */
-  toResult<E = Error, R extends Result<T, E> = ResultInstance<T, E>>(
+  toResult<E = Error>(
     error?: E,
-  ): R;
+  ): ResultInstance<T, E>;
 }
 
 /**
@@ -1019,10 +1005,15 @@ function none<T = never>(): None & Context<T> {
  * impl Static.andThen
  */
 async function andThen<
-  U extends Option<unknown>,
-  F extends (() => Promise<U> | U) | Promise<U> | U,
-  Fn extends F[],
-  T extends ({
+  Return extends Fn[number] extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
+      : (Awaited<O> extends Option<infer _> ? Option<T> : never))
+    : never,
+  O extends Option<T[number]> = Option<unknown>,
+  PO extends Promise<O> | O = Promise<O> | O,
+  F extends (() => PO) | PO = (() => PO) | PO,
+  Fn extends F[] = F[],
+  T extends unknown[] = ({
     [K in keyof Fn]: Fn[K] extends (() => infer O) | infer O
       ? (Awaited<O> extends Some<infer T> ? T
         : (Awaited<O> extends None ? never
@@ -1030,10 +1021,6 @@ async function andThen<
             : never)))
       : never;
   }),
-  Return extends Fn[number] extends (() => infer O) | infer O
-    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
-      : Option<T>)
-    : never,
 >(...fn: Fn): Promise<Return> {
   const somes: unknown[] = new Array(fn.length);
   for (let i = 0; i < fn.length; i++) {
@@ -1055,10 +1042,15 @@ async function andThen<
  * impl Static.orElse
  */
 async function orElse<
-  U extends Option<unknown>,
-  F extends (() => Promise<U> | U) | Promise<U> | U,
-  Fn extends [F, ...F[]],
-  T extends ({
+  Return extends Fn[number] extends (() => infer O) | infer O
+    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
+      : (Awaited<O> extends Option<infer _> ? Option<T> : never))
+    : never,
+  O extends Option<T> = Return,
+  PO extends Promise<O> | O = Promise<O> | O,
+  F extends (() => PO) | PO = (() => PO) | PO,
+  Fn extends [F, ...F[]] = [F, ...F[]],
+  T = ({
     [K in keyof Fn]: Fn[K] extends (() => infer O) | infer O
       ? (Awaited<O> extends Some<infer T> ? T
         : (Awaited<O> extends None ? never
@@ -1066,10 +1058,6 @@ async function orElse<
             : never)))
       : never;
   })[number],
-  Return extends Fn[number] extends (() => infer O) | infer O
-    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
-      : Option<T>)
-    : never,
 >(...fn: Fn): Promise<Return> {
   let last;
   for (let i = 0; i < fn.length; i++) {
@@ -1089,18 +1077,19 @@ async function orElse<
  * impl Static.lazy
  */
 function lazy<
-  U extends Option<unknown>,
-  O extends (() => Promise<U> | U) | Promise<U> | U,
-  T extends O extends (() => infer O) | infer O
+  O extends Option<T>,
+  PO extends Promise<O> | O = Promise<O> | O,
+  Fn extends (() => PO) | PO = (() => PO) | PO,
+  T = Fn extends (() => infer O) | infer O
     ? (Awaited<O> extends Some<infer T> ? T
       : (Awaited<O> extends None ? never
         : (Awaited<O> extends Option<infer T> ? T
           : never)))
     : never,
-  Eval extends O extends (() => infer O) | infer O
+  Eval extends Option<T> = Fn extends (() => infer O) | infer O
     ? (Awaited<O> extends Instance<infer T> ? Instance<T>
       : Option<T>)
     : never,
->(option: O): Lazy<T, Eval> {
+>(option: Fn): Lazy<T, Eval> {
   return new _Lazy(option as unknown as Eval);
 }

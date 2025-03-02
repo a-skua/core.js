@@ -331,12 +331,12 @@ Deno.test("Result.lazy", async (t) => {
 
   const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
 
-  const tests: [Parameters<typeof Result.lazy>[0], Result<string>][] = [
+  const tests = [
     [Result.ok(1), Result.ok("1.00")],
     [() => Result.ok(2), Result.ok("2.00")],
     [Promise.resolve(Result.ok(3)), Result.ok("3.00")],
     [() => Promise.resolve(Result.ok(4)), Result.ok("4.00")],
-  ];
+  ] as const;
 
   for (const [input, expected] of tests) {
     await t.step(
@@ -456,12 +456,12 @@ Deno.test("Instance.lazy", async (t) => {
   type TestLazy = Lazy<number, Error, Result<number>>;
 
   const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
-  const tests: [Parameters<typeof Instance.lazy>[0], Result<string>][] = [
+  const tests = [
     [Instance.ok(1), Instance.ok("1.00")],
     [() => Instance.ok(2), Instance.ok("2.00")],
     [Promise.resolve(Instance.ok(3)), Instance.ok("3.00")],
     [() => Promise.resolve(Instance.ok(4)), Instance.ok("4.00")],
-  ];
+  ] as const;
 
   for (const [input, expected] of tests) {
     await t.step(
@@ -491,7 +491,7 @@ Deno.test("Lazy", async (t) => {
       .and(Promise.resolve(Result.ok(2)))
       .and(Result.ok(3));
 
-    const expected = Result.ok(3) as Instance<number>;
+    const expected = Result.ok(3);
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });
