@@ -2,6 +2,24 @@ import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
 import { Instance, Option } from "./option.ts";
 import { Result } from "./result.ts";
 
+Deno.test("Option", async (t) => {
+  const tests = [
+    [{ some: true, value: 1 }, Option.some(1)],
+    [{ some: false }, Option.none()],
+    [
+      { some: false, value: 1 } as { some: boolean; value: number },
+      Option.none(),
+    ],
+    // [{ some: false } as { some: boolean }, Option.none()],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(`Option(${input}) => ${expected}`, () => {
+      assertEquals(Option(input), expected);
+    });
+  }
+});
+
 Deno.test("Instance", async (t) => {
   await t.step("(Instance).toString", async (t) => {
     const tests = [

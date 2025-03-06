@@ -6,7 +6,7 @@ Option(Option.some(1));
 Option<number>(Option.none());
 Option(foo());
 
-Option({ some: false })
+Option<number>({ some: false })
   .map((n) => n + 1)
   .and<Option<number>>(Option.none())
   .and(Option.none())
@@ -99,8 +99,8 @@ Option.andThen(
 );
 
 Option.andThen<Option<[string, number]>>(
-  Option.some(1), // FIXME is error
   Option.none(),
+  Option.some(1),
 );
 
 Option.lazy(Option.some(1)).eval();

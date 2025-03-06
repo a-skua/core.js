@@ -43,7 +43,7 @@ export interface Or<T, U = unknown, V = unknown> {
    * assertEquals(option, Option.some(0));
    * ```
    */
-  orElse(fn: (v: T) => U): V;
+  orElse(fn: (() => U) | ((v: T) => U)): V;
 
   /**
    * or
