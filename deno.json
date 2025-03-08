@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.1.0",
+  "version": "1.1.1-1",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
@@ -20,9 +20,24 @@
   },
   "tasks": {
     "version": "jq -r .version < deno.json",
-    "tests": "deno test && deno test --doc .",
+    "tests:doc": "deno test -q --doc .",
+    "tests": {
+      "command": "deno test -q",
+      "dependencies": ["tests:doc"]
+    },
     "bench": "deno bench | sed s:$(dirname $(pwd))::",
-    "check": "deno fmt && deno lint && deno check . && deno task tests && deno publish --dry-run"
+    "check:format": "deno fmt --check",
+    "check:lint": "deno lint",
+    "check:version": "test \"$(deno task version)\" = \"$(git tag --points-at)\"",
+    "check": {
+      "command": "deno check . && deno publish --dry-run",
+      "dependencies": [
+        "check:format",
+        "check:lint",
+        "check:version",
+        "tests"
+      ]
+    }
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"

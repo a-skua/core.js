@@ -14,7 +14,6 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      - run: echo "VERSION=$(jq -r .version < deno.json)" >> $GITHUB_ENV
-      - run: exit 1
-        if: ${{ github.ref_name != env.VERSION }}
+      - uses: denoland/setup-deno@v2
+      - run: deno task check
       - run: npx jsr publish
