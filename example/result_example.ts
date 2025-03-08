@@ -1,4 +1,8 @@
-import { Instance as Result } from "@askua/core/result";
+import { Instance as Result, type Ok } from "@askua/core/result";
+
+Result({ ok: Math.random() >= 0.5, value: 1, error: "error" });
+Result({ ok: true, value: 1 });
+Result({ ok: false, error: "error" });
 
 Result<string, Error>({ ok: true, value: "ok" });
 Result<string, string>({ ok: false, error: "error" });
@@ -16,13 +20,25 @@ Result({ ok: false, error: "error" })
   .and(Result.ok(0))
   .lazy()
   .map((n) => n + 1)
+  .map((n) => !!n)
+  .map((n) => Promise.resolve(n.toString()))
   .and<Result<number, string>>(Result.err(""))
   .and(Result.ok(""))
   .andThen<Result<string, number>>((s) =>
     s.length > 0 ? Result.ok(s) : Result.err(-1)
   )
   .andThen(() => ({ ok: true, value: 1 }))
+  .andThen(() => Promise.resolve({ ok: true, value: 1 }))
+  .andThen((_): Ok<number> => ({ ok: true, value: 1 }))
+  .andThen((_) => ({ ok: true, value: 1 }) as const)
+  .andThen((_) => ({ ok: true as const, value: 1 }))
+  .andThen((_) => ({ ok: true, value: 1 }))
+  .andThen<{ ok: true; value: 1 }>((_) =>
+    Promise.resolve({ ok: true, value: 1 })
+  )
+  .andThen((_) => Result.ok(1))
   .andThen(() => ({ ok: false, error: -1 }))
+  .andThen((_) => ({ ok: false, error: -1 }))
   .eval();
 
 Result.ok(null)
@@ -70,7 +86,7 @@ Result.andThen(
   foo(),
 );
 
-Result.andThen<Result<[number, number], Error>>(
+Result.andThen<Result<[number, number], Error | number>>(
   Result.ok(1),
   Result.err(-1),
 );

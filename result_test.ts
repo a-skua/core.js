@@ -491,7 +491,7 @@ Deno.test("Lazy", async (t) => {
       .and(Promise.resolve(Result.ok(2)))
       .and(Result.ok(3));
 
-    const expected = Result.ok(3);
+    const expected = Result.ok(3) as Instance<number>;
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });
