@@ -396,6 +396,19 @@ try {
 }
 
 {
+  const result = await resultNumber
+    .lazy()
+    .andThen((n) => ({ ok: true, value: n + 1 }))
+    .map((n) => n + 1)
+    .map((n) => Promise.resolve(n + 1))
+    .map<string>((n) => Promise.resolve(n.toFixed(2)))
+    .map(() => "1")
+    .map(() => Promise.resolve("2" as const))
+    .eval();
+  test<Result<"2", Error>>(result);
+}
+
+{
   const result = await Result.andThen(
     resultNumber,
     Promise.resolve(resultNumber),
