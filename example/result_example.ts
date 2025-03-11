@@ -1,5 +1,14 @@
 import { Instance as Result, type Ok } from "@askua/core/result";
 
+declare function bar(): Result<number>;
+
+const result = bar();
+if (result.ok) {
+  console.log(result.value);
+} else {
+  console.error(result.error);
+}
+
 Result({ ok: Math.random() >= 0.5, value: 1, error: "error" });
 Result({ ok: true, value: 1 });
 Result({ ok: false, error: "error" });

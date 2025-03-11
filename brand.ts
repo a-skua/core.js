@@ -1,4 +1,6 @@
 /**
+ * Brand type definition.
+ *
  * @example
  * ```ts
  * import { Brand } from "@askua/core/brand";
@@ -13,6 +15,8 @@
  * @module
  */
 
+declare const _Brand: unique symbol;
+
 /**
  * type Brand
  *
@@ -24,7 +28,7 @@
  */
 export type Brand<Type, ID extends string | symbol> =
   & Type
-  & { [Key in ID]: never };
+  & { [_Brand]: { [Key in ID]: never } };
 
 /**
  * value as Brand

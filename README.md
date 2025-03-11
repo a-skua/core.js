@@ -2,6 +2,8 @@
 
 My favorite types.
 
+![CI](https://github.com/a-skua/core.js/workflows/Publish/badge.svg)
+
 ## Installation
 
 ```sh
