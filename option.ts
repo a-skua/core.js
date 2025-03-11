@@ -6,81 +6,73 @@
  *
  * const some: Some<number> = { some: true, value: 1 };
  * const none: None = { some: false };
+ * ```
+ * # Usage
  *
- * const option1: Option<number> = some;
- * const option2: Option<number> = none;
+ * ```ts
+ * import type { Option } from "@askua/core/option";
+ *
+ * const option = ((): Option<number> => ({ some: true, value: 1 }))();
+ * if (option.some) {
+ *   console.log(option.value);
+ * }
  * ```
  *
- * ## Why Object base?
+ * # Why Object base?
  *
- * if you use on Server and Browser, using JSON.stringify and JSON.parse.
+ * If you use on Server and Browser, using JSON.stringify and JSON.parse.
  * So, Object base is easy to use.
  *
  * ```ts
  * import type { Some } from "@askua/core/option";
  *
- * const json = JSON.stringify({ some: true, value: 1 });
- * const some: Some<number> = JSON.parse(json);
+ * const json: string = `{"some":true,"value":1}`;
+ *
+ * const option: Option<number> = JSON.parse(json);
+ * if (option.some) {
+ *   console.log(option.value);
+ * }
  * ```
  *
- * ## Using method
+ * # Using with method
  *
  * ```ts
  * import { Option } from "@askua/core/option";
  *
- * const some = { some: true, value: 1 };
- * const option = Option(some).map((n) => n + 1);
+ * const option: Option<string> = Option.some(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ *   .map((n) => n.toFixed(2));
+ *
+ * if (option.some) {
+ *   console.log(option.value);
+ * }
  * ```
  *
  * @example
  * ```ts
  * import { Instance as Option } from "@askua/core/option";
  *
- * const n: Option<number> = Option.some(Math.random())
+ * const n: Option<string> = Option.some(Math.random())
  *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ *   .map((n) => n.toFixed(2));
  *
- * console.log(n.map((n) => n.toFixed(2)).unwrapOr("0.00"));
- * ```
- *
- * @example
- * ```ts
- * import { type Some, type None, Instance as Option } from "@askua/core/option";
- *
- * function some<T>(value: T): Some<T> {
- *   return Option.some(value);
- * }
- *
- * function none(): None {
- *   return Option.none();
- * }
- *
- * console.log(some(1));
- * console.log(none());
+ * console.log(n.unwrapOr("None!"));
  * ```
  *
  * @example
  * ```ts
  * import { Option } from "@askua/core/option";
  *
- * const getNumber = (): Option<number> => ({ some: true, value: 1 });
+ * const getNumber = () => Option.some(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none());
  *
- * const option = getNumber();
- * if (option.some) {
- *   console.log(`some = ${option.value}`);
- * } else {
- *   console.error("none");
- * }
- * ```
+ * const list = [
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ * ];
  *
- * @example
- * ```ts
- * import { Option } from "@askua/core/option";
- *
- * const some = Option({ some: true, value: 1 }).map((n) => n + 1);
- * console.log(some.unwrap());
- *
- * const none = Option<number>({ some: false }).map((n) => n + 1);
- * console.log(none.unwrapOr(0));
+ * console.log(list);
  * ```
  *
  * @module

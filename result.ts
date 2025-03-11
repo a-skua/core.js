@@ -1,57 +1,87 @@
 /**
- * Result
+ * Result is Object base type, Ok<T> and Err<E>.
+ *
+ * ```ts
+ * import type { Ok, Err, Result } from "@askua/core/result";
+ *
+ * const ok: Ok<number> = { ok: true, value: 1 };
+ * const err: Err<Error> = { ok: false, error: new Error("error") };
+ * ```
+ *
+ * # Usage
+ *
+ * ```ts
+ * import type { Result } from "@askua/core/result";
+ *
+ * const result = ((): Result<number> => ({ ok: true, value: 1 }))();
+ * if (result.ok) {
+ *   console.log(`Ok: ${result.value}`);
+ * } else {
+ *   console.error(`Err: ${result.error}`);
+ * }
+ * ```
+ *
+ * # Why Object base?
+ *
+ * If you use on Server and Browser, using JSON.stringify and JSON.parse.
+ * So, Object base is easy to use.
+ *
+ * ```ts
+ * import type { Result } from "@askua/core/result";
+ *
+ * const json: string = `{"ok":true,"value":1}`;
+ *
+ * const result: Result<number> = JSON.parse(json);
+ * if (result.ok) {
+ *   console.log(`Ok: ${result.value}`);
+ * } else {
+ *   console.error(`Err: ${result.error}`);
+ * }
+ * ```
+ *
+ * # Using with method
+ *
+ * ```ts
+ * import { Result } from "@askua/core/result";
+ *
+ * const result: Result<string> = Result.ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ *   .map((n) => n.toFixed(2));
+ *
+ * if (result.ok) {
+ *   console.log(`Ok: ${result.value}`);
+ * } else {
+ *   console.error(`Err: ${result.error}`);
+ * }
+ * ```
  *
  * @example
  * ```ts
  * import { Instance as Result } from "@askua/core/result";
  *
- * const ok: Result<number> = Result.ok(1).map((n) => n + 1);
- * console.log(ok.unwrap());
+ * const result: Result<string> = Result.ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ *   .map((n) => n.toFixed(2));
  *
- * const err: Result<number> = Result.err<number>(new Error("error")).map((n) => n + 1);
- * console.log(err.unwrapOr(0));
- * ```
- *
- * @example
- * ```ts
- * import { type Ok, type Err, Instance as Result } from "@askua/core/result";
- *
- * function ok<T>(value: T): Ok<T> {
- *   return Result.ok(value);
- * }
- *
- * function err<E>(error: E): Err<E> {
- *   return Result.err(error);
- * }
- *
- * console.log(ok(1));
- * console.log(err(new Error("error")));
+ * console.log(result.unwrapOrElse((e) => {
+ *   console.error(e.message);
+ *   return "Error!";
+ * }));
  * ```
  *
  * @example
  * ```ts
  * import { Result } from "@askua/core/result";
  *
- * const getNumber = (): Result<number> => ({ ok: true, value: 1 });
+ * const getNumber = () => Result.ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")));
  *
- * const result = getNumber();
- *
- * if (result.ok) {
- *   console.log(`ok = ${result.value}`);
- * } else {
- *   console.error(`error = ${result.error}`);
- * }
- * ```
- *
- * @example
- * ```ts
- * import { Result } from "@askua/core/result";
- *
- * const ok = Result({ ok: true, value: 1 }).map((n) => n + 1);
- * console.log(ok.unwrap());
- *
- * const err = Result({ ok: false, error: new Error("error")}).map((n) => n + 1);
- * console.log(err.unwrapOr(0));
+ * const list = [
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ *   [...getNumber().map((n) => n.toFixed(2))],
+ * ];
+ * console.log(list.flat());
  * ```
  *
  * @module
