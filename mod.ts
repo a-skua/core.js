@@ -1,5 +1,9 @@
 /**
+ * My favorite type definitions.
+ *
  * @example
+ * ## type Option
+ *
  * ```ts
  * import { Option } from "@askua/core";
  *

@@ -1,7 +1,6 @@
 /**
  * Brand type definition.
  *
- * @example
  * ```ts
  * import { Brand } from "@askua/core/brand";
  *
@@ -15,12 +14,13 @@
  * @module
  */
 
+/**
+ * Brand unique symbol
+ */
 declare const _Brand: unique symbol;
 
 /**
  * type Brand
- *
- * ### Example
  *
  * ```ts
  * type MyID = Brand<number, "MyID">;
@@ -32,8 +32,6 @@ export type Brand<Type, ID extends string | symbol> =
 
 /**
  * value as Brand
- *
- * ### Example
  *
  * ```ts
  * type MyID = Brand<number, "MyID">;

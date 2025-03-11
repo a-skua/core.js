@@ -8,7 +8,6 @@
  * const err: Err<Error> = { ok: false, error: new Error("error") };
  * ```
  *
- * @example
  * ## Usage
  *
  * ```ts
@@ -22,7 +21,6 @@
  * }
  * ```
  *
- * @example
  * ## Why Object base?
  *
  * If you use on Server and Browser, using JSON.stringify and JSON.parse.
@@ -41,7 +39,6 @@
  * }
  * ```
  *
- * @example
  * ## Using with method
  *
  * ```ts
@@ -58,7 +55,6 @@
  * }
  * ```
  *
- * @example
  * ## Using Instance type
  *
  * ```ts
@@ -74,7 +70,6 @@
  * }));
  * ```
  *
- * @example
  * ## Using Iterable type
  *
  * ```ts
@@ -91,7 +86,6 @@
  * console.log(list.flat());
  * ```
  *
- * @example
  * ## Using Lazy type
  *
  * ```ts
@@ -120,7 +114,6 @@ import type { OrPromise } from "./types.ts";
 /**
  * Result element Ok
  *
- * @example
  * ```ts
  * import { assertObjectMatch } from "@std/assert";
  *
@@ -143,7 +136,6 @@ export interface Ok<T> {
 /**
  * Result element Err
  *
- * @example
  * ```ts
  * import { assertObjectMatch } from "@std/assert";
  *
@@ -166,7 +158,6 @@ export interface Err<E> {
 /**
  * Result
  *
- * @example
  * ```ts
  * const ok: Result<number> = Result.ok(1);
  * const err: Result<number> = Result.err<number>(new Error("error"));
@@ -180,7 +171,6 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
 /**
  * impl Result
  *
- * @example
  * ```ts
  * import { assertEquals } from "@std/assert";
  *
@@ -198,7 +188,6 @@ export const Result: ToInstance & Static = Object.assign(
 /**
  * Result Instance
  *
- * @example
  * ```ts
  * import { assertEquals } from "@std/assert";
  *
@@ -217,7 +206,6 @@ export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
 /**
  * impl Instance
  *
- * @example
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { Instance as Result } from "@askua/core/result";
@@ -234,7 +222,6 @@ export const Instance: ToInstance & Static = Result;
 /**
  * Result ToInstance
  *
- * @example
  * ```ts
  * const ok: Result<number> = Result({ ok: true, value: 1 });
  * const err: Result<number> = Result({ ok: false, error: new Error("error") });
@@ -273,9 +260,6 @@ type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
 export interface Context<T, E>
   extends Iterable<T>, ToOption<T>, c.And<T>, c.Or<E>, c.Map<T>, c.Unwrap<T> {
   /**
-   * andThen
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).andThen");
    *
@@ -291,9 +275,6 @@ export interface Context<T, E>
   ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
 
   /**
-   * and
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).and");
    *
@@ -309,9 +290,6 @@ export interface Context<T, E>
   ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
 
   /**
-   * orElse
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).orElse");
    *
@@ -331,9 +309,6 @@ export interface Context<T, E>
   ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
 
   /**
-   * or
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).or");
    *
@@ -350,9 +325,6 @@ export interface Context<T, E>
   ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
 
   /**
-   * map
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).map");
    *
@@ -367,9 +339,6 @@ export interface Context<T, E>
   map<T2>(fn: (value: T) => T2): Instance<T2, E>;
 
   /**
-   * unwrap
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).unwrap");
    *
@@ -385,9 +354,6 @@ export interface Context<T, E>
   unwrap(): T;
 
   /**
-   * unwrapOr
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).unwrapOr");
    *
@@ -401,9 +367,6 @@ export interface Context<T, E>
   unwrapOr<T2>(value: T2): T | T2;
 
   /**
-   * unwrapOrElse
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Result).unwrapOrElse");
    *
@@ -421,9 +384,6 @@ export interface Context<T, E>
   unwrapOrElse<T2>(fn: (error: E) => T2): T | T2;
 
   /**
-   * toString
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -437,9 +397,6 @@ export interface Context<T, E>
   toString(): string;
 
   /**
-   * lazy
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -469,9 +426,6 @@ type LazyEval<
 export interface Lazy<T, E, Eval extends Result<T, E>>
   extends c.And<T>, c.Or<E>, c.Map<T> {
   /**
-   * andThen
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).andThen");
    *
@@ -493,9 +447,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   >(fn: (value: T) => OrPromise<R>): Lazy<T2, E2, Z>;
 
   /**
-   * and
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).and");
    *
@@ -517,9 +468,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   >(result: OrPromise<R>): Lazy<T2, E2, Z>;
 
   /**
-   * orElse
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).orElse");
    *
@@ -545,9 +493,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   >(fn: (error: E) => OrPromise<R>): Lazy<T2, E2, Z>;
 
   /**
-   * or
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).or");
    *
@@ -570,9 +515,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   >(result: OrPromise<R>): Lazy<T2, E2, Z>;
 
   /**
-   * map
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).map");
    *
@@ -592,9 +534,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   >(fn: (value: T) => OrPromise<T2>): Lazy<T2, E, Z>;
 
   /**
-   * eval
-   *
-   * @example
    * ```ts
    * console.log("[Example] (Lazy).eval");
    *
@@ -606,9 +545,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
   eval(): Promise<Eval>;
 
   /**
-   * toString
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -631,9 +567,6 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
  */
 export interface Static {
   /**
-   * Create a Result instance
-   *
-   * @example
    * ```ts
    * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
@@ -651,9 +584,6 @@ export interface Static {
   ok: typeof ok;
 
   /**
-   * Create a Result instance
-   *
-   * @example
    * ```ts
    * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
@@ -671,9 +601,6 @@ export interface Static {
   err: typeof err;
 
   /**
-   * andThen
-   *
-   * @example
    * ```ts
    * console.log("[Example] Result.andThen");
    *
@@ -690,7 +617,6 @@ export interface Static {
    * console.log(`Result: ${await fn()}`);
    * ```
    *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -707,9 +633,6 @@ export interface Static {
   andThen: typeof andThen;
 
   /**
-   * orElse
-   *
-   * @example
    * ```ts
    * console.log("[Example] Result.orElse");
    *
@@ -726,7 +649,6 @@ export interface Static {
    * console.log(`Result: ${await fn()}`);
    * ```
    *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -743,9 +665,6 @@ export interface Static {
   orElse: typeof orElse;
 
   /**
-   * lazy
-   *
-   * @example
    * ```ts
    * console.log("[Example] Result.lazy");
    *
@@ -775,9 +694,6 @@ export interface Static {
  */
 export interface ToOption<T> {
   /**
-   * toOption
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";

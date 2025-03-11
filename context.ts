@@ -1,9 +1,8 @@
-/** And */
+/**
+ * And
+ */
 export interface And<T, U = unknown> {
   /**
-   * andThen
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -15,9 +14,6 @@ export interface And<T, U = unknown> {
   andThen(fn: (v: T) => U): U;
 
   /**
-   * and
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -29,12 +25,11 @@ export interface And<T, U = unknown> {
   and(value: U): U;
 }
 
-/** Or */
+/**
+ * Or
+ */
 export interface Or<T, U = unknown, V = unknown> {
   /**
-   * orElse
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -46,9 +41,6 @@ export interface Or<T, U = unknown, V = unknown> {
   orElse(fn: (() => U) | ((v: T) => U)): V;
 
   /**
-   * or
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -60,12 +52,11 @@ export interface Or<T, U = unknown, V = unknown> {
   or(v: U): V;
 }
 
-/** Map */
+/**
+ * Map
+ */
 export interface Map<T, U = unknown, V = unknown> {
   /**
-   * map
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -77,12 +68,11 @@ export interface Map<T, U = unknown, V = unknown> {
   map(fn: (value: T) => U): V;
 }
 
-/** Unwrap */
+/**
+ * Unwrap
+ */
 export interface Unwrap<T> {
   /**
-   * unwrap
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -94,9 +84,6 @@ export interface Unwrap<T> {
   unwrap(): T;
 
   /**
-   * unwrapOr
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
@@ -108,9 +95,6 @@ export interface Unwrap<T> {
   unwrapOr<U>(defaultValue: U): T | U;
 
   /**
-   * unwrapOrElse
-   *
-   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
