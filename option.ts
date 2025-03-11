@@ -197,6 +197,15 @@ export type ToInstance = {
   <T>(option: Option<T>): Instance<T>;
 };
 
+type NextT<O extends Option<unknown>, T> = O extends Some<infer T2> ? T | T2
+  : (O extends None ? T
+    : (O extends Option<infer T2> ? T | T2
+      : unknown));
+
+type AndT<O extends Option<unknown>> = NextT<O, never>;
+
+type OrT<O extends Option<unknown>, T> = NextT<O, T>;
+
 /**
  * Option Context
  *
@@ -224,13 +233,7 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  andThen<
-    O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T2
-      : (O extends None ? never
-        : (O extends Option<infer T2> ? T2
-          : unknown)),
-  >(
+  andThen<O extends Option<T2>, T2 = AndT<O>>(
     fn: (value: T) => O,
   ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
@@ -248,13 +251,9 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  and<
-    O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T2
-      : (O extends None ? never
-        : (O extends Option<infer T2> ? T2
-          : unknown)),
-  >(option: O): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  and<O extends Option<T2>, T2 = AndT<O>>(
+    option: O,
+  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * orElse
@@ -271,13 +270,9 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  orElse<
-    O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T | T2
-      : (O extends None ? T
-        : (O extends Option<infer T2> ? T | T2
-          : unknown)),
-  >(fn: () => O): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  orElse<O extends Option<T2>, T2 = OrT<O, T>>(
+    fn: () => O,
+  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * or
@@ -294,13 +289,9 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  or<
-    O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T | T2
-      : (O extends None ? T
-        : (O extends Option<infer T2> ? T | T2
-          : unknown)),
-  >(option: O): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  or<O extends Option<T2>, T2 = OrT<O, T>>(
+    option: O,
+  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
 
   /**
    * map
@@ -403,6 +394,10 @@ export interface Context<T>
   toString(): string;
 }
 
+type LazyEval<T, O extends Option<T>, Eval extends Option<unknown>> = O extends
+  Instance<unknown> ? (Eval extends Instance<unknown> ? Instance<T> : Option<T>)
+  : O;
+
 /**
  * Option Lazy eval
  *
@@ -430,13 +425,8 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   andThen<
     O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T2
-      : (O extends None ? never
-        : (O extends Option<infer T2> ? T2
-          : unknown)),
-    Z extends Option<T2> = O extends Instance<infer _>
-      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
-      : Option<T2>,
+    T2 = AndT<O>,
+    Z extends Option<T2> = LazyEval<T2, O, Eval>,
   >(fn: (value: T) => OrPromise<O>): Lazy<T2, Z>;
 
   /**
@@ -458,13 +448,8 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   and<
     O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T2
-      : (O extends None ? never
-        : (O extends Option<infer T2> ? T2
-          : unknown)),
-    Z extends Option<T2> = O extends Instance<infer _>
-      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
-      : Option<T2>,
+    T2 = AndT<O>,
+    Z extends Option<T2> = LazyEval<T2, O, Eval>,
   >(option: OrPromise<O>): Lazy<T2, Z>;
 
   /**
@@ -487,13 +472,8 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   orElse<
     O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T | T2
-      : (O extends None ? T
-        : (O extends Option<infer T2> ? T | T2
-          : unknown)),
-    Z extends Option<T2> = O extends Instance<infer _>
-      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
-      : Option<T2>,
+    T2 = OrT<O, T>,
+    Z extends Option<T2> = LazyEval<T2, O, Eval>,
   >(fn: () => OrPromise<O>): Lazy<T2, Z>;
 
   /**
@@ -516,13 +496,8 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   or<
     O extends Option<T2>,
-    T2 = O extends Some<infer T2> ? T | T2
-      : (O extends None ? T
-        : (O extends Option<infer T2> ? T | T2
-          : unknown)),
-    Z extends Option<T2> = O extends Instance<infer _>
-      ? (Eval extends Instance<infer _> ? Instance<T2> : Option<T2>)
-      : Option<T2>,
+    T2 = OrT<O, T>,
+    Z extends Option<T2> = LazyEval<T2, O, Eval>,
   >(option: OrPromise<O>): Lazy<T2, Z>;
 
   /**
@@ -544,8 +519,7 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   map<
     T2,
-    Z extends Option<T2> = Eval extends Instance<infer _> ? Instance<T2>
-      : Option<T2>,
+    Z extends Option<T2> = LazyEval<T2, Instance<T2>, Eval>,
   >(fn: (value: T) => OrPromise<T2>): Lazy<T2, Z>;
 
   /**
@@ -1021,9 +995,7 @@ async function andThen<
       : never),
   T extends unknown[] = {
     [K in keyof Fn]: Fn[K] extends infer O | (() => infer O)
-      ? (Awaited<O> extends Some<infer T> ? T
-        : (Awaited<O> extends None ? never
-          : (Awaited<O> extends Option<infer T> ? T : unknown)))
+      ? (O extends Option<unknown> ? AndT<O> : never)
       : never;
   },
 >(...fn: Fn): Promise<O> {
@@ -1058,9 +1030,7 @@ async function orElse<
   Fn extends [F, ...F[]] = [F, ...F[]],
   T = {
     [K in keyof Fn]: Fn[K] extends (() => infer O) | infer O
-      ? (Awaited<O> extends Some<infer T> ? T
-        : (Awaited<O> extends None ? never
-          : (Awaited<O> extends Option<infer T> ? T : unknown)))
+      ? (Awaited<O> extends Option<unknown> ? OrT<Awaited<O>, never> : never)
       : never;
   }[number],
 >(...fn: Fn): Promise<O> {
@@ -1089,10 +1059,7 @@ function lazy<
       | (() => OrPromise<O>),
   Eval extends Option<T> = Fn extends (() => infer O) | infer O ? Awaited<O>
     : never,
-  T = Eval extends Some<infer T> ? T
-    : (Eval extends None ? never
-      : (Eval extends Option<infer T> ? T
-        : unknown)),
+  T = NextT<Eval, never>,
 >(option: Fn): Lazy<T, Eval> {
   return new _Lazy(option);
 }
