@@ -8,7 +8,8 @@
  * const err: Err<Error> = { ok: false, error: new Error("error") };
  * ```
  *
- * # Usage
+ * @example
+ * ## Usage
  *
  * ```ts
  * import type { Result } from "@askua/core/result";
@@ -21,7 +22,8 @@
  * }
  * ```
  *
- * # Why Object base?
+ * @example
+ * ## Why Object base?
  *
  * If you use on Server and Browser, using JSON.stringify and JSON.parse.
  * So, Object base is easy to use.
@@ -39,7 +41,8 @@
  * }
  * ```
  *
- * # Using with method
+ * @example
+ * ## Using with method
  *
  * ```ts
  * import { Result } from "@askua/core/result";
@@ -56,6 +59,8 @@
  * ```
  *
  * @example
+ * ## Using Instance type
+ *
  * ```ts
  * import { Instance as Result } from "@askua/core/result";
  *
@@ -70,6 +75,8 @@
  * ```
  *
  * @example
+ * ## Using Iterable type
+ *
  * ```ts
  * import { Result } from "@askua/core/result";
  *
@@ -82,6 +89,25 @@
  *   [...getNumber().map((n) => n.toFixed(2))],
  * ];
  * console.log(list.flat());
+ * ```
+ *
+ * @example
+ * ## Using Lazy type
+ *
+ * ```ts
+ * import { Result } from "@askua/core/result";
+ *
+ * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+ *
+ * const result = await Result.lazy(getNumber())
+ *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ *   .map((n) => n.toFixed(2))
+ *   .eval();
+ *
+ * console.log(result.unwrapOrElse((e) => {
+ *   console.error(e.message);
+ *   return "Error!";
+ * }));
  * ```
  *
  * @module

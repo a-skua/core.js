@@ -7,7 +7,8 @@
  * const some: Some<number> = { some: true, value: 1 };
  * const none: None = { some: false };
  * ```
- * # Usage
+ * @example
+ * ## Usage
  *
  * ```ts
  * import type { Option } from "@askua/core/option";
@@ -18,7 +19,8 @@
  * }
  * ```
  *
- * # Why Object base?
+ * @example
+ * ## Why Object base?
  *
  * If you use on Server and Browser, using JSON.stringify and JSON.parse.
  * So, Object base is easy to use.
@@ -34,7 +36,8 @@
  * }
  * ```
  *
- * # Using with method
+ * @example
+ * ## Using with method
  *
  * ```ts
  * import { Option } from "@askua/core/option";
@@ -49,6 +52,8 @@
  * ```
  *
  * @example
+ * ## Using Instance type
+ *
  * ```ts
  * import { Instance as Option } from "@askua/core/option";
  *
@@ -60,6 +65,8 @@
  * ```
  *
  * @example
+ * ## Using Iterable type
+ *
  * ```ts
  * import { Option } from "@askua/core/option";
  *
@@ -73,6 +80,22 @@
  * ];
  *
  * console.log(list);
+ * ```
+ *
+ * @example
+ * ## Using Lazy type
+ *
+ * ```ts
+ * import { Option } from "@askua/core/option";
+ *
+ * const getNumber = () => Promise.resolve(Option.some(Math.random()));
+ *
+ * const option = await Option.lazy(getNumber())
+ *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ *   .map((n) => n.toFixed(2))
+ *   .eval();
+ *
+ * console.log(option.unwrapOr("None!"));
  * ```
  *
  * @module

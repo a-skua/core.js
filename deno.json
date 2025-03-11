@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.1.1",
+  "version": "1.1.2-1",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
@@ -11,11 +11,13 @@
   "publish": {
     "exclude": [
       ".github",
+      ".gitignore",
       "*_example.ts",
       "example/*",
       "bench/*",
       "*_bench.ts",
-      "*_test.ts"
+      "*_test.ts",
+      "docs/*"
     ]
   },
   "tasks": {
@@ -25,6 +27,7 @@
       "command": "deno test -q",
       "dependencies": ["tests:doc"]
     },
+    "docs": "deno doc --output=docs --html brand.ts option.ts result.ts",
     "bench": "deno bench | sed s:$(dirname $(pwd))::",
     "check:format": "deno fmt --check",
     "check:lint": "deno lint",
