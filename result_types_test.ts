@@ -1,9 +1,9 @@
 import { test } from "./types_test.ts";
-import { type Err, type Instance, type Ok, Result } from "./result.ts";
+import { type Err, type Ok, Result, type ResultInstance } from "./result.ts";
 
-const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
-  n > 0.5 ? Result.ok(n) : Result.err(new Error("n is too small"))
-);
+const resultNumber: ResultInstance<number> = Result.ok(Math.random()).andThen((
+  n,
+) => n > 0.5 ? Result.ok(n) : Result.err(new Error("n is too small")));
 
 {
   const result = { ok: true as const, value: 1 };
@@ -25,42 +25,42 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = Result({ ok: true, value: 1 });
   test<Ok<number>>(result);
-  test<Instance<number, never>>(result);
+  test<ResultInstance<number, never>>(result);
 }
 
 {
   const result = Result<number, string>({ ok: true, value: 1 });
   test<Ok<number>>(result);
-  test<Instance<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
   const result = Result({ ok: false, error: "error" });
   test<Err<string>>(result);
-  test<Instance<never, string>>(result);
+  test<ResultInstance<never, string>>(result);
 }
 
 {
   const result = Result<number, string>({ ok: false, error: "error" });
   test<Err<string>>(result);
-  test<Instance<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
   const result = Result({ ok: Math.random() >= 0.5, value: 1, error: "error" });
-  test<Instance<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
   const result = Result.ok(1);
   test<Ok<number>>(result);
-  test<Instance<number, never>>(result);
+  test<ResultInstance<number, never>>(result);
 }
 
 {
   const result = Result.err("error");
   test<Err<string>>(result);
-  test<Instance<never, string>>(result);
+  test<ResultInstance<never, string>>(result);
 }
 
 {
@@ -99,25 +99,25 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = resultNumber
     .andThen(() => Result.ok(1));
-  test<Instance<number>>(result);
+  test<ResultInstance<number>>(result);
 }
 
 {
   const result = resultNumber
     .andThen(() => Result.err("error"));
-  test<Instance<never, string | Error>>(result);
+  test<ResultInstance<never, string | Error>>(result);
 }
 
 {
   const result = resultNumber
     .andThen((n) => Result.ok(n + 1));
-  test<Instance<number>>(result);
+  test<ResultInstance<number>>(result);
 }
 
 {
   const result = resultNumber
     .andThen((n) => Result.err(n));
-  test<Instance<never, number | Error>>(result);
+  test<ResultInstance<never, number | Error>>(result);
 }
 
 {
@@ -128,13 +128,13 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = resultNumber
     .and(Result.ok(1));
-  test<Instance<number>>(result);
+  test<ResultInstance<number>>(result);
 }
 
 {
   const result = resultNumber
     .and(Result.err("error"));
-  test<Instance<never, string | Error>>(result);
+  test<ResultInstance<never, string | Error>>(result);
 }
 
 {
@@ -170,7 +170,7 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = resultNumber
     .orElse(() => Result.ok("ok"));
-  test<Instance<number | string>>(result);
+  test<ResultInstance<number | string>>(result);
 }
 
 {
@@ -200,13 +200,13 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = resultNumber
     .orElse((e) => Result.ok(e.message));
-  test<Instance<number | string>>(result);
+  test<ResultInstance<number | string>>(result);
 }
 
 {
   const result = resultNumber
     .orElse((e) => Result.err(e.message));
-  test<Instance<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
@@ -230,37 +230,37 @@ const resultNumber: Instance<number> = Result.ok(Math.random()).andThen((n) =>
 {
   const result = resultNumber
     .or(Result.ok("ok"));
-  test<Instance<number | string>>(result);
+  test<ResultInstance<number | string>>(result);
 }
 
 {
   const result = resultNumber
     .or(Result.err("error"));
-  test<Instance<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
   const result = resultNumber
     .map(() => "ok");
-  test<Instance<string>>(result);
+  test<ResultInstance<string>>(result);
 }
 
 {
   const result = resultNumber
     .map<string>(() => "ok");
-  test<Instance<string>>(result);
+  test<ResultInstance<string>>(result);
 }
 
 {
   const result = resultNumber
     .map((n) => n.toFixed(2));
-  test<Instance<string>>(result);
+  test<ResultInstance<string>>(result);
 }
 
 {
   const result = resultNumber
     .map<string>((n) => n.toFixed(2));
-  test<Instance<string>>(result);
+  test<ResultInstance<string>>(result);
 }
 
 try {
@@ -322,7 +322,7 @@ try {
     .lazy()
     .and({ ok: true, value: "1" as const })
     .and(Promise.resolve({ ok: true, value: "2" as const }))
-    .and<Instance<"3">>(Result.ok("3"))
+    .and<ResultInstance<"3">>(Result.ok("3"))
     .and(Promise.resolve(Result.ok("4" as const)))
     .eval();
   test<Result<"4">>(result);
@@ -392,7 +392,7 @@ try {
     .map(() => "1")
     .map(() => Promise.resolve("2" as const))
     .eval();
-  test<Instance<"2", Error>>(result);
+  test<ResultInstance<"2", Error>>(result);
 }
 
 {
@@ -415,7 +415,7 @@ try {
     () => resultNumber,
     () => Promise.resolve(resultNumber),
   );
-  test<Instance<[number, number, number, number]>>(result);
+  test<ResultInstance<[number, number, number, number]>>(result);
 }
 
 {
@@ -437,16 +437,16 @@ try {
 }
 
 {
-  const result = await Result.andThen<Instance<[number, never], string>>(
+  const result = await Result.andThen<ResultInstance<[number, never], string>>(
     () => Promise.resolve(Result.ok(Math.random())),
     () => Promise.resolve(Result.err("error")),
   );
-  test<Instance<[number, number], string>>(result);
+  test<ResultInstance<[number, number], string>>(result);
 }
 
 {
   const result = await Result.orElse<
-    Instance<number | "1" | "2" | "3" | "4", Error | "error">
+    ResultInstance<number | "1" | "2" | "3" | "4", Error | "error">
   >(
     resultNumber,
     Promise.resolve(resultNumber),
@@ -458,12 +458,12 @@ try {
     () => Promise.resolve(Result.ok("4")),
     () => Result.err("error"),
   );
-  test<Instance<number | string, Error | string>>(result);
+  test<ResultInstance<number | string, Error | string>>(result);
 }
 
 {
   const result = await Result.lazy(resultNumber).eval();
-  test<Instance<number>>(result);
+  test<ResultInstance<number>>(result);
 }
 
 {
@@ -472,7 +472,7 @@ try {
     resultNumber,
     resultNumber,
   )).eval();
-  test<Instance<[number, number, number]>>(result);
+  test<ResultInstance<[number, number, number]>>(result);
 }
 
 {

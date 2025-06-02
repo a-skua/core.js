@@ -48,10 +48,10 @@
  * }
  * ```
  *
- * ## Using Instance type
+ * ## Using OptionInstance type
  *
  * ```ts
- * import { Instance as Option } from "@askua/core/option";
+ * import { OptionInstance as Option } from "@askua/core/option";
  *
  * const n: Option<string> = Option.some(Math.random())
  *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
@@ -96,7 +96,7 @@
  */
 
 import type * as c from "./context.ts";
-import { Instance as Result } from "./result.ts";
+import { ResultInstance as Result } from "./result.ts";
 import type { OrPromise } from "./types.ts";
 
 /**
@@ -167,7 +167,7 @@ export const Option: ToInstance & Static = Object.assign(
 );
 
 /**
- * Option Instance
+ * Option OptionInstance
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -181,17 +181,19 @@ export const Option: ToInstance & Static = Object.assign(
  *
  * @typeParam T - value type
  */
-export type Instance<T> = Option<T> & Context<T>;
+export type OptionInstance<T> = Option<T> & Context<T>;
+export type Instance<T> = OptionInstance<T>;
 
 /**
- * impl Instance
+ * impl OptionInstance
  *
  * ```ts
- * const some: Option<number> = Instance({ some: true, value: 1 });
- * const none: Option<number> = Instance({ some: false });
+ * const some: Option<number> = OptionInstance({ some: true, value: 1 });
+ * const none: Option<number> = OptionInstance({ some: false });
  * ```
  */
-export const Instance: ToInstance & Static = Option;
+export const OptionInstance: ToInstance & Static = Option;
+export const Instance = OptionInstance;
 
 /**
  * Option ToInstance
@@ -204,7 +206,7 @@ export const Instance: ToInstance & Static = Option;
 export type ToInstance = {
   <T>(option: Some<T>): Some<T> & Context<T>;
   <T>(option: None): None & Context<T>;
-  <T>(option: Option<T>): Instance<T>;
+  <T>(option: Option<T>): OptionInstance<T>;
 };
 
 type NextT<O extends Option<unknown>, T> = O extends Some<infer T2> ? T | T2
@@ -242,7 +244,7 @@ export interface Context<T>
    */
   andThen<O extends Option<T2>, T2 = AndT<O>>(
     fn: (value: T) => O,
-  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
    * ```ts
@@ -257,7 +259,7 @@ export interface Context<T>
    */
   and<O extends Option<T2>, T2 = AndT<O>>(
     option: O,
-  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
    * ```ts
@@ -273,7 +275,7 @@ export interface Context<T>
    */
   orElse<O extends Option<T2>, T2 = OrT<O, T>>(
     fn: () => O,
-  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
    * ```ts
@@ -289,7 +291,7 @@ export interface Context<T>
    */
   or<O extends Option<T2>, T2 = OrT<O, T>>(
     option: O,
-  ): O extends Instance<infer _> ? Instance<T2> : Option<T2>;
+  ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
    * ```ts
@@ -302,7 +304,7 @@ export interface Context<T>
    * console.log(`Option: ${fn()}`);
    * ```
    */
-  map<T2>(fn: (value: T) => T2): Instance<T2>;
+  map<T2>(fn: (value: T) => T2): OptionInstance<T2>;
 
   /**
    * ```ts
@@ -358,7 +360,7 @@ export interface Context<T>
    * assertEquals(option, Option.some(2));
    * ```
    */
-  lazy(): Lazy<T, Instance<T>>;
+  lazy(): Lazy<T, OptionInstance<T>>;
 
   /**
    * ```ts
@@ -375,7 +377,8 @@ export interface Context<T>
 }
 
 type LazyEval<T, O extends Option<T>, Eval extends Option<unknown>> = O extends
-  Instance<unknown> ? (Eval extends Instance<unknown> ? Instance<T> : Option<T>)
+  OptionInstance<unknown>
+  ? (Eval extends OptionInstance<unknown> ? OptionInstance<T> : Option<T>)
   : O;
 
 /**
@@ -484,7 +487,7 @@ export interface Lazy<T, Eval extends Option<T>>
    */
   map<
     T2,
-    Z extends Option<T2> = LazyEval<T2, Instance<T2>, Eval>,
+    Z extends Option<T2> = LazyEval<T2, OptionInstance<T2>, Eval>,
   >(fn: (value: T) => OrPromise<T2>): Lazy<T2, Z>;
 
   /**
@@ -889,8 +892,8 @@ class _Lazy<T, Eval extends Option<T>> implements Lazy<T, Eval> {
  */
 function toInstance<T>(option: Some<T>): Some<T> & Context<T>;
 function toInstance<T>(option: None): None & Context<T>;
-function toInstance<T>(option: Option<T>): Instance<T>;
-function toInstance<T>(option: Option<T>): Instance<T> {
+function toInstance<T>(option: Option<T>): OptionInstance<T>;
+function toInstance<T>(option: Option<T>): OptionInstance<T> {
   return (option.some ? Option.some(option.value) : Option.none());
 }
 
@@ -913,17 +916,17 @@ function none<T = never>(): None & Context<T> {
  */
 async function andThen<
   O extends Fn[number] extends (() => infer O) | infer O
-    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
+    ? (Awaited<O> extends OptionInstance<infer _> ? OptionInstance<T>
       : (Awaited<O> extends Option<infer _> ? Option<T> : unknown))
     : never,
   Fn extends {
     [K in keyof T]:
       | OrPromise<Option<T[K]>>
       | (() => OrPromise<Option<T[K]>>);
-  }[number][] = O extends Instance<infer T extends unknown[]> ? {
+  }[number][] = O extends OptionInstance<infer T extends unknown[]> ? {
       [K in keyof T]:
-        | OrPromise<Instance<T[K]>>
-        | (() => OrPromise<Instance<T[K]>>);
+        | OrPromise<OptionInstance<T[K]>>
+        | (() => OrPromise<OptionInstance<T[K]>>);
     }
     : (O extends Option<infer T extends unknown[]> ? {
         [K in keyof T]:
@@ -957,7 +960,7 @@ async function andThen<
  */
 async function orElse<
   O extends Fn[number] extends (() => infer O) | infer O
-    ? (Awaited<O> extends Instance<infer _> ? Instance<T>
+    ? (Awaited<O> extends OptionInstance<infer _> ? OptionInstance<T>
       : (Awaited<O> extends Option<infer _> ? Option<T> : never))
     : never,
   F extends

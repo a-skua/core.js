@@ -1,8 +1,8 @@
 import { test } from "./types_test.ts";
-import { type Instance, type None, Option, type Some } from "./option.ts";
+import { type None, Option, type OptionInstance, type Some } from "./option.ts";
 
-const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
-  n > 0.5 ? Option.some(n) : Option.none()
+const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
+  (n) => n > 0.5 ? Option.some(n) : Option.none(),
 );
 
 {
@@ -24,95 +24,101 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 {
   const some = Option({ some: true, value: 1 });
   test<Some<number>>(some);
-  test<Instance<number>>(some);
+  test<OptionInstance<number>>(some);
 }
 
 {
   const none = Option({ some: false });
   test<None>(none);
-  test<Instance<unknown>>(none);
+  test<OptionInstance<unknown>>(none);
 }
 
 {
   const option = Option({ some: Math.random() >= 0.5, value: 1 });
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
   const some = Option<number>({ some: true, value: 1 });
   test<Some<number>>(some);
-  test<Instance<number>>(some);
+  test<OptionInstance<number>>(some);
 }
 
 {
   const none = Option<number>({ some: false });
   test<None>(none);
-  test<Instance<number>>(none);
+  test<OptionInstance<number>>(none);
 }
 
 {
   const option = Option<number>({ some: Math.random() >= 0.5, value: 1 });
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
   const some = Option.some(1);
   test<Some<number>>(some);
-  test<Instance<number>>(some);
+  test<OptionInstance<number>>(some);
 }
 
 {
   const none = Option.none();
   test<None>(none);
-  test<Instance<number>>(none);
+  test<OptionInstance<number>>(none);
 }
 
 {
   const option = optionNumber.andThen(() => Option.some("2"));
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
   const option = optionNumber.andThen((n) => Option.some(n.toString()));
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen((): Instance<string> => Option.some("2"));
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen((): OptionInstance<string> =>
+    Option.some("2")
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen((n): Instance<string> =>
+  const option = optionNumber.andThen((n): OptionInstance<string> =>
     Option.some(n.toString())
   );
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>(() => Option.some("2"));
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen<OptionInstance<string>>(() =>
+    Option.some("2")
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((n) =>
+  const option = optionNumber.andThen<OptionInstance<string>>((n) =>
     Option.some(n.toString())
   );
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((): Instance<
-    string
-  > => Option.some("2"));
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen<OptionInstance<string>>(
+    (): OptionInstance<
+      string
+    > => Option.some("2"),
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((
+  const option = optionNumber.andThen<OptionInstance<string>>((
     n,
-  ): Instance<string> => Option.some(n.toString()));
-  test<Instance<string>>(option);
+  ): OptionInstance<string> => Option.some(n.toString()));
+  test<OptionInstance<string>>(option);
 }
 
 {
@@ -177,46 +183,56 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 
 {
   const option = optionNumber.andThen(() => Option.none());
-  test<Instance<never>>(option);
+  test<OptionInstance<never>>(option);
 }
 
 {
   const option = optionNumber.andThen((_) => Option.none());
-  test<Instance<never>>(option);
+  test<OptionInstance<never>>(option);
 }
 
 {
-  const option = optionNumber.andThen((): Instance<string> => Option.none());
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen((): OptionInstance<string> =>
+    Option.none()
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen((_): Instance<string> => Option.none());
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen((_): OptionInstance<string> =>
+    Option.none()
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>(() => Option.none());
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen<OptionInstance<string>>(() =>
+    Option.none()
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((_) => Option.none());
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen<OptionInstance<string>>((_) =>
+    Option.none()
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((): Instance<
-    string
-  > => Option.none());
-  test<Instance<string>>(option);
+  const option = optionNumber.andThen<OptionInstance<string>>(
+    (): OptionInstance<
+      string
+    > => Option.none(),
+  );
+  test<OptionInstance<string>>(option);
 }
 
 {
-  const option = optionNumber.andThen<Instance<string>>((
+  const option = optionNumber.andThen<OptionInstance<string>>((
     _,
-  ): Instance<string> => Option.none());
-  test<Instance<string>>(option);
+  ): OptionInstance<string> => Option.none());
+  test<OptionInstance<string>>(option);
 }
 
 {
@@ -284,13 +300,13 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 
 {
   const option = optionNumber.and(Option.some(1));
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
   const option = optionNumber.and(Option.none());
-  test<Instance<never>>(option);
-  test<Instance<number>>(option);
+  test<OptionInstance<never>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -325,12 +341,12 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 
 {
   const option = optionNumber.orElse(() => Option.some("2"));
-  test<Instance<number | string>>(option);
+  test<OptionInstance<number | string>>(option);
 }
 
 {
   const option = optionNumber.orElse(() => Option.none());
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -368,12 +384,12 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 
 {
   const option = optionNumber.or(Option.some("2"));
-  test<Instance<number | string>>(option);
+  test<OptionInstance<number | string>>(option);
 }
 
 {
   const option = optionNumber.or(Option.none());
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -401,22 +417,22 @@ const optionNumber: Instance<number> = Option.some(Math.random()).andThen((n) =>
 
 {
   const option = optionNumber.map(() => "2");
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
   const option = optionNumber.map((n) => n.toString());
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
   const option = optionNumber.map<string>(() => "2");
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
   const option = optionNumber.map<string>((n) => n.toString());
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 try {
@@ -441,7 +457,7 @@ try {
   const option = await optionNumber
     .lazy()
     .eval();
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -509,7 +525,7 @@ try {
     .map((n) => Promise.resolve(n + 1))
     .map((n) => n.toFixed(2))
     .eval();
-  test<Instance<string>>(option);
+  test<OptionInstance<string>>(option);
 }
 
 {
@@ -519,7 +535,7 @@ try {
     () => optionNumber,
     () => Promise.resolve(optionNumber),
   );
-  test<Instance<[number, number, number, number]>>(option);
+  test<OptionInstance<[number, number, number, number]>>(option);
 }
 
 {
@@ -533,13 +549,13 @@ try {
 }
 
 {
-  const option = await Option.andThen<Instance<["1", "2", "3", "4"]>>(
+  const option = await Option.andThen<OptionInstance<["1", "2", "3", "4"]>>(
     Option.some("1"),
     Promise.resolve(Option.some("2")),
     () => Option.some("3"),
     () => Promise.resolve(Option.some("4")),
   );
-  test<Instance<["1", "2", "3", "4"]>>(option);
+  test<OptionInstance<["1", "2", "3", "4"]>>(option);
 }
 
 {
@@ -564,7 +580,7 @@ try {
 }
 
 {
-  const option = await Option.orElse<Instance<number | string>>(
+  const option = await Option.orElse<OptionInstance<number | string>>(
     Option.some(1),
     Option.none(),
     Promise.resolve(Option.some("2")),
@@ -574,11 +590,11 @@ try {
     () => Promise.resolve(Option.some("4")),
     () => Promise.resolve(Option.none()),
   );
-  test<Instance<number | string>>(option);
+  test<OptionInstance<number | string>>(option);
 }
 
 {
-  const option = await Option.orElse<Instance<number | string>>(
+  const option = await Option.orElse<OptionInstance<number | string>>(
     Option.some(1),
     Option.none(),
     Promise.resolve(Option.some("2")),
@@ -588,12 +604,12 @@ try {
     () => Promise.resolve(Option.some("4")),
     () => Promise.resolve(Option.none()),
   );
-  test<Instance<number | string>>(option);
+  test<OptionInstance<number | string>>(option);
 }
 
 {
   const option = await Option.lazy(optionNumber).eval();
-  test<Instance<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -602,7 +618,7 @@ try {
     optionNumber,
     optionNumber,
   )).eval();
-  test<Instance<[number, number, number]>>(option);
+  test<OptionInstance<[number, number, number]>>(option);
 }
 
 {
@@ -613,10 +629,10 @@ try {
 }
 
 {
-  const option = await Option.lazy<Instance<[number]>>(Option.andThen(
+  const option = await Option.lazy<OptionInstance<[number]>>(Option.andThen(
     optionNumber,
   )).eval();
-  test<Instance<[number]>>(option);
+  test<OptionInstance<[number]>>(option);
 }
 
 {

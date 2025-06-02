@@ -55,10 +55,10 @@
  * }
  * ```
  *
- * ## Using Instance type
+ * ## Using ResultInstance type
  *
  * ```ts
- * import { Instance as Result } from "@askua/core/result";
+ * import { ResultInstance as Result } from "@askua/core/result";
  *
  * const result: Result<string> = Result.ok(Math.random())
  *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
@@ -90,7 +90,6 @@
  *
  * ```ts
  * import { Result } from "@askua/core/result";
- *
  * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
  *
  * const result = await Result.lazy(getNumber())
@@ -108,13 +107,14 @@
  */
 
 import type * as c from "./context.ts";
-import { Instance as Option } from "./option.ts";
+import { OptionInstance as Option } from "./option.ts";
 import type { OrPromise } from "./types.ts";
 
 /**
  * Result element Ok
  *
  * ```ts
+ * import { Result } from "@askua/core/result";
  * import { assertObjectMatch } from "@std/assert";
  *
  * const result = Result.ok("is ok");
@@ -137,6 +137,7 @@ export interface Ok<T> {
  * Result element Err
  *
  * ```ts
+ * import { Result } from "@askua/core/result";
  * import { assertObjectMatch } from "@std/assert";
  *
  * const result = Result.err("is error");
@@ -172,6 +173,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * impl Result
  *
  * ```ts
+ * import { Result } from "@askua/core/result";
  * import { assertEquals } from "@std/assert";
  *
  * const result = Result({ ok: true, value: 1 })
@@ -186,7 +188,7 @@ export const Result: ToInstance & Static = Object.assign(
 );
 
 /**
- * Result Instance
+ * Result ResultInstance
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -201,14 +203,15 @@ export const Result: ToInstance & Static = Object.assign(
  * @typeParam T - value type
  * @typeParam E - error type (default: Error)
  */
-export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
+export type ResultInstance<T, E = Error> = Result<T, E> & Context<T, E>;
+export type Instance<T, E = Error> = ResultInstance<T, E>;
 
 /**
- * impl Instance
+ * impl ResultInstance
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { Instance as Result } from "@askua/core/result";
+ * import { ResultInstance as Result } from "@askua/core/result";
  *
  * const ok: Result<number> = Result({ ok: true, value: 1 });
  * assertEquals(ok.unwrap(), 1);
@@ -217,7 +220,8 @@ export type Instance<T, E = Error> = Result<T, E> & Context<T, E>;
  * assertEquals(err.unwrapOr(0), 0);
  * ```
  */
-export const Instance: ToInstance & Static = Result;
+export const ResultInstance: ToInstance & Static = Result;
+export const Instance = ResultInstance;
 
 /**
  * Result ToInstance
@@ -230,8 +234,8 @@ export const Instance: ToInstance & Static = Result;
 export type ToInstance = {
   <T, E = never>(ok: Ok<T>): Ok<T> & Context<T, E>;
   <T = never, E = never>(err: Err<E>): Err<E> & Context<T, E>;
-  <T = never, E = never>(result: Result<T, E>): Instance<T, E>;
-  <T, E>(result: { ok: boolean; value: T; error: E }): Instance<T, E>;
+  <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
+  <T, E>(result: { ok: boolean; value: T; error: E }): ResultInstance<T, E>;
 };
 
 type NextT<R extends Result<unknown, unknown>, T> = R extends Ok<infer T2>
@@ -261,6 +265,7 @@ export interface Context<T, E>
   extends Iterable<T>, ToOption<T>, c.And<T>, c.Or<E>, c.Map<T>, c.Unwrap<T> {
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).andThen");
    *
    * const fn = () => Result.ok(Math.random())
@@ -272,10 +277,12 @@ export interface Context<T, E>
    */
   andThen<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
     fn: (value: T) => R,
-  ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
+  ): R extends ResultInstance<infer _, infer _> ? ResultInstance<T2, E2>
+    : Result<T2, E2>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).and");
    *
    * const fn = () => Result.ok(Math.random())
@@ -287,10 +294,12 @@ export interface Context<T, E>
    */
   and<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
     result: R,
-  ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
+  ): R extends ResultInstance<infer _, infer _> ? ResultInstance<T2, E2>
+    : Result<T2, E2>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).orElse");
    *
    * const fn = () => Result.ok(Math.random())
@@ -306,10 +315,12 @@ export interface Context<T, E>
    */
   orElse<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
     fn: (error: E) => R,
-  ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
+  ): R extends ResultInstance<infer _, infer _> ? ResultInstance<T2, E2>
+    : Result<T2, E2>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).or");
    *
    * const fn = () => Result.ok(Math.random())
@@ -322,10 +333,12 @@ export interface Context<T, E>
    */
   or<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
     result: R,
-  ): R extends Instance<infer _, infer _> ? Instance<T2, E2> : Result<T2, E2>;
+  ): R extends ResultInstance<infer _, infer _> ? ResultInstance<T2, E2>
+    : Result<T2, E2>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).map");
    *
    * const fn = () => Result.ok(Math.random())
@@ -336,10 +349,11 @@ export interface Context<T, E>
    * console.log(`Result: ${fn()}`);
    * ```
    */
-  map<T2>(fn: (value: T) => T2): Instance<T2, E>;
+  map<T2>(fn: (value: T) => T2): ResultInstance<T2, E>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrap");
    *
    * const fn = () => Result.ok(Math.random())
@@ -355,6 +369,7 @@ export interface Context<T, E>
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrapOr");
    *
    * const fn = () => Result.ok(Math.random())
@@ -368,6 +383,7 @@ export interface Context<T, E>
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrapOrElse");
    *
    * const fn = () => Result.ok(Math.random())
@@ -385,6 +401,7 @@ export interface Context<T, E>
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
    * const ok = Result.ok("is ok");
@@ -398,13 +415,14 @@ export interface Context<T, E>
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.ok(1).lazy().and((Result.ok(2))).eval();
    * assertEquals(result, Result.ok(2));
    * ```
    */
-  lazy(): Lazy<T, E, Instance<T, E>>;
+  lazy(): Lazy<T, E, ResultInstance<T, E>>;
 }
 
 type LazyEval<
@@ -412,8 +430,9 @@ type LazyEval<
   E,
   R extends Result<T, E>,
   Eval extends Result<unknown, unknown>,
-> = R extends Instance<unknown, unknown>
-  ? (Eval extends Instance<unknown, unknown> ? Instance<T, E> : Result<T, E>)
+> = R extends ResultInstance<unknown, unknown>
+  ? (Eval extends ResultInstance<unknown, unknown> ? ResultInstance<T, E>
+    : Result<T, E>)
   : R;
 
 /**
@@ -530,11 +549,12 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    */
   map<
     T2,
-    Z extends Result<T2, E> = LazyEval<T2, E, Instance<T2, E>, Eval>,
+    Z extends Result<T2, E> = LazyEval<T2, E, ResultInstance<T2, E>, Eval>,
   >(fn: (value: T) => OrPromise<T2>): Lazy<T2, E, Z>;
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Lazy).eval");
    *
    * const result: Result<number> = await Result.lazy(Result.ok(1)).eval();
@@ -568,6 +588,7 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
 export interface Static {
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
    * const result = Result.ok("is ok");
@@ -585,6 +606,7 @@ export interface Static {
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
    * const result = Result.err("is error");
@@ -602,6 +624,8 @@ export interface Static {
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
+   *
    * console.log("[Example] Result.andThen");
    *
    * const getNumber = (count: number) => Result.ok(Math.random())
@@ -618,6 +642,7 @@ export interface Static {
    * ```
    *
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.andThen(
@@ -650,6 +675,7 @@ export interface Static {
    * ```
    *
    * ```ts
+   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.orElse(
@@ -666,6 +692,7 @@ export interface Static {
 
   /**
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] Result.lazy");
    *
    * const result = await Result.lazy(Result.ok(1))
@@ -676,6 +703,7 @@ export interface Static {
    * ```
    *
    * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] Result.lazy");
    *
    * const result = await Result.lazy(() => Result.ok(1))
@@ -927,14 +955,14 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
  */
 function toInstance<T, E>(result: Ok<T>): Ok<T> & Context<T, E>;
 function toInstance<T, E>(result: Err<E>): Err<E> & Context<T, E>;
-function toInstance<T, E>(result: Result<T, E>): Instance<T, E>;
+function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E>;
 function toInstance<T, E>(
   result: { ok: boolean; value: T; error: E },
-): Instance<T, E>;
-function toInstance<T, E>(result: Result<T, E>): Instance<T, E> {
+): ResultInstance<T, E>;
+function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
   return (result.ok
     ? Result.ok(result.value)
-    : Result.err(result.error)) as Instance<T, E>;
+    : Result.err(result.error)) as ResultInstance<T, E>;
 }
 
 /**
@@ -956,17 +984,19 @@ function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
  */
 async function andThen<
   R extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer _, infer _> ? Instance<T, E>
+    ? (Awaited<R> extends ResultInstance<infer _, infer _>
+      ? ResultInstance<T, E>
       : Result<T, E>)
     : never,
   Fn extends {
     [K in keyof T]:
       | OrPromise<Result<T[K], E>>
       | (() => OrPromise<Result<T[K], E>>);
-  }[number][] = R extends Instance<infer T, infer E> ? (T extends unknown[] ? {
+  }[number][] = R extends ResultInstance<infer T, infer E>
+    ? (T extends unknown[] ? {
         [K in keyof T]:
-          | OrPromise<Instance<T[K], E>>
-          | (() => OrPromise<Instance<T[K], E>>);
+          | OrPromise<ResultInstance<T[K], E>>
+          | (() => OrPromise<ResultInstance<T[K], E>>);
       }
       : never)
     : (R extends Result<infer T, infer E> ? (T extends unknown[] ? {
@@ -1011,7 +1041,8 @@ async function andThen<
  */
 async function orElse<
   R extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends Instance<infer _, infer _> ? Instance<T, E>
+    ? (Awaited<R> extends ResultInstance<infer _, infer _>
+      ? ResultInstance<T, E>
       : Result<T, E>)
     : never,
   F extends
