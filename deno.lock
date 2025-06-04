@@ -1,7 +1,8 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
     "jsr:@std/assert@1": "1.0.7",
+    "jsr:@std/html@^1.0.4": "1.0.4",
     "jsr:@std/internal@^1.0.5": "1.0.5"
   },
   "jsr": {
@@ -11,13 +12,17 @@
         "jsr:@std/internal"
       ]
     },
+    "@std/html@1.0.4": {
+      "integrity": "eff3497c08164e6ada49b7f81a28b5108087033823153d065e3f89467dd3d50e"
+    },
     "@std/internal@1.0.5": {
       "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
     }
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@1"
+      "jsr:@std/assert@1",
+      "jsr:@std/html@^1.0.4"
     ]
   }
 }
