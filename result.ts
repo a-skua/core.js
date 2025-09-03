@@ -972,11 +972,23 @@ function ok<T, E = never>(value: T): Ok<T> & Context<T, E> {
   return new _Ok(value);
 }
 
+function isOk<R extends Result<T, E>, T, E>(result: R): result is Ok<T>;
+function isOk<R extends Result<T, E> & Context<T, E>, T, E>(result: R): result is Ok<T> & Context<T, E>;
+function isOk<R extends Result<T, E> & Context<T, E>, T, E>(result: R): result is Ok<T> & Context<T, E> {
+  return result.ok;
+}
+
 /**
  * impl Static.err
  */
 function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
   return new _Err(error);
+}
+
+function isErr<R extends Result<T, E>, T, E>(result: R): result is Err<E>;
+function isErr<R extends Result<T, E> & Context<T, E>, T, E>(result: R): result is Err<E> & Context<T, E>;
+function isErr<R extends Result<T, E> & Context<T, E>, T, E>(result: R): result is Err<E> & Context<T, E> {
+  return !result.ok;
 }
 
 /**
