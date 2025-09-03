@@ -134,6 +134,21 @@ export interface Ok<T> {
 }
 
 /**
+ * Infer Ok type from Result or ResultInstance
+ *
+ * ```diff
+ *  import { Result, Ok, InferOk } from "@askua/core/result";
+ *
+ *  type A = Result<number>;
+ * -type B = Ok<number>;
+ * +type B = InferOk<A>; // Ok<number>
+ * ```
+ */
+export type InferOk<R extends Result<unknown, unknown>> = R extends
+  ResultInstance<infer T, infer E> ? Context<T, E> & Ok<T>
+  : (Ok<R extends Ok<infer T> ? T : never>);
+
+/**
  * Result element Err
  *
  * ```ts
@@ -155,6 +170,21 @@ export interface Err<E> {
   readonly ok: false;
   readonly error: E;
 }
+
+/**
+ * Infer Err type from Result or ResultInstance
+ *
+ * ```diff
+ *  import { Result, Err, InferErr } from "@askua/core/result";
+ *
+ *  type A = Result<number, string>;
+ * -type B = Err<string>;
+ * +type B = InferErr<A>; // Err<string>
+ * ```
+ */
+export type InferErr<R extends Result<unknown, unknown>> = R extends
+  ResultInstance<infer T, infer E> ? Context<T, E> & Err<E>
+  : (Err<R extends Err<infer E> ? E : never>);
 
 /**
  * Result
@@ -221,7 +251,6 @@ export type Instance<T, E = Error> = ResultInstance<T, E>;
  * ```
  */
 export const ResultInstance: ToInstance & Static = Result;
-export const Instance = ResultInstance;
 
 /**
  * Result ToInstance
@@ -231,9 +260,9 @@ export const Instance = ResultInstance;
  * const b: Result<number> = Result({ ok: false, error: new Error("error") });
  * ```
  */
-export type ToInstance = {
-  <T, E = never>(ok: Ok<T>): ResultInstance<T, E> & Ok<T>;
-  <T = never, E = never>(err: Err<E>): ResultInstance<T, E> & Err<E>;
+type ToInstance = {
+  <T, E = never>(ok: Ok<T>): InferOk<ResultInstance<T, E>>;
+  <T = never, E = never>(err: Err<E>): InferErr<ResultInstance<T, E>>;
   <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
   <T, E>(result: { ok: boolean; value: T; error: E }): ResultInstance<T, E>;
 };
@@ -261,7 +290,7 @@ type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
  * @typeParam T - value type
  * @typeParam E - error type
  */
-export interface Context<T, E>
+interface Context<T, E>
   extends Iterable<T>, ToOption<T>, c.And<T>, c.Or<E>, c.Map<T>, c.Unwrap<T> {
   /**
    * ```ts
@@ -585,10 +614,10 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
 /**
  * Static Result
  */
-export interface Static {
+interface Static {
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
+   * import { ok } from "@askua/core/result";
    * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
    * const result = ok("is ok");
@@ -606,7 +635,7 @@ export interface Static {
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
+   * import { err } from "@askua/core/result";
    * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
    * const result = err("is error");
@@ -953,8 +982,8 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
 /**
  * impl ToInstance
  */
-function toInstance<T, E>(result: Ok<T>): ResultInstance<T, E> & Ok<T>;
-function toInstance<T, E>(result: Err<E>): ResultInstance<T, E> & Err<E>;
+function toInstance<T, E>(result: Ok<T>): InferOk<ResultInstance<T, E>>;
+function toInstance<T, E>(result: Err<E>): InferErr<ResultInstance<T, E>>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E>;
 function toInstance<T, E>(result: Ok<T> | Err<E>): ResultInstance<T, E>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
@@ -967,15 +996,57 @@ function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
 /**
  * impl Static.ok
  */
-export function ok<T, E = never>(value: T): Ok<T> & Context<T, E> {
+export function ok<T, E = never>(value: T): InferOk<ResultInstance<T, E>> {
   return new _Ok(value);
+}
+
+/**
+ * ```ts
+ * import { assert } from "@std/assert";
+ *
+ * const result = ok(1) as Result<number>;
+ * assert(isOk(result));
+ *
+ * const _: Ok<number> = result;
+ * ```
+ */
+export function isOk<T, E>(
+  result: Result<T, E>,
+): result is InferOk<typeof result>;
+export function isOk<T, E>(
+  result: ResultInstance<T, E>,
+): result is InferOk<typeof result>;
+export function isOk<T, E>({ ok }: Result<T, E>) {
+  return ok;
 }
 
 /**
  * impl Static.err
  */
-export function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
+export function err<T = never, E = Error>(
+  error: E,
+): InferErr<ResultInstance<T, E>> {
   return new _Err(error);
+}
+
+/**
+ * ```ts
+ * import { assert } from "@std/assert";
+ *
+ * const result = err(new Error("error")) as Result<number>;
+ * assert(isErr(result));
+ *
+ * const _: Err<Error> = result;
+ * ```
+ */
+export function isErr<T, E>(
+  result: Result<T, E>,
+): result is InferErr<typeof result>;
+export function isErr<T, E>(
+  result: ResultInstance<T, E>,
+): result is InferErr<typeof result>;
+export function isErr<T, E>({ ok }: Result<T, E>) {
+  return !ok;
 }
 
 /**

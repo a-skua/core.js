@@ -1,5 +1,14 @@
 import { test } from "./types_test.ts";
-import { type Err, type Ok, Result, type ResultInstance } from "./result.ts";
+import {
+  type Err,
+  err,
+  type InferErr,
+  type InferOk,
+  type Ok,
+  ok,
+  Result,
+  type ResultInstance,
+} from "./result.ts";
 
 const resultNumber: ResultInstance<number> = Result.ok(Math.random()).andThen((
   n,
@@ -498,4 +507,28 @@ try {
     .orElse((e) => Result.ok(e.message))
     .eval();
   test<number | string>(result.unwrap());
+}
+
+{
+  const result = ok(0) as ResultInstance<number>;
+  const a = result as InferOk<typeof result>;
+  test<Ok<number>>(a);
+}
+
+{
+  const result = ok(0) as Result<number>;
+  const a = result as InferOk<typeof result>;
+  test<Ok<number>>(a);
+}
+
+{
+  const result = err("error") as ResultInstance<never, string>;
+  const a = result as InferErr<typeof result>;
+  test<Err<string>>(a);
+}
+
+{
+  const result = err("error") as Result<never, string>;
+  const a = result as InferErr<typeof result>;
+  test<Err<string>>(a);
 }

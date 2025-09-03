@@ -4,7 +4,17 @@ import {
   assertObjectMatch,
   assertThrows,
 } from "@std/assert";
-import { type Lazy, Result, ResultInstance } from "./result.ts";
+import {
+  type Err,
+  err,
+  isErr,
+  isOk,
+  type Lazy,
+  type Ok,
+  ok,
+  Result,
+  ResultInstance,
+} from "./result.ts";
 import { Option } from "./option.ts";
 
 Deno.test("ResultInstance", async (t) => {
@@ -582,5 +592,41 @@ Deno.test("Lazy", async (t) => {
         assertEquals(`${lazy}`, expected);
       });
     }
+  });
+});
+
+Deno.test("isOk", async (t) => {
+  await t.step("true", () => {
+    const a = ok(1) as Result<number, string>;
+    assert(isOk(a));
+
+    const b: Ok<number> = a;
+    assertEquals(a, b);
+  });
+
+  await t.step("false", () => {
+    const a = err("error") as Result<number, string>;
+    assert(!isOk(a));
+
+    const b: Err<string> = a;
+    assertEquals(a, b);
+  });
+});
+
+Deno.test("isErr", async (t) => {
+  await t.step("true", () => {
+    const a = err("error") as Result<number, string>;
+    assert(isErr(a));
+
+    const b: Err<string> = a;
+    assertEquals(a, b);
+  });
+
+  await t.step("false", () => {
+    const a = ok(1) as Result<number, string>;
+    assert(!isErr(a));
+
+    const b: Ok<number> = a;
+    assertEquals(a, b);
   });
 });
