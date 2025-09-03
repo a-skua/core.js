@@ -4,10 +4,10 @@
  * ## type Option
  *
  * ```ts
- * import { Option } from "@askua/core";
+ * import { some, none } from "@askua/core";
  *
- * const n = Option.some(Math.random())
- *   .andThen((n) => n >= 0.5 ? Option.some(n) : Option.none())
+ * const n = some(Math.random())
+ *   .andThen((n) => n >= 0.5 ? some(n) : none())
  *   .map((n) => n.toFixed(2))
  *
  * console.log(n.unwrapOr("n is less than 0.5"));
@@ -16,10 +16,10 @@
  * ## type Result
  *
  * ```ts
- * import { Result } from "@askua/core";
+ * import { ok, err } from "@askua/core";
  *
- * const n = Result.ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("n is less than 0.5")))
+ * const n = ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("n is less than 0.5")))
  *   .map((n) => n.toFixed(2));
  *
  * console.log(n.unwrapOrElse((e) => e.message));
@@ -39,6 +39,6 @@
  * @module
  */
 
-export { Result } from "./result.ts";
-export { Option } from "./option.ts";
+export { err, ok, Result } from "./result.ts";
+export { none, Option, some } from "./option.ts";
 export { Brand } from "./brand.ts";

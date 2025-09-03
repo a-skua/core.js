@@ -4,8 +4,8 @@
  * ```ts
  * import type { Ok, Err, Result } from "@askua/core/result";
  *
- * const ok: Ok<number> = { ok: true, value: 1 };
- * const err: Err<Error> = { ok: false, error: new Error("error") };
+ * const a: Ok<number> = { ok: true, value: 1 };
+ * const b: Err<Error> = { ok: false, error: new Error("error") };
  * ```
  *
  * ## Usage
@@ -44,8 +44,8 @@
  * ```ts
  * import { Result } from "@askua/core/result";
  *
- * const result: Result<string> = Result.ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ * const result: Result<string> = ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("less than 0.5")))
  *   .map((n) => n.toFixed(2));
  *
  * if (result.ok) {
@@ -60,8 +60,8 @@
  * ```ts
  * import { ResultInstance as Result } from "@askua/core/result";
  *
- * const result: Result<string> = Result.ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ * const result: Result<string> = ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("less than 0.5")))
  *   .map((n) => n.toFixed(2));
  *
  * console.log(result.unwrapOrElse((e) => {
@@ -75,8 +75,8 @@
  * ```ts
  * import { Result } from "@askua/core/result";
  *
- * const getNumber = () => Result.ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")));
+ * const getNumber = () => ok(Math.random())
+ *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")));
  *
  * const list = [
  *   [...getNumber().map((n) => n.toFixed(2))],
@@ -90,10 +90,10 @@
  *
  * ```ts
  * import { Result } from "@askua/core/result";
- * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+ * const getNumber = () => Promise.resolve(ok(Math.random()));
  *
  * const result = await Result.lazy(getNumber())
- *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err(new Error("less than 0.5")))
+ *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("less than 0.5")))
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
@@ -107,7 +107,7 @@
  */
 
 import type * as c from "./context.ts";
-import { OptionInstance as Option } from "./option.ts";
+import { none, type OptionInstance, some } from "./option.ts";
 import type { OrPromise } from "./types.ts";
 
 /**
@@ -117,7 +117,7 @@ import type { OrPromise } from "./types.ts";
  * import { Result } from "@askua/core/result";
  * import { assertObjectMatch } from "@std/assert";
  *
- * const result = Result.ok("is ok");
+ * const result = ok("is ok");
  *
  * assertObjectMatch(result, {
  *   ok: true,
@@ -140,7 +140,7 @@ export interface Ok<T> {
  * import { Result } from "@askua/core/result";
  * import { assertObjectMatch } from "@std/assert";
  *
- * const result = Result.err("is error");
+ * const result = err("is error");
  *
  * assertObjectMatch(result, {
  *   ok: false,
@@ -160,8 +160,8 @@ export interface Err<E> {
  * Result
  *
  * ```ts
- * const ok: Result<number> = Result.ok(1);
- * const err: Result<number> = Result.err<number>(new Error("error"));
+ * const a: Result<number> = ok(1);
+ * const b: Result<number> = err<number>(new Error("error"));
  * ```
  *
  * @typeParam T - value type
@@ -179,7 +179,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * const result = Result({ ok: true, value: 1 })
  *   .map((n) => n + 1);
  *
- * assertEquals(result, Result.ok(2));
+ * assertEquals(result, ok(2));
  * ```
  */
 export const Result: ToInstance & Static = Object.assign(
@@ -193,7 +193,7 @@ export const Result: ToInstance & Static = Object.assign(
  * ```ts
  * import { assertEquals } from "@std/assert";
  *
- * const value = Result.err<number>(new Error("error"))
+ * const value = err<number>(new Error("error"))
  *   .map((n) => n + 1)
  *   .unwrapOr(0);
  *
@@ -213,11 +213,11 @@ export type Instance<T, E = Error> = ResultInstance<T, E>;
  * import { assertEquals } from "@std/assert";
  * import { ResultInstance as Result } from "@askua/core/result";
  *
- * const ok: Result<number> = Result({ ok: true, value: 1 });
- * assertEquals(ok.unwrap(), 1);
+ * const a: Result<number> = Result({ ok: true, value: 1 });
+ * assertEquals(a.unwrap(), 1);
  *
- * const err: Result<number> = Result({ ok: false, error: new Error("error") });
- * assertEquals(err.unwrapOr(0), 0);
+ * const b: Result<number> = Result({ ok: false, error: new Error("error") });
+ * assertEquals(b.unwrapOr(0), 0);
  * ```
  */
 export const ResultInstance: ToInstance & Static = Result;
@@ -227,13 +227,13 @@ export const Instance = ResultInstance;
  * Result ToInstance
  *
  * ```ts
- * const ok: Result<number> = Result({ ok: true, value: 1 });
- * const err: Result<number> = Result({ ok: false, error: new Error("error") });
+ * const a: Result<number> = Result({ ok: true, value: 1 });
+ * const b: Result<number> = Result({ ok: false, error: new Error("error") });
  * ```
  */
 export type ToInstance = {
-  <T, E = never>(ok: Ok<T>): Ok<T> & Context<T, E>;
-  <T = never, E = never>(err: Err<E>): Err<E> & Context<T, E>;
+  <T, E = never>(ok: Ok<T>): ResultInstance<T, E> & Ok<T>;
+  <T = never, E = never>(err: Err<E>): ResultInstance<T, E> & Err<E>;
   <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
   <T, E>(result: { ok: boolean; value: T; error: E }): ResultInstance<T, E>;
 };
@@ -268,9 +268,9 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).andThen");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)));
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -285,9 +285,9 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).and");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .and(Result.ok("TOO LARGE"));
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .and(ok("TOO LARGE"));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -302,12 +302,12 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).orElse");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
    *   .orElse((e) => {
    *     console.error(`Error: ${e}`);
-   *     return Result.ok(0);
+   *     return ok(0);
    *   })
    *
    * console.log(`Result: ${fn()}`);
@@ -323,10 +323,10 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).or");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
-   *   .or(Result.ok(0));
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
+   *   .or(ok(0));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -341,10 +341,10 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).map");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .map((n) => n.toFixed(2))
-   *   .or(Result.ok("0.00"));
+   *   .or(ok("0.00"));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -356,10 +356,10 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrap");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
-   *   .or(Result.ok("0.00"))
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
+   *   .or(ok("0.00"))
    *   .unwrap();
    *
    * console.log(`Result: ${fn()}`);
@@ -372,9 +372,9 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrapOr");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
    *   .unwrapOr("0.00");
    *
    * console.log(`Result: ${fn()}`);
@@ -386,9 +386,9 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrapOrElse");
    *
-   * const fn = () => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.5 ? Result.ok(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
+   * const fn = () => ok(Math.random())
+   *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
    *   .unwrapOrElse((e) => {
    *     console.error(`Error: ${e}`);
    *     return "0.00";
@@ -404,11 +404,11 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const ok = Result.ok("is ok");
-   * assertEquals(ok.toString(), "Ok(is ok)");
+   * const a = ok("is ok");
+   * assertEquals(a.toString(), "Ok(is ok)");
    *
-   * const err = Result.err("is error");
-   * assertEquals(err.toString(), "Err(is error)");
+   * const b = err("is error");
+   * assertEquals(b.toString(), "Err(is error)");
    * ```
    */
   toString(): string;
@@ -418,8 +418,8 @@ export interface Context<T, E>
    * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.ok(1).lazy().and((Result.ok(2))).eval();
-   * assertEquals(result, Result.ok(2));
+   * const result = await ok(1).lazy().and((ok(2))).eval();
+   * assertEquals(result, ok(2));
    * ```
    */
   lazy(): Lazy<T, E, ResultInstance<T, E>>;
@@ -448,11 +448,11 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * ```ts
    * console.log("[Example] (Lazy).andThen");
    *
-   * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+   * const getNumber = () => Promise.resolve(ok(Math.random()));
    *
    * const fn = () => Result.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? Result.ok<number>(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Promise.resolve(Result.ok(n.toFixed(2))))
+   *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => Promise.resolve(ok(n.toFixed(2))))
    *   .eval();
    *
    * console.debug(`Result: ${await fn()}`);
@@ -469,11 +469,11 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * ```ts
    * console.log("[Example] (Lazy).and");
    *
-   * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+   * const getNumber = () => Promise.resolve(ok(Math.random()));
    *
    * const fn = () => Result.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? Result.ok<number>(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .and(Promise.resolve(Result.ok("TOO LARGE")))
+   *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
+   *   .and(Promise.resolve(ok("TOO LARGE")))
    *   .eval();
    *
    * console.debug(`Result: ${await fn()}`);
@@ -490,14 +490,14 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * ```ts
    * console.log("[Example] (Lazy).orElse");
    *
-   * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+   * const getNumber = () => Promise.resolve(ok(Math.random()));
    *
    * const fn = () => Result.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? Result.ok<number>(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
+   *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
    *   .orElse((e) => {
    *     console.error(`Error: ${e}`);
-   *     return Promise.resolve(Result.ok("0.50"));
+   *     return Promise.resolve(ok("0.50"));
    *   })
    *   .eval();
    *
@@ -515,12 +515,12 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * ```ts
    * console.log("[Example] (Lazy).or");
    *
-   * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+   * const getNumber = () => Promise.resolve(ok(Math.random()));
    *
    * const fn = () => Result.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? Result.ok<number>(n) : Result.err<number>(new Error("less than 0.5")))
-   *   .andThen((n) => Result.ok(n.toFixed(2)))
-   *   .or(Promise.resolve(Result.ok("0.50")))
+   *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => ok(n.toFixed(2)))
+   *   .or(Promise.resolve(ok("0.50")))
    *   .eval();
    *
    * console.debug(`Result: ${await fn()}`);
@@ -537,10 +537,10 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * ```ts
    * console.log("[Example] (Lazy).map");
    *
-   * const getNumber = () => Promise.resolve(Result.ok(Math.random()));
+   * const getNumber = () => Promise.resolve(ok(Math.random()));
    *
    * const fn = () => Result.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? Result.ok<number>(n) : Result.err<number>(new Error("less than 0.5")))
+   *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
    *   .map((n) => Promise.resolve(n.toFixed(2)))
    *   .eval();
    *
@@ -557,7 +557,7 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * import { Result } from "@askua/core/result";
    * console.log("[Example] (Lazy).eval");
    *
-   * const result: Result<number> = await Result.lazy(Result.ok(1)).eval();
+   * const result: Result<number> = await Result.lazy(ok(1)).eval();
    *
    * console.debug(`Result: ${result}`);
    * ```
@@ -569,13 +569,13 @@ export interface Lazy<T, E, Eval extends Result<T, E>>
    * import { assertEquals } from "@std/assert";
    *
    * assertEquals(
-   *   Result.lazy(Result.ok(1)).toString(),
+   *   Result.lazy(ok(1)).toString(),
    *   "Lazy<Ok(1)>",
    * );
    *
    * assertEquals(
-   *   Result.lazy(() => Result.ok(1)).map((n) => n * 100).or(Result.ok(0)).toString(),
-   *   "Lazy<()=>Result.ok(1).map((n)=>n * 100).or(Ok(0))>",
+   *   Result.lazy(() => ok(1)).map((n) => n * 100).or(ok(0)).toString(),
+   *   "Lazy<()=>ok(1).map((n)=>n * 100).or(Ok(0))>",
    * );
    * ```
    */
@@ -591,7 +591,7 @@ export interface Static {
    * import { Result } from "@askua/core/result";
    * import { assertEquals, assertObjectMatch } from "@std/assert";
    *
-   * const result = Result.ok("is ok");
+   * const result = ok("is ok");
    *
    * assertEquals(result.toString(), "Ok(is ok)");
    * assertObjectMatch(result, { ok: true, value: "is ok" });
@@ -609,7 +609,7 @@ export interface Static {
    * import { Result } from "@askua/core/result";
    * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
    *
-   * const result = Result.err("is error");
+   * const result = err("is error");
    *
    * assertEquals(result.toString(), "Err(is error)");
    * assertObjectMatch(result, { ok: false, error: "is error" });
@@ -628,8 +628,8 @@ export interface Static {
    *
    * console.log("[Example] Result.andThen");
    *
-   * const getNumber = (count: number) => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.2 ? Result.ok(n) : Result.err<number>(new Error(`${count}: less than 0.2`)))
+   * const getNumber = (count: number) => ok(Math.random())
+   *   .andThen((n) => n >= 0.2 ? ok(n) : err<number>(new Error(`${count}: less than 0.2`)))
    *   .map((n) => n.toFixed(2));
    *
    * const fn = () => Result.andThen(
@@ -646,10 +646,10 @@ export interface Static {
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.andThen(
-   *   Result.ok(1),
-   *   () => Result.ok(2),
-   *   Promise.resolve(Result.ok(3)),
-   *   () => Promise.resolve(Result.ok(4)),
+   *   ok(1),
+   *   () => ok(2),
+   *   Promise.resolve(ok(3)),
+   *   () => Promise.resolve(ok(4)),
    * ).then((r) => r.unwrap().join(", "));
    *
    * assertEquals(result, "1, 2, 3, 4");
@@ -661,8 +661,8 @@ export interface Static {
    * ```ts
    * console.log("[Example] Result.orElse");
    *
-   * const getNumber = (count: number) => Result.ok(Math.random())
-   *   .andThen((n) => n >= 0.8 ? Result.ok(n) : Result.err<number>(new Error(`${count}: less than 0.8`)))
+   * const getNumber = (count: number) => ok(Math.random())
+   *   .andThen((n) => n >= 0.8 ? ok(n) : err<number>(new Error(`${count}: less than 0.8`)))
    *   .map((n) => n.toFixed(2));
    *
    * const fn = () => Result.orElse(
@@ -679,10 +679,10 @@ export interface Static {
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.orElse(
-   *   Result.err<number>(new Error("1")),
-   *   () => Result.err<number>(new Error("2")),
-   *   Promise.resolve(Result.err<number>(new Error("3"))),
-   *   () => Promise.resolve(Result.ok<number>(4)),
+   *   err<number>(new Error("1")),
+   *   () => err<number>(new Error("2")),
+   *   Promise.resolve(err<number>(new Error("3"))),
+   *   () => Promise.resolve(ok<number>(4)),
    * ).then((r) => r.map((n) => n.toFixed(2)).unwrap());
    *
    * assertEquals(result, "4.00");
@@ -695,8 +695,8 @@ export interface Static {
    * import { Result } from "@askua/core/result";
    * console.log("[Example] Result.lazy");
    *
-   * const result = await Result.lazy(Result.ok(1))
-   *   .and(Result.ok(2))
+   * const result = await Result.lazy(ok(1))
+   *   .and(ok(2))
    *   .eval();
    *
    * console.log(`Result: ${result}`);
@@ -706,8 +706,8 @@ export interface Static {
    * import { Result } from "@askua/core/result";
    * console.log("[Example] Result.lazy");
    *
-   * const result = await Result.lazy(() => Result.ok(1))
-   *   .and(Result.ok(2))
+   * const result = await Result.lazy(() => ok(1))
+   *   .and(ok(2))
    *   .map((n) => n.toFixed(2))
    *   .eval();
    *
@@ -726,14 +726,14 @@ export interface ToOption<T> {
    * import { assertEquals } from "@std/assert";
    * import { Option } from "@askua/core/option";
    *
-   * const some = Result.ok("is ok").toOption();
+   * const some = ok("is ok").toOption();
    * assertEquals(some, Option.some("is ok"));
    *
-   * const none = Result.err("is error").toOption();
+   * const none = err("is error").toOption();
    * assertEquals(none, Option.none());
    * ```
    */
-  toOption(): Option<T>;
+  toOption(): OptionInstance<T>;
 }
 
 /**
@@ -745,7 +745,7 @@ class _Ok<T, E> implements Ok<T>, Context<T, E> {
   }
 
   toOption<O>(): O {
-    return Option.some(this.value) as O;
+    return some(this.value) as O;
   }
 
   andThen<U, V>(fn: (v: T) => U): V {
@@ -765,7 +765,7 @@ class _Ok<T, E> implements Ok<T>, Context<T, E> {
   }
 
   map<U, V>(fn: (v: T) => U): V {
-    return Result.ok(fn(this.value)) as V;
+    return ok(fn(this.value)) as V;
   }
 
   unwrap(): T {
@@ -807,7 +807,7 @@ class _Err<T, E> implements Err<E>, Context<T, E> {
   constructor(readonly error: E) {}
 
   toOption<O>(): O {
-    return Option.none() as O;
+    return none() as O;
   }
 
   andThen<U>(): U {
@@ -932,7 +932,7 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
 
       if ("map" in op && result.ok) {
         const p = op.map(result.value);
-        result = Result.ok(p instanceof Promise ? await p : p);
+        result = ok(p instanceof Promise ? await p : p);
         continue;
       }
     }
@@ -953,29 +953,28 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
 /**
  * impl ToInstance
  */
-function toInstance<T, E>(result: Ok<T>): Ok<T> & Context<T, E>;
-function toInstance<T, E>(result: Err<E>): Err<E> & Context<T, E>;
+function toInstance<T, E>(result: Ok<T>): ResultInstance<T, E> & Ok<T>;
+function toInstance<T, E>(result: Err<E>): ResultInstance<T, E> & Err<E>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E>;
-function toInstance<T, E>(
-  result: { ok: boolean; value: T; error: E },
-): ResultInstance<T, E>;
+function toInstance<T, E>(result: Ok<T> | Err<E>): ResultInstance<T, E>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
-  return (result.ok
-    ? Result.ok(result.value)
-    : Result.err(result.error)) as ResultInstance<T, E>;
+  return (result.ok ? ok(result.value) : err(result.error)) as ResultInstance<
+    T,
+    E
+  >;
 }
 
 /**
  * impl Static.ok
  */
-function ok<T, E = never>(value: T): Ok<T> & Context<T, E> {
+export function ok<T, E = never>(value: T): Ok<T> & Context<T, E> {
   return new _Ok(value);
 }
 
 /**
  * impl Static.err
  */
-function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
+export function err<T = never, E = Error>(error: E): Err<E> & Context<T, E> {
   return new _Err(error);
 }
 
@@ -1020,7 +1019,7 @@ async function andThen<
 >(
   ...fn: Fn
 ): Promise<R> {
-  const oks: T[number][] = new Array(fn.length);
+  const values: T[number][] = new Array(fn.length);
   for (let i = 0; i < fn.length; i++) {
     const f = fn[i];
     const p: OrPromise<Result<T[number], E>> = typeof f === "function"
@@ -1028,12 +1027,12 @@ async function andThen<
       : f;
     const result = p instanceof Promise ? await p : p;
     if (result.ok) {
-      oks[i] = result.value;
+      values[i] = result.value;
     } else {
       return result as R;
     }
   }
-  return Result.ok(oks) as never;
+  return ok(values) as never;
 }
 
 /**
