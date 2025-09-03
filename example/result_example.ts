@@ -1,6 +1,6 @@
-import { Instance as Result, type Ok } from "@askua/core/result";
+import { type Ok, Result, type ResultInstance } from "@askua/core/result";
 
-declare function bar(): Result<number>;
+declare function bar(): ResultInstance<number>;
 
 const result = bar();
 if (result.ok) {
@@ -21,10 +21,10 @@ Result(foo());
 
 Result({ ok: false, error: "error" })
   .map((n) => n + 1)
-  .and<Result<string, number>>(Result.err(-1))
+  .and<ResultInstance<string, number>>(Result.err(-1))
   .and(Result.ok(1))
-  .andThen<Result<string, number>>(() => Result.err(-1))
-  .andThen<Result<number, string>>(() => Result.ok(1))
+  .andThen<ResultInstance<string, number>>(() => Result.err(-1))
+  .andThen<ResultInstance<number, string>>(() => Result.ok(1))
   .andThen((n) => n > 0 ? Result.ok(n) : Result.err(-1))
   .and(Result.ok(0))
   .lazy()
@@ -54,7 +54,7 @@ Result.ok(null)
   .or(Result.ok(""))
   .or(Result.err(""))
   .orElse(() => Result.ok(1))
-  .orElse<Result<string, number>>(() => Result.err(-1))
+  .orElse<ResultInstance<string, number>>(() => Result.err(-1))
   .lazy()
   .eval();
 

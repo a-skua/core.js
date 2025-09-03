@@ -1,4 +1,4 @@
-import { Instance as Option } from "@askua/core/option";
+import { Option, type OptionInstance } from "@askua/core/option";
 
 Option({ some: true, value: "some" });
 Option<string>({ some: false });
@@ -8,14 +8,14 @@ Option(foo());
 
 Option<number>({ some: false })
   .map((n) => n + 1)
-  .and<Option<number>>(Option.none())
+  .and<OptionInstance<number>>(Option.none())
   .and(Option.none())
   // .and({ some: false })
   // .and({ some: true, value: 1 })
   .and(Option.some(1))
   // .and(({ some: true, value: 1 }))
   // .and(({ some: false }))
-  .andThen<Option<string>>(() => Option.none())
+  .andThen<OptionInstance<string>>(() => Option.none())
   .andThen(() => Option.some(1))
   // .andThen(() => ({ some: true, value: 1 }))
   // .andThen(() => ({ some: false }))
@@ -47,7 +47,7 @@ Option.some(null)
   // .orElse(() => ({ some: true, value: 1 }))
   // .orElse(() => ({ some: false }))
   .orElse(() => Option.some(1))
-  .orElse<Option<number>>(() => Option.none())
+  .orElse<OptionInstance<number>>(() => Option.none())
   .lazy()
   .eval();
 
@@ -65,7 +65,7 @@ Option.some(null)
   .orElse(() => ({ some: false }))
   .eval();
 
-function foo(): Option<number> {
+function foo(): OptionInstance<number> {
   return Option.some(1);
 }
 
