@@ -1,5 +1,19 @@
-import { assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
-import { Option, OptionInstance } from "./option.ts";
+import {
+  assert,
+  assertEquals,
+  assertObjectMatch,
+  assertThrows,
+} from "@std/assert";
+import {
+  isNone,
+  isSome,
+  type None,
+  none,
+  Option,
+  OptionInstance,
+  type Some,
+  some,
+} from "./option.ts";
 import { Result } from "./result.ts";
 
 Deno.test("Option", async (t) => {
@@ -569,5 +583,41 @@ Deno.test("Lazy", async (t) => {
         assertEquals(`${lazy}`, expected);
       });
     }
+  });
+});
+
+Deno.test("isSome", async (t) => {
+  await t.step("true", () => {
+    const a = some(1) as Option<number>;
+    assert(isSome(a));
+
+    const b: Some<number> = a;
+    assertEquals(a, b);
+  });
+
+  await t.step("false", () => {
+    const a = none() as Option<number>;
+    assert(!isSome(a));
+
+    const b: None = a;
+    assertEquals(a, b);
+  });
+});
+
+Deno.test("isNone", async (t) => {
+  await t.step("true", () => {
+    const a = none() as Option<number>;
+    assert(isNone(a));
+
+    const b: None = a;
+    assertEquals(a, b);
+  });
+
+  await t.step("false", () => {
+    const a = some(1) as Option<number>;
+    assert(!isNone(a));
+
+    const b: Some<number> = a;
+    assertEquals(a, b);
   });
 });

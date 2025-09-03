@@ -138,6 +138,36 @@ export interface None {
 }
 
 /**
+ * Infer Some from Option or OptionInstance
+ *
+ * ```diff
+ *  import type { InferSome, OptionInstance, some } from "@askua/core/option";
+ *
+ *  type A = Option<number>;
+ * -type B = Some<number>;
+ * +type B = InferSome<A>; // Same<number>
+ * ```
+ */
+export type InferSome<O extends Option<unknown>> = O extends
+  OptionInstance<infer T> ? Context<T> & Some<T>
+  : (Some<O extends Some<infer T> ? T : never>);
+
+/**
+ * Infer None from Option or OptionInstance
+ *
+ * ```diff
+ * import type { InferNone, OptionInstance, none } from "@askua/core/option";
+ *
+ * type A = Option<number>;
+ * -type B = None;
+ * +type B = InferNone<A>; // None
+ * ```
+ */
+export type InferNone<O extends Option<unknown>> = O extends
+  OptionInstance<infer T> ? Context<T> & None
+  : None;
+
+/**
  * Option
  *
  * ```ts
@@ -193,7 +223,6 @@ export type Instance<T> = OptionInstance<T>;
  * ```
  */
 export const OptionInstance: ToInstance & Static = Option;
-export const Instance = OptionInstance;
 
 /**
  * Option ToInstance
@@ -203,9 +232,9 @@ export const Instance = OptionInstance;
  * const b: Option<number> = Option({ some: false });
  * ```
  */
-export type ToInstance = {
-  <T>(option: Some<T>): OptionInstance<T> & Some<T>;
-  <T>(option: None): OptionInstance<T> & None;
+type ToInstance = {
+  <T>(option: Some<T>): InferSome<OptionInstance<T>>;
+  <T>(option: None): InferNone<OptionInstance<T>>;
   <T>(option: Option<T>): OptionInstance<T>;
 };
 
@@ -223,7 +252,7 @@ type OrT<O extends Option<unknown>, T> = NextT<O, T>;
  *
  * @typeParam T - value type
  */
-export interface Context<T>
+interface Context<T>
   extends
     Iterable<T>,
     ToResult<T>,
@@ -522,7 +551,7 @@ export interface Lazy<T, Eval extends Option<T>>
 /**
  * Static Option
  */
-export interface Static {
+interface Static {
   /**
    * ```ts
    * import { assertEquals, assertObjectMatch } from "@std/assert";
@@ -890,8 +919,8 @@ class _Lazy<T, Eval extends Option<T>> implements Lazy<T, Eval> {
 /**
  * impl ToInstance
  */
-function toInstance<T>(option: Some<T>): OptionInstance<T> & Some<T>;
-function toInstance<T>(option: None): OptionInstance<T> & None;
+function toInstance<T>(option: Some<T>): InferSome<OptionInstance<T>>;
+function toInstance<T>(option: None): InferNone<OptionInstance<T>>;
 function toInstance<T>(option: Option<T>): OptionInstance<T>;
 function toInstance<T>(option: Option<T>): OptionInstance<T> {
   return (option.some ? some(option.value) : none());
@@ -900,15 +929,55 @@ function toInstance<T>(option: Option<T>): OptionInstance<T> {
 /**
  * impl Static.some
  */
-export function some<T>(value: T): Some<T> & Context<T> {
+export function some<T>(value: T): InferSome<OptionInstance<T>> {
   return new _Some(value);
+}
+
+/**
+ * ```ts
+ * import { assert } from "@std/assert";
+ *
+ * const option = some(1) as Option<number>;
+ * assert(isSome(option));
+ *
+ * const _: Some<number> = option;
+ * ```
+ */
+export function isSome<T>(
+  option: Option<T>,
+): option is InferSome<typeof option>;
+export function isSome<T>(
+  option: OptionInstance<T>,
+): option is InferSome<typeof option>;
+export function isSome<T>({ some }: Option<T>) {
+  return some;
 }
 
 /**
  * impl Static.none
  */
-export function none<T = never>(): None & Context<T> {
+export function none<T = never>(): InferNone<OptionInstance<T>> {
   return new _None<T>();
+}
+
+/**
+ * ```ts
+ * import { assert } from "@std/assert";
+ *
+ * const option = none() as Option<number>;
+ * assert(isNone(option));
+ *
+ * const _: None = option;
+ * ```
+ */
+export function isNone<T>(
+  option: Option<T>,
+): option is InferNone<typeof option>;
+export function isNone<T>(
+  option: OptionInstance<T>,
+): option is InferNone<typeof option>;
+export function isNone<T>({ some }: Option<T>) {
+  return !some;
 }
 
 /**

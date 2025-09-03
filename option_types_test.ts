@@ -1,5 +1,14 @@
 import { test } from "./types_test.ts";
-import { type None, Option, type OptionInstance, type Some } from "./option.ts";
+import {
+  type InferNone,
+  type InferSome,
+  type None,
+  none,
+  Option,
+  type OptionInstance,
+  type Some,
+  some,
+} from "./option.ts";
 
 const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
   (n) => n > 0.5 ? Option.some(n) : Option.none(),
@@ -636,7 +645,7 @@ try {
 }
 
 {
-  const result = await Option.lazy(Option.orElse(
+  const option = await Option.lazy(Option.orElse(
     () => optionNumber,
     () => optionNumber,
     () => optionNumber,
@@ -644,5 +653,17 @@ try {
     .map((n) => n + 1)
     .orElse(() => Option.some("some"))
     .eval();
-  test<number | string>(result.unwrap());
+  test<number | string>(option.unwrap());
+}
+
+{
+  const option = some(1) as OptionInstance<number>;
+  const a = option as InferSome<typeof option>;
+  test<Some<number>>(a);
+}
+
+{
+  const option = none() as OptionInstance<unknown>;
+  const a = option as InferNone<typeof option>;
+  test<None>(a);
 }
