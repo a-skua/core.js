@@ -14,10 +14,7 @@
  * @module
  */
 
-/**
- * Brand unique symbol
- */
-declare const _Brand: unique symbol;
+import type { _Brand } from "./internal/brand.ts";
 
 /**
  * type Brand
@@ -25,6 +22,9 @@ declare const _Brand: unique symbol;
  * ```ts
  * type MyID = Brand<number, "MyID">;
  * ```
+ *
+ * @typeParam Type base type
+ * @typeParam ID unique identifier
  */
 export type Brand<Type, ID extends string | symbol> =
   & Type
