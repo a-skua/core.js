@@ -39,6 +39,9 @@ export type Brand<Type, ID extends string | symbol> =
  *
  * const id: MyID = MyID(1);
  * ```
+ *
+ * @typeparam Type base type
+ * @typeparam ID unique identifier
  */
 export function Brand<Type, ID extends string | symbol>(
   value: Type,
