@@ -10,7 +10,7 @@ import {
   type None,
   none,
   Option,
-  OptionInstance,
+  type OptionInstance,
   type Some,
   some,
 } from "./option.ts";
@@ -350,7 +350,7 @@ Deno.test("Option.lazy", async (t) => {
   }
 });
 
-Deno.test("OptionInstance.some", async (t) => {
+Deno.test("some", async (t) => {
   const tests = [
     ["value", { some: true, value: "value" }],
     [1, { some: true, value: 1 }],
@@ -358,119 +358,24 @@ Deno.test("OptionInstance.some", async (t) => {
 
   for (const [input, expected] of tests) {
     await t.step(`OptionInstance.some(${input}) => ${expected})`, () => {
-      const actual = OptionInstance.some(input);
+      const actual = some(input);
       assertObjectMatch(actual, expected);
       assertEquals(Object.keys(actual).length, Object.keys(expected).length);
     });
   }
 });
 
-Deno.test("OptionInstance.none", async (t) => {
+Deno.test("none", async (t) => {
   const tests = [
     [{ some: false }],
   ] as const;
 
   for (const [expected] of tests) {
     await t.step(`OptionInstance.none() => ${expected})`, () => {
-      const actual = OptionInstance.none();
+      const actual = none();
       assertObjectMatch(actual, expected);
       assertEquals(Object.keys(actual).length, Object.keys(expected).length);
     });
-  }
-});
-
-Deno.test("OptionInstance.andThen", async (t) => {
-  type Arg =
-    | Promise<OptionInstance<unknown>>
-    | OptionInstance<unknown>
-    | (() => Promise<OptionInstance<unknown>>)
-    | (() => OptionInstance<unknown>);
-
-  const tests: [Arg[], OptionInstance<unknown>][] = [
-    [
-      [OptionInstance.some(1), Promise.resolve(OptionInstance.some("hello"))],
-      OptionInstance.some([1, "hello"]),
-    ],
-    [[
-      OptionInstance.some(1),
-      Promise.resolve(OptionInstance.some(2)),
-      () => Promise.resolve(OptionInstance.some(3)),
-      () => OptionInstance.some(4),
-    ], OptionInstance.some([1, 2, 3, 4])],
-    [[
-      OptionInstance.some(1),
-      Promise.resolve(OptionInstance.some(2)),
-      () => Promise.resolve(OptionInstance.some(3)),
-      () => OptionInstance.none(),
-    ], OptionInstance.none()],
-  ];
-
-  for (const [args, expected] of tests) {
-    await t.step(
-      `OptionInstance.andThen(${args})() => ${expected}`,
-      async () => {
-        assertEquals(await OptionInstance.andThen(...args), expected);
-      },
-    );
-  }
-});
-
-Deno.test("OptionInstance.orElse", async (t) => {
-  type Arg =
-    | Promise<OptionInstance<unknown>>
-    | OptionInstance<unknown>
-    | (() => Promise<OptionInstance<unknown>>)
-    | (() => OptionInstance<unknown>);
-
-  const tests: [[Arg, ...Arg[]], OptionInstance<unknown>][] = [
-    [[
-      OptionInstance.none(),
-      Promise.resolve(OptionInstance.some(1)),
-    ], OptionInstance.some(1)],
-    [[
-      () => OptionInstance.none(),
-      () => Promise.resolve(OptionInstance.some("hello")),
-    ], OptionInstance.some("hello")],
-    [[
-      OptionInstance.none(),
-      Promise.resolve(OptionInstance.none()),
-      () => OptionInstance.none(),
-      () => Promise.resolve(OptionInstance.none()),
-    ], OptionInstance.none()],
-    [[
-      OptionInstance.none(),
-      Promise.resolve(OptionInstance.none()),
-      () => Promise.resolve(OptionInstance.some(1)),
-      () => OptionInstance.none(),
-    ], OptionInstance.some(1)],
-  ];
-
-  for (const [args, expected] of tests) {
-    await t.step(`(OptionInstance.orElse(${args}) => ${expected}`, async () => {
-      assertEquals(await OptionInstance.orElse(...args), expected);
-    });
-  }
-});
-
-Deno.test("OptionInstance.lazy", async (t) => {
-  const fn = (n: number) => n.toFixed(2);
-  const tests = [
-    [OptionInstance.some(1), OptionInstance.some("1.00")],
-    [() => OptionInstance.some(2), OptionInstance.some("2.00")],
-    [Promise.resolve(OptionInstance.some(3)), OptionInstance.some("3.00")],
-    [
-      () => Promise.resolve(OptionInstance.some(4)),
-      OptionInstance.some("4.00"),
-    ],
-  ] as const;
-
-  for (const [input, expected] of tests) {
-    await t.step(
-      `OptionInstance.lazy(${input}).map(${fn}).eval() => ${expected}`,
-      async () => {
-        assertEquals(await OptionInstance.lazy(input).map(fn).eval(), expected);
-      },
-    );
   }
 });
 

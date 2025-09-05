@@ -1,7 +1,10 @@
+import { assert } from "@std/assert";
 import { test } from "./types_test.ts";
 import {
   type InferNone,
   type InferSome,
+  isNone,
+  isSome,
   type None,
   none,
   Option,
@@ -657,13 +660,65 @@ try {
 }
 
 {
-  const option = some(1) as OptionInstance<number>;
+  const option = some(1) as Option<number>;
   const a = option as InferSome<typeof option>;
   test<Some<number>>(a);
+  // test<None>(a);
+  test<Option<number>>(a);
+  // test<OptionInstance<number>>(a);
 }
 
 {
-  const option = none() as OptionInstance<unknown>;
+  const option = none() as Option<number>;
   const a = option as InferNone<typeof option>;
+  // test<Some<number>>(a);
   test<None>(a);
+  test<Option<number>>(a);
+  // test<OptionInstance<number>>(a);
+}
+
+{
+  const option = some(1) as OptionInstance<number>;
+  const a = option as InferSome<typeof option>;
+  test<Some<number>>(a);
+  // test<None>(a);
+  test<Option<number>>(a);
+  // test<OptionInstance<number>>(a);
+}
+
+{
+  const option = none() as OptionInstance<number>;
+  const a = option as InferNone<typeof option>;
+  // test<Some<number>>(a);
+  test<None>(a);
+  test<Option<number>>(a);
+  test<OptionInstance<number>>(a);
+}
+
+{
+  const option = some(1) as Option<number>;
+  assert(isSome(option));
+  option.value;
+  // option.map((n) => n + 1);
+}
+
+{
+  const option = some(1) as OptionInstance<number>;
+  assert(isSome(option));
+  option.value;
+  option.map((n) => n + 1);
+}
+
+{
+  const option = none() as Option<number>;
+  assert(isNone(option));
+  // option.value;
+  // option.map((n) => n + 1);
+}
+
+{
+  const option = none() as OptionInstance<number>;
+  assert(isNone(option));
+  // option.value;
+  option.map((n) => n + 1);
 }

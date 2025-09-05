@@ -2,20 +2,34 @@
  * Option is Object base type, Some<T> and None.
  *
  * ```ts
- * import type { Some, None, Option } from "@askua/core/option";
+ * import { assert } from "@std/assert";
+ * import { some, none, isSome, isNone } from "@askua/core/option";
+ * import type { Option } from "@askua/core/option";
  *
- * const a: Some<number> = { some: true, value: 1 };
- * const b: None = { some: false };
+ * const a: Option<number> = { some: true, value: 1 };
+ * assert(isSome(a));
+ *
+ * const b: Option<number> = { some: false };
+ * assert(isNone(b));
+ *
+ * const c: Option<number> = some(2);
+ * assert(isSome(c));
+ *
+ * const d: Option<number> = none();
+ * assert(isNone(d));
  * ```
+ *
  * ## Usage
  *
  * ```ts
- * import type { Option } from "@askua/core/option";
+ * import { assertEquals } from "@std/assert";
+ * import { Option, some, none } from "@askua/core/option";
  *
- * const option = ((): Option<number> => ({ some: true, value: 1 }))();
- * if (option.some) {
- *   console.log(option.value);
- * }
+ * const value = Option({ some: true, value: 1 })
+ *   .map((n) => n + 1)
+ *   .andThen((n) => n >= 2 ? some(n) : none())
+ *   .unwrapOr(0);
+ * assertEquals(value, 2);
  * ```
  *
  * ## Why Object base?
@@ -24,54 +38,45 @@
  * So, Object base is easy to use.
  *
  * ```ts
- * import type { Some } from "@askua/core/option";
+ * import { assert } from "@std/assert";
+ * import type { Option } from "@askua/core/option";
  *
- * const json: string = `{"some":true,"value":1}`;
+ * const json: string = '{"some":true,"value":1}';
  *
  * const option: Option<number> = JSON.parse(json);
- * if (option.some) {
- *   console.log(option.value);
- * }
+ * assert(option.some);
+ *
+ * console.log(option.value); // 1
  * ```
  *
  * ## Using with method
  *
  * ```ts
- * import { Option } from "@askua/core/option";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { some, none } from "@askua/core/option";
  *
- * const option: Option<string> = some(Math.random())
+ * const option: OptionInstance<number> = some(Math.random());
+ *
+ * const value = option
  *   .andThen((n) => n >= 0.5 ? some(n) : none())
- *   .map((n) => n.toFixed(2));
+ *   .map((n) => n.toFixed(2))
+ *   .unwrapOr("0.00");
  *
- * if (option.some) {
- *   console.log(option.value);
- * }
+ * console.log(value);
  * ```
  *
- * ## Using OptionInstance type
+ * ## Using Iterable
  *
  * ```ts
- * import { OptionInstance as Option } from "@askua/core/option";
- *
- * const n: Option<string> = some(Math.random())
- *   .andThen((n) => n >= 0.5 ? some(n) : none())
- *   .map((n) => n.toFixed(2));
- *
- * console.log(n.unwrapOr("None!"));
- * ```
- *
- * ## Using Iterable type
- *
- * ```ts
- * import { Option } from "@askua/core/option";
+ * import { some, none } from "@askua/core/option";
  *
  * const getNumber = () => some(Math.random())
  *   .andThen((n) => n >= 0.5 ? some(n) : none());
  *
  * const list = [
- *   [...getNumber().map((n) => n.toFixed(2))],
- *   [...getNumber().map((n) => n.toFixed(2))],
- *   [...getNumber().map((n) => n.toFixed(2))],
+ *   ...getNumber(),
+ *   ...getNumber(),
+ *   ...getNumber(),
  * ];
  *
  * console.log(list);
@@ -80,7 +85,7 @@
  * ## Using Lazy type
  *
  * ```ts
- * import { Option } from "@askua/core/option";
+ * import { some, none } from "@askua/core/option";
  *
  * const getNumber = () => Promise.resolve(some(Math.random()));
  *
@@ -89,7 +94,7 @@
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
- * console.log(option.unwrapOr("None!"));
+ * console.log(option.unwrapOr("0.00"));
  * ```
  *
  * @module
@@ -103,16 +108,12 @@ import type { OrPromise } from "./types.ts";
  * Option element Some
  *
  * ```ts
- * import { assertObjectMatch } from "@std/assert";
+ * import type { Some } from "@askua/core/option";
  *
- * const option = some("is some");
- * assertObjectMatch(option, {
- *   some: true,
- *   value: "is some",
- * });
+ * const option: Some<number> = { some: true, value: 1 };
  * ```
  *
- * @typeParam T - value type
+ * @typeParam T value type
  */
 export interface Some<T> {
   readonly some: true;
@@ -123,15 +124,10 @@ export interface Some<T> {
  * Option element None
  *
  * ```ts
- * import { assertObjectMatch } from "@std/assert";
+ * import type { None } from "@askua/core/option";
  *
- * const option = none();
- * assertObjectMatch(option, {
- *   some: false,
- * });
+ * const option: None = { some: false };
  * ```
- *
- * @typeParam _ - value type
  */
 export interface None {
   readonly some: false;
@@ -140,55 +136,86 @@ export interface None {
 /**
  * Infer Some from Option or OptionInstance
  *
- * ```diff
- *  import type { InferSome, OptionInstance, some } from "@askua/core/option";
+ * ```ts
+ * import type { InferSome, Option } from "@askua/core/option";
  *
- *  type A = Option<number>;
- * -type B = Some<number>;
- * +type B = InferSome<A>; // Same<number>
+ * type A = Option<number>;
+ * type B = InferSome<A>; // = Same<number>
  * ```
  */
-export type InferSome<O extends Option<unknown>> = O extends
-  OptionInstance<infer T> ? Context<T> & Some<T>
-  : (Some<O extends Some<infer T> ? T : never>);
+export type InferSome<O extends Option<unknown>> = O extends Context<infer T>
+  ? Context<T> & Some<T>
+  : Some<O extends Some<infer T> ? T : never>;
 
 /**
  * Infer None from Option or OptionInstance
  *
- * ```diff
- * import type { InferNone, OptionInstance, none } from "@askua/core/option";
+ * ```ts
+ * import type { InferNone, Option } from "@askua/core/option";
  *
  * type A = Option<number>;
- * -type B = None;
- * +type B = InferNone<A>; // None
+ * type B = InferNone<A>; // = None
  * ```
  */
-export type InferNone<O extends Option<unknown>> = O extends
-  OptionInstance<infer T> ? Context<T> & None
+export type InferNone<O extends Option<unknown>> = O extends Context<infer T>
+  ? Context<T> & None
   : None;
 
 /**
- * Option
+ * Option is Object base type, Some<T> and None.
  *
  * ```ts
- * const a: Option<number> = some(1);
- * const b: Option<number> = none();
+ * import type { Option } from "@askua/core/option";
+ *
+ * const a: Option<number> = { some: true, value: 1 };
+ * const b: Option<number> = { some: false };
  * ```
  *
- * @typeParam T - value type
+ * @typeParam T value type
  */
 export type Option<T> = Some<T> | None;
 
 /**
- * impl Option
+ * Option is Object base type, Some<T> and None.
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
+ * import { Option, some, none } from "@askua/core/option";
  *
- * const option = Option({ some: true, value: 1 })
- *   .map((n) => n + 1);
+ * assertEquals(
+ *   Option.some(1),
+ *   Option({ some: true, value: 1 }),
+ * );
  *
- * assertEquals(option, some(2));
+ * assertEquals(
+ *   Option.none(),
+ *   Option({ some: false }),
+ * );
+ *
+ * assertEquals(
+ *   await Option.andThen(some(1), some(2)),
+ *   Option<[number, number]>({ some: true, value: [1, 2] }),
+ * );
+ *
+ * assertEquals(
+ *   await Option.orElse(some(1), some(2)),
+ *   Option({ some: true, value: 1 }),
+ * );
+ *
+ * assertEquals(
+ *   await Option.andThen(none(), some(1)),
+ *   Option({ some: false }),
+ * );
+ *
+ * assertEquals(
+ *   await Option.orElse(none(), some(1)),
+ *   Option({ some: true, value: 1 }),
+ * );
+ *
+ * assertEquals(
+ *   await Option.lazy(Promise.resolve(some(1))).map((n) => n + 1).eval(),
+ *   Option({ some: true, value: 2 }),
+ * );
  * ```
  */
 export const Option: ToInstance & Static = Object.assign(
@@ -197,32 +224,23 @@ export const Option: ToInstance & Static = Object.assign(
 );
 
 /**
- * Option OptionInstance
+ * Option Instance
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { some, none } from "@askua/core/option";
  *
- * const value = none()
- *   .map((n) => n + 1)
- *   .unwrapOr(0);
+ * const a: OptionInstance<number> = some(1);
+ * const b: OptionInstance<number> = none();
  *
- * assertEquals(value, 0);
+ * assertEquals(a.map((n) => n + 1), some(2));
+ * assertEquals(b.map((n) => n + 1), none());
  * ```
  *
- * @typeParam T - value type
+ * @typeParam T value type
  */
 export type OptionInstance<T> = Option<T> & Context<T>;
-export type Instance<T> = OptionInstance<T>;
-
-/**
- * impl OptionInstance
- *
- * ```ts
- * const a: Option<number> = OptionInstance({ some: true, value: 1 });
- * const b: Option<number> = OptionInstance({ some: false });
- * ```
- */
-export const OptionInstance: ToInstance & Static = Option;
 
 /**
  * Option ToInstance
@@ -416,7 +434,7 @@ type LazyEval<T, O extends Option<T>, Eval extends Option<unknown>> = O extends
  * @typeParam T - value type
  * @typeParam Eval - eval Option
  */
-export interface Lazy<T, Eval extends Option<T>>
+interface Lazy<T, Eval extends Option<T>>
   extends c.And<T>, c.Or<never>, c.Map<T> {
   /**
    * ```ts
@@ -681,7 +699,7 @@ interface Static {
 /**
  * Option ToResult
  */
-export interface ToResult<T> {
+interface ToResult<T> {
   /**
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -927,25 +945,42 @@ function toInstance<T>(option: Option<T>): OptionInstance<T> {
 }
 
 /**
- * impl Static.some
+ * some is create Some
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { some } from "@askua/core/option";
+ *
+ * const a: OptionInstance<number> = some(1);
+ * assertEquals(a.map((n) => n + 1), some(2));
+ * ```
+ *
+ * @typeParam T value type
  */
 export function some<T>(value: T): InferSome<OptionInstance<T>> {
   return new _Some(value);
 }
 
 /**
+ * isSome is check Some
+ *
  * ```ts
  * import { assert } from "@std/assert";
+ * import { some, isSome } from "@askua/core/option";
  *
- * const option = some(1) as Option<number>;
+ * const option = some(1);
  * assert(isSome(option));
- *
- * const _: Some<number> = option;
  * ```
+ *
+ * @typeParam T value type
  */
 export function isSome<T>(
   option: Option<T>,
 ): option is InferSome<typeof option>;
+/**
+ * @typeParam T value type
+ */
 export function isSome<T>(
   option: OptionInstance<T>,
 ): option is InferSome<typeof option>;
@@ -954,25 +989,42 @@ export function isSome<T>({ some }: Option<T>) {
 }
 
 /**
- * impl Static.none
+ * none is create None
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { none } from "@askua/core/option";
+ *
+ * const a: OptionInstance<number> = none<number>();
+ * assertEquals(a.map((n) => n + 1), none());
+ * ```
+ *
+ * @typeParam T value type
  */
 export function none<T = never>(): InferNone<OptionInstance<T>> {
   return new _None<T>();
 }
 
 /**
+ * isNone is check None
+ *
  * ```ts
  * import { assert } from "@std/assert";
+ * import { none, isNone } from "@askua/core/option";
  *
- * const option = none() as Option<number>;
+ * const option = none();
  * assert(isNone(option));
- *
- * const _: None = option;
  * ```
+ *
+ * @typeParam T value type
  */
 export function isNone<T>(
   option: Option<T>,
 ): option is InferNone<typeof option>;
+/**
+ * @typeParam T value type
+ */
 export function isNone<T>(
   option: OptionInstance<T>,
 ): option is InferNone<typeof option>;
