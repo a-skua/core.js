@@ -1,4 +1,4 @@
-import { type Instance, Result } from "@askua/core/result";
+import { Result, type ResultInstance } from "@askua/core/result";
 
 async function test(name: string, fn: () => Promise<unknown>) {
   console.time(name);
@@ -8,7 +8,7 @@ async function test(name: string, fn: () => Promise<unknown>) {
   console.log(`${name}: ${result}`);
 }
 
-const getNumber = (): Promise<Instance<number>> =>
+const getNumber = (): Promise<ResultInstance<number>> =>
   new Promise((resolve) => {
     setTimeout(() => {
       resolve(
