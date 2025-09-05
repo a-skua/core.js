@@ -513,22 +513,34 @@ try {
   const result = ok(0) as ResultInstance<number>;
   const a = result as InferOk<typeof result>;
   test<Ok<number>>(a);
+  // test<Err<Error>>(a);
+  test<Result<number>>(a);
+  test<ResultInstance<number>>(a);
 }
 
 {
   const result = ok(0) as Result<number>;
   const a = result as InferOk<typeof result>;
   test<Ok<number>>(a);
+  // test<Err<Error>>(a);
+  test<Result<number>>(a);
+  // test<ResultInstance<number>>(a);
 }
 
 {
-  const result = err("error") as ResultInstance<never, string>;
+  const result = err("error") as ResultInstance<number, string>;
   const a = result as InferErr<typeof result>;
   test<Err<string>>(a);
+  // test<Ok<number>>(a);
+  test<Result<number, string>>(a);
+  test<ResultInstance<number, string>>(a);
 }
 
 {
-  const result = err("error") as Result<never, string>;
+  const result = err("error") as Result<number, string>;
   const a = result as InferErr<typeof result>;
   test<Err<string>>(a);
+  // test<Ok<number>>(a);
+  test<Result<number, string>>(a);
+  // test<ResultInstance<number, string>>(a);
 }

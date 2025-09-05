@@ -9,11 +9,10 @@ import {
   err,
   isErr,
   isOk,
-  type Lazy,
   type Ok,
   ok,
   Result,
-  ResultInstance,
+  type ResultInstance,
 } from "./result.ts";
 import { Option } from "./option.ts";
 
@@ -341,9 +340,7 @@ Deno.test("Result.orElse", async (t) => {
 });
 
 Deno.test("Result.lazy", async (t) => {
-  type TestLazy = Lazy<number, Error, Result<number>>;
-
-  const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
+  const fn = (n: number) => n.toFixed(2);
 
   const tests = [
     [Result.ok(1), Result.ok("1.00")],
@@ -356,135 +353,40 @@ Deno.test("Result.lazy", async (t) => {
     await t.step(
       `Result.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
-        const lazy = Result.lazy(input) as TestLazy;
+        const lazy = Result.lazy(input);
         assertEquals(await lazy.map(fn).eval(), expected);
       },
     );
   }
 });
 
-Deno.test("ResultInstance.ok", async (t) => {
+Deno.test("ok", async (t) => {
   const tests = [
     ["value", { ok: true, value: "value" }],
     [1, { ok: true, value: 1 }],
   ] as const;
 
   for (const [input, expected] of tests) {
-    await t.step(`ResultInstance.ok(${input}) => ${expected})`, () => {
-      const actual = ResultInstance.ok(input);
+    await t.step(`ok(${input}) => ${expected})`, () => {
+      const actual = ok(input);
       assertObjectMatch(actual, expected);
       assertEquals(Object.keys(actual).length, Object.keys(expected).length);
     });
   }
 });
 
-Deno.test("ResultInstance.err", async (t) => {
+Deno.test("err", async (t) => {
   const tests = [
     ["error", { ok: false, error: "error" }],
     [1, { ok: false, error: 1 }],
   ] as const;
 
   for (const [input, expected] of tests) {
-    await t.step(`ResultInstance.err(${input}) => ${expected})`, () => {
-      const actual = ResultInstance.err(input);
+    await t.step(`err(${input}) => ${expected})`, () => {
+      const actual = err(input);
       assertObjectMatch(actual, expected);
       assertEquals(Object.keys(actual).length, Object.keys(expected).length);
     });
-  }
-});
-
-Deno.test("ResultInstance.andThen", async (t) => {
-  type Arg =
-    | Promise<ResultInstance<unknown, unknown>>
-    | ResultInstance<unknown, unknown>
-    | (() => Promise<ResultInstance<unknown, unknown>>)
-    | (() => ResultInstance<unknown, unknown>);
-
-  const tests: [
-    Arg[],
-    ResultInstance<unknown, unknown>,
-  ][] = [
-    [[
-      ResultInstance.ok(1),
-      Promise.resolve(ResultInstance.ok(2)),
-      () => Promise.resolve(ResultInstance.ok(3)),
-      () => ResultInstance.ok(4),
-    ], ResultInstance.ok([1, 2, 3, 4])],
-    [[
-      ResultInstance.ok(1),
-      Promise.resolve(ResultInstance.ok(2)),
-      () => Promise.resolve(ResultInstance.err("Error")),
-      () => ResultInstance.ok(4),
-    ], ResultInstance.err("Error")],
-    [[
-      ResultInstance.err("1"),
-      Promise.resolve(ResultInstance.err("2")),
-      () => Promise.resolve(ResultInstance.err("3")),
-      () => ResultInstance.err("4"),
-    ], ResultInstance.err("1")],
-  ];
-
-  for (const [args, expected] of tests) {
-    await t.step(`ResultInstance.andThen(${args}) => ${expected}`, async () => {
-      assertEquals(await ResultInstance.andThen(...args), expected);
-    });
-  }
-});
-
-Deno.test("ResultInstance.orElse", async (t) => {
-  type Arg =
-    | Promise<ResultInstance<unknown, unknown>>
-    | ResultInstance<unknown, unknown>
-    | (() => Promise<ResultInstance<unknown, unknown>>)
-    | (() => ResultInstance<unknown, unknown>);
-
-  const tests: [[Arg, ...Arg[]], ResultInstance<unknown, unknown>][] = [
-    [[
-      ResultInstance.err("Error"),
-      Promise.resolve(ResultInstance.ok(1)),
-      () => ResultInstance.ok(2),
-      () => ResultInstance.ok(3),
-    ], ResultInstance.ok(1)],
-    [[
-      () => ResultInstance.err("Error"),
-      () => ResultInstance.ok(1),
-      ResultInstance.ok(2),
-      Promise.resolve(ResultInstance.ok(3)),
-    ], ResultInstance.ok(1)],
-    [[
-      ResultInstance.err("1"),
-      Promise.resolve(ResultInstance.err("2")),
-      () => ResultInstance.err("3"),
-      () => Promise.resolve(ResultInstance.err("4")),
-    ], ResultInstance.err("4")],
-  ];
-
-  for (const [args, expected] of tests) {
-    await t.step(`ResultInstance.orElse(${args}) => ${expected}`, async () => {
-      assertEquals(await ResultInstance.orElse(...args), expected);
-    });
-  }
-});
-
-Deno.test("ResultInstance.lazy", async (t) => {
-  type TestLazy = Lazy<number, Error, Result<number>>;
-
-  const fn: Parameters<TestLazy["map"]>[0] = (n) => n.toFixed(2);
-  const tests = [
-    [ResultInstance.ok(1), ResultInstance.ok("1.00")],
-    [() => ResultInstance.ok(2), ResultInstance.ok("2.00")],
-    [Promise.resolve(ResultInstance.ok(3)), ResultInstance.ok("3.00")],
-    [() => Promise.resolve(ResultInstance.ok(4)), ResultInstance.ok("4.00")],
-  ] as const;
-
-  for (const [input, expected] of tests) {
-    await t.step(
-      `ResultInstance.lazy(${input}).map(${fn}).eval() => ${expected}`,
-      async () => {
-        const lazy = ResultInstance.lazy(input) as TestLazy;
-        assertEquals(await lazy.map(fn).eval(), expected);
-      },
-    );
   }
 });
 
