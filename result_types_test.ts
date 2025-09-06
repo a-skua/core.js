@@ -63,7 +63,7 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).andThen((
 {
   const result = Result.ok(1);
   test<Ok<number>>(result);
-  test<ResultInstance<number, never>>(result);
+  test<ResultInstance<number>>(result);
 }
 
 {

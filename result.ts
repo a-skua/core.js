@@ -188,40 +188,303 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * import { Result, ok, err } from "@askua/core/result";
  *
  * assertEquals(
- *   Result.ok(1),
+ *   ok(1),
  *   Result({ ok: true, value: 1 }),
  * );
  *
  * assertEquals(
- *   Result.err(new Error("error")),
+ *   err(new Error("error")),
  *   Result({ ok: false, error: new Error("error") }),
  * );
  *
  * assertEquals(
- *   await Result.andThen(ok(1), ok(2)),
- *   Result<[number, number]>({ ok: true, value: [1, 2] }),
+ *   JSON.stringify(ok(1)),
+ *   '{"value":1,"ok":true}',
  * );
  *
  * assertEquals(
- *   await Result.orElse(ok(1), ok(2)),
- *   Result({ ok: true, value: 1 }),
- * );
- *
- * assertEquals(
- *   await Result.andThen(err("error"), ok(2)),
- *   Result({ ok: false, error: "error" }),
- * );
- *
- * assertEquals(
- *   await Result.orElse(err("error"), ok(2)),
- *   Result({ ok: true, value: 2 }),
- * );
- *
- * assertEquals(
- *   await Result.lazy(Promise.resolve(ok(1))).map((n) => n + 1).eval(),
- *   Result({ ok: true, value: 2 }),
+ *   JSON.stringify(err("is error")),
+ *   '{"error":"is error","ok":false}',
  * );
  * ```
+ *
+ * ## Static Methods
+ *
+ * ### ok
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, ok } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   Result.ok("is ok"),
+ *   ok("is ok"),
+ * );
+ * ```
+ *
+ * ### err
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   Result.err("is error"),
+ *   err("is error"),
+ * );
+ * ```
+ *
+ * ### andThen
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { ResultInstance } from "@askua/core/result";
+ * import { Result, ok } from "@askua/core/result";
+ *
+ * const a = await Result.andThen(
+ *   ok(1),
+ *   () => ok(2),
+ *   Promise.resolve(ok(3)),
+ *   () => Promise.resolve(ok(4)),
+ * );
+ * const b: ResultInstance<[number, number, number, number]> = ok([1, 2, 3, 4]);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ### orElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { ResultInstance } from "@askua/core/result";
+ * import { Result, ok } from "@askua/core/result";
+ *
+ * const a = await Result.orElse(
+ *   err("error"),
+ *   () => err("error"),
+ *   Promise.resolve(err("error")),
+ *   () => Promise.resolve(ok(4)),
+ * );
+ * const b: ResultInstance<number, string> = ok(4);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ### lazy
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, ok } from "@askua/core/result";
+ *
+ * const result = await Result.lazy(ok(1))
+ *   .or(ok(2))
+ *   .map((n) => n.toFixed(2))
+ *   .eval();
+ *
+ * assertEquals(result, ok("1.00"));
+ * ```
+ *
+ * ## Instance Methods
+ *
+ * ### andThen
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).andThen((n) => ok(n + 1)),
+ *   ok(2),
+ * );
+ *
+ * assertEquals(
+ *   err("error").andThen((n) => ok(n + 1)),
+ *   err("error"),
+ * );
+ * ```
+ *
+ * ### and
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).and(ok(2)),
+ *   ok(2),
+ * );
+ *
+ * assertEquals(
+ *   err("error").and(ok(2)),
+ *   err("error"),
+ * );
+ * ```
+ *
+ * ## orElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).orElse(() => ok(2)),
+ *   ok(1),
+ * );
+ *
+ * assertEquals(
+ *   err("error").orElse(() => ok(2)),
+ *   ok(2),
+ * );
+ * ```
+ *
+ * ## or
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).or(ok(2)),
+ *   ok(1),
+ * );
+ *
+ * assertEquals(
+ *   err("error").or(ok(2)),
+ *   ok(2),
+ * );
+ * ```
+ *
+ * ## map
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).map((n) => n + 1),
+ *   ok(2),
+ * );
+ *
+ * assertEquals(
+ *   err("error").map((n) => n + 1),
+ *   err("error"),
+ * );
+ * ```
+ *
+ * ## unwrap
+ *
+ * ```ts
+ * import { assertEquals, assertThrows } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).unwrap(),
+ *   1,
+ * );
+ *
+ * assertThrows(() => err(new Error("error")).unwrap());
+ * ```
+ *
+ * ## unwrapOr
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).unwrapOr(0),
+ *   1,
+ * );
+ *
+ * assertEquals(
+ *   err("error").unwrapOr(0),
+ *   0,
+ * );
+ * ```
+ *
+ * ## unwrapOrElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).unwrapOrElse(() => 0),
+ *   1,
+ * );
+ *
+ * assertEquals(
+ *   err("error").unwrapOrElse(() => 0),
+ *   0,
+ * );
+ * ```
+ *
+ * ## lazy
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * const a = await ok(1)
+ *   .lazy()
+ *   .map((n) => Promise.resolve(n + 1))
+ *   .eval();
+ * const b = ok(2);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ## [Symbol.iterator]
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   [...ok(1)],
+ *   [1],
+ * );
+ *
+ * assertEquals(
+ *   [...err("error")],
+ *   [],
+ * );
+ * ```
+ *
+ * ## toOption
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok("is ok").toOption(),
+ *   some("is ok"),
+ * );
+ *
+ * assertEquals(
+ *   err("is error").toOption(),
+ *   none(),
+ * );
+ * ```
+ *
+ * ## toString
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok("is ok").toString(),
+ *   "Ok(is ok)",
+ * );
+ *
+ * assertEquals(
+ *   err("is error").toString(),
+ *   "Err(is error)",
+ * );
+ *   ```
  */
 export const Result: ToInstance & Static = Object.assign(
   toInstance,
@@ -1004,7 +1267,7 @@ function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
  * @typeParam T value type
  * @typeParam E error type
  */
-export function ok<T, E = never>(value: T): InferOk<ResultInstance<T, E>> {
+export function ok<T, E = Error>(value: T): InferOk<ResultInstance<T, E>> {
   return new _Ok(value);
 }
 
@@ -1089,11 +1352,10 @@ export function isErr<T, E>({ ok }: Result<T, E>) {
  * impl Static.andThen
  */
 async function andThen<
-  R extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends ResultInstance<infer _, infer _>
-      ? ResultInstance<T, E>
-      : Result<T, E>)
-    : never,
+  R extends Fn[number] extends (() => OrPromise<infer R>) | OrPromise<infer R>
+    ? (R extends ResultInstance<unknown, unknown> ? ResultInstance<T, E>
+      : (R extends Result<unknown, unknown> ? Result<T, E> : unknown))
+    : unknown,
   Fn extends {
     [K in keyof T]:
       | OrPromise<Result<T[K], E>>
@@ -1113,15 +1375,17 @@ async function andThen<
         : never)
       : never),
   T extends unknown[] = ({
-    [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<unknown, unknown> ? AndT<Awaited<R>> : never)
+    [K in keyof Fn]: Fn[K] extends
+      OrPromise<infer R> | (() => OrPromise<infer R>)
+      ? (R extends Ok<unknown> ? AndT<R> : never)
       : never;
   }),
   E = ({
-    [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<unknown, unknown> ? AndE<Awaited<R>, never>
-        : never)
-      : never;
+    [K in keyof Fn]: Fn[K] extends
+      OrPromise<infer R> | (() => OrPromise<infer R>)
+      ? (R extends ResultInstance<unknown, infer E> ? AndE<R, E>
+        : (R extends Err<infer E> ? AndE<R, E> : unknown))
+      : unknown;
   })[number],
 >(
   ...fn: Fn
@@ -1187,15 +1451,14 @@ async function orElse<
  */
 function lazy<
   R extends Eval,
-  Fn extends
-    | OrPromise<Eval>
-    | (() => OrPromise<Eval>) =
-      | OrPromise<R>
-      | (() => OrPromise<R>),
-  Eval extends Result<T, E> = Fn extends (() => infer R) | infer R ? Awaited<R>
-    : never,
+  Fn extends OrPromise<Eval> | (() => OrPromise<Eval>) =
+    | OrPromise<R>
+    | (() => OrPromise<R>),
+  Eval extends Result<T, E> = Fn extends
+    OrPromise<infer R> | (() => OrPromise<infer R>) ? R : never,
   T = NextT<Eval, never>,
-  E = NextE<Eval, never>,
+  E = Eval extends ResultInstance<unknown, infer E> ? NextE<Eval, E>
+    : NextE<Eval, never>,
 >(result: Fn): Lazy<T, E, Eval> {
   return new _Lazy(result);
 }

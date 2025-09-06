@@ -343,10 +343,10 @@ Deno.test("Result.lazy", async (t) => {
   const fn = (n: number) => n.toFixed(2);
 
   const tests = [
-    [Result.ok(1), Result.ok("1.00")],
-    [() => Result.ok(2), Result.ok("2.00")],
-    [Promise.resolve(Result.ok(3)), Result.ok("3.00")],
-    [() => Promise.resolve(Result.ok(4)), Result.ok("4.00")],
+    [ok(1), ok("1.00")],
+    [() => ok(2), ok("2.00")],
+    [Promise.resolve(ok(3)), ok("3.00")],
+    [() => Promise.resolve(ok(4)), ok("4.00")],
   ] as const;
 
   for (const [input, expected] of tests) {
