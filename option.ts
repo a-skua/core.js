@@ -183,38 +183,302 @@ export type Option<T> = Some<T> | None;
  * import { Option, some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   Option.some(1),
+ *   some(1),
  *   Option({ some: true, value: 1 }),
  * );
+ *
+ * assertEquals(
+ *   none(),
+ *   Option({ some: false }),
+ * );
+ *
+ * assertEquals(
+ *   JSON.stringify(some(1)),
+ *   '{"value":1,"some":true}',
+ * );
+ *
+ * assertEquals(
+ *   JSON.stringify(none()),
+ *   '{"some":false}',
+ * );
+ * ```
+ *
+ * ## Static Methods
+ *
+ * ### some
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Option, some } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   Option.some(1),
+ *   some(1),
+ * );
+ * ```
+ *
+ * ### none
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Option, none } from "@askua/core/option";
  *
  * assertEquals(
  *   Option.none(),
- *   Option({ some: false }),
+ *   none(),
+ * );
+ * ```
+ *
+ * ### andThen
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { Option, some } from "@askua/core/option";
+ *
+ * const a = await Option.andThen(
+ *   some(1),
+ *   () => some(2),
+ *   Promise.resolve(some(3)),
+ *   () => Promise.resolve(some(4)),
+ * );
+ * const b: OptionInstance<[number, number, number, number]> = some([1, 2, 3, 4]);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ### orElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import type { OptionInstance } from "@askua/core/option";
+ * import { Option, some, none } from "@askua/core/option";
+ *
+ * const a = await Option.orElse(
+ *   none<number>(),
+ *   Promise.resolve(none<number>()),
+ *   () => none<number>(),
+ *   () => Promise.resolve(some(4)),
+ * );
+ * const b: OptionInstance<number> = some(4);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ### lazy
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Option, some } from "@askua/core/option";
+ *
+ * const a = await Option.lazy(Promise.resolve(some(1)))
+ *   .or(some(2))
+ *   .map((n) => n + 1)
+ *   .eval();
+ * const b = some(2);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ## Instance Methods
+ *
+ * ### andThen
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).andThen((n) => some(n + 1)),
+ *   some(2),
  * );
  *
  * assertEquals(
- *   await Option.andThen(some(1), some(2)),
- *   Option<[number, number]>({ some: true, value: [1, 2] }),
+ *   some(1).andThen(() => none()),
+ *   none(),
+ * );
+ * ```
+ *
+ * ### and
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).and(some(2)),
+ *   some(2),
  * );
  *
  * assertEquals(
- *   await Option.orElse(some(1), some(2)),
- *   Option({ some: true, value: 1 }),
+ *   some(1).and(none()),
+ *   none(),
+ * );
+ * ```
+ *
+ * ### orElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).orElse(() => some(2)),
+ *   some(1),
  * );
  *
  * assertEquals(
- *   await Option.andThen(none(), some(1)),
- *   Option({ some: false }),
+ *   none().orElse(() => some(2)),
+ *   some(2),
+ * );
+ * ```
+ *
+ * ### or
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).or(some(2)),
+ *   some(1),
  * );
  *
  * assertEquals(
- *   await Option.orElse(none(), some(1)),
- *   Option({ some: true, value: 1 }),
+ *   none().or(some(2)),
+ *   some(2),
+ * );
+ * ```
+ *
+ * ### map
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).map((n) => n + 1),
+ *   some(2),
  * );
  *
  * assertEquals(
- *   await Option.lazy(Promise.resolve(some(1))).map((n) => n + 1).eval(),
- *   Option({ some: true, value: 2 }),
+ *   none().map((n) => n + 1),
+ *   none(),
+ * );
+ * ```
+ *
+ * ### unwrap
+ *
+ * ```ts
+ * import { assertEquals, assertThrows } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).unwrap(),
+ *   1,
+ * );
+ *
+ * assertThrows(() => none().unwrap());
+ * ```
+ *
+ * ### unwrapOr
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).unwrapOr(0),
+ *   1,
+ * );
+ *
+ * assertEquals(
+ *   none().unwrapOr(0),
+ *   0,
+ * );
+ * ```
+ *
+ * ### unwrapOrElse
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).unwrapOrElse(() => 0),
+ *   1,
+ * );
+ *
+ * assertEquals(
+ *   none().unwrapOrElse(() => 0),
+ *   0,
+ * );
+ * ```
+ *
+ * ### lazy
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * const a = await some(1)
+ *   .lazy()
+ *   .map((n) => Promise.resolve(n + 1))
+ *   .eval();
+ * const b = some(2);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
+ * ### [Symbol.iterator]
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   [...some("is some")],
+ *   ["is some"],
+ * );
+ *
+ * assertEquals(
+ *   [...none()],
+ *   [],
+ * );
+ * ```
+ *
+ * ### toResult
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   some("is some").toResult(),
+ *   ok("is some"),
+ * );
+ *
+ * assertEquals(
+ *   none().toResult(),
+ *   err(new Error("None")),
+ * );
+ * ```
+ *
+ * ### toString
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some("is some").toString(),
+ *   "Some(is some)",
+ * );
+ *
+ * assertEquals(
+ *   none().toString(),
+ *   "None",
  * );
  * ```
  */
@@ -1056,7 +1320,8 @@ async function andThen<
       }
       : never),
   T extends unknown[] = {
-    [K in keyof Fn]: Fn[K] extends infer O | (() => infer O)
+    [K in keyof Fn]: Fn[K] extends
+      infer O | (() => infer O) | Promise<infer O> | (() => Promise<infer O>)
       ? (O extends Option<unknown> ? AndT<O> : never)
       : never;
   },
