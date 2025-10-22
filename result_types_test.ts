@@ -9,6 +9,7 @@ import {
   Result,
   type ResultInstance,
 } from "./result.ts";
+import { none, type Option, some } from "./option.ts";
 
 const resultNumber: ResultInstance<number> = Result.ok(Math.random()).andThen((
   n,
@@ -543,4 +544,32 @@ try {
   // test<Ok<number>>(a);
   test<Result<number, string>>(a);
   // test<ResultInstance<number, string>>(a);
+}
+
+{
+  const result = Result.fromOption(some(1));
+  test<Ok<number>>(result);
+}
+
+{
+  const result = Result.fromOption(none());
+  test<Err<Error>>(result);
+}
+
+{
+  const result = Result.fromOption(none(), () => "ERR!");
+  // const result = Result.fromOption<number>(none(), "ERR!");
+  test<Err<string>>(result);
+}
+
+{
+  const option = some(1) as Option<number>;
+  const result = Result.fromOption(option);
+  test<ResultInstance<number>>(result);
+}
+
+{
+  const option = some(1) as Option<number>;
+  const result = Result.fromOption(option, () => "ERR!");
+  test<ResultInstance<number, string>>(result);
 }

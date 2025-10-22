@@ -102,7 +102,8 @@
  */
 
 import type * as c from "./context.ts";
-import { none, type OptionInstance, some } from "./option.ts";
+import { none, some } from "./option.ts";
+import type { None, Option, OptionInstance, Some } from "./option.ts";
 import type { OrPromise } from "./types.ts";
 
 /**
@@ -148,7 +149,7 @@ export interface Err<E> {
  * ```
  */
 export type InferOk<R extends Result<unknown, unknown>> = R extends
-  Context<infer T, infer E> ? Context<T, E> & Ok<T>
+  ResultContext<infer T, infer E> ? ResultContext<T, E> & Ok<T>
   : Ok<R extends Ok<infer T> ? T : never>;
 
 /**
@@ -162,7 +163,7 @@ export type InferOk<R extends Result<unknown, unknown>> = R extends
  * ```
  */
 export type InferErr<R extends Result<unknown, unknown>> = R extends
-  Context<infer T, infer E> ? Context<T, E> & Err<E>
+  ResultContext<infer T, infer E> ? ResultContext<T, E> & Err<E>
   : Err<R extends Err<infer E> ? E : never>;
 
 /**
@@ -282,6 +283,19 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  *   .eval();
  *
  * assertEquals(result, ok("1.00"));
+ * ```
+ *
+ * ### fromOption
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, ok } from "@askua/core/result";
+ * import { some } from "@askua/core/option";
+ *
+ * const a = Result.fromOption(some(1));
+ * const b = ok(1);
+ *
+ * assertEquals(a, b);
  * ```
  *
  * ## Instance Methods
@@ -451,24 +465,6 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## toOption
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok("is ok").toOption(),
- *   some("is ok"),
- * );
- *
- * assertEquals(
- *   err("is error").toOption(),
- *   none(),
- * );
- * ```
- *
  * ## toString
  *
  * ```ts
@@ -486,9 +482,9 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  *   ```
  */
-export const Result: ToInstance & Static = Object.assign(
+export const Result: ResultToInstance & ResultStatic = Object.assign(
   toInstance,
-  { ok, err, andThen, orElse, lazy },
+  { ok, err, andThen, orElse, lazy, fromOption },
 );
 
 /**
@@ -509,7 +505,7 @@ export const Result: ToInstance & Static = Object.assign(
  * @typeParam T value type
  * @typeParam E error type
  */
-export type ResultInstance<T, E = Error> = Result<T, E> & Context<T, E>;
+export type ResultInstance<T, E = Error> = Result<T, E> & ResultContext<T, E>;
 
 /**
  * Result ToInstance
@@ -519,7 +515,7 @@ export type ResultInstance<T, E = Error> = Result<T, E> & Context<T, E>;
  * const b: Result<number> = Result({ ok: false, error: new Error("error") });
  * ```
  */
-type ToInstance = {
+type ResultToInstance = {
   <T, E = never>(ok: Ok<T>): InferOk<ResultInstance<T, E>>;
   <T = never, E = never>(err: Err<E>): InferErr<ResultInstance<T, E>>;
   <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
@@ -549,7 +545,7 @@ type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
  * @typeParam T - value type
  * @typeParam E - error type
  */
-interface Context<T, E>
+interface ResultContext<T, E>
   extends Iterable<T>, ToOption<T>, c.And<T>, c.Or<E>, c.Map<T>, c.Unwrap<T> {
   /**
    * ```ts
@@ -871,9 +867,9 @@ interface Lazy<T, E, Eval extends Result<T, E>>
 }
 
 /**
- * Static Result
+ * Static Methods
  */
-interface Static {
+interface ResultStatic {
   /**
    * ```ts
    * import { ok } from "@askua/core/result";
@@ -1003,10 +999,29 @@ interface Static {
    * ```
    */
   lazy: typeof lazy;
+
+  /**
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   * import { some, none } from "@askua/core/option";
+   *
+   * const a: Ok<number> = Result.fromOption(some(1));
+   * assertEquals(a, ok(1));
+   *
+   * const b: Err<Error> = Result.fromOption(none());
+   * assertEquals(b, err(new Error("Option is None")));
+   *
+   * const c: Err<string> = Result.fromOption(none(), () => "ERR!");
+   * assertEquals(c, err("ERR!"));
+   * ```
+   */
+  fromOption: typeof fromOption;
 }
 
 /**
  * Result ToOption
+ *
+ * @deprecated use Option.fromResult()
  */
 interface ToOption<T> {
   /**
@@ -1020,6 +1035,8 @@ interface ToOption<T> {
    * const none = err("is error").toOption();
    * assertEquals(none, Option.none());
    * ```
+   *
+   * @deprecated use Option.fromResult()
    */
   toOption(): OptionInstance<T>;
 }
@@ -1027,7 +1044,7 @@ interface ToOption<T> {
 /**
  * impl Ok<T, E>
  */
-class _Ok<T, E> implements Ok<T>, Context<T, E> {
+class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
   readonly ok = true;
   constructor(readonly value: T) {
   }
@@ -1090,7 +1107,7 @@ class _Ok<T, E> implements Ok<T>, Context<T, E> {
 /**
  * impl Err<T, E>
  */
-class _Err<T, E> implements Err<E>, Context<T, E> {
+class _Err<T, E> implements Err<E>, ResultContext<T, E> {
   readonly ok = false;
   constructor(readonly error: E) {}
 
@@ -1348,9 +1365,6 @@ export function isErr<T, E>({ ok }: Result<T, E>) {
   return !ok;
 }
 
-/**
- * impl Static.andThen
- */
 async function andThen<
   R extends Fn[number] extends (() => OrPromise<infer R>) | OrPromise<infer R>
     ? (R extends ResultInstance<unknown, unknown> ? ResultInstance<T, E>
@@ -1406,9 +1420,6 @@ async function andThen<
   return ok(values) as never;
 }
 
-/**
- * impl Static.orElse
- */
 async function orElse<
   R extends Fn[number] extends (() => infer R) | infer R
     ? (Awaited<R> extends ResultInstance<infer _, infer _>
@@ -1446,9 +1457,6 @@ async function orElse<
   return last as R;
 }
 
-/**
- * impl Static.lazy
- */
 function lazy<
   R extends Eval,
   Fn extends OrPromise<Eval> | (() => OrPromise<Eval>) =
@@ -1461,4 +1469,31 @@ function lazy<
     : NextE<Eval, never>,
 >(result: Fn): Lazy<T, E, Eval> {
   return new _Lazy(result);
+}
+
+function fromOption<T, E = Error>(
+  option: Some<T>,
+): InferOk<ResultInstance<T, E>>;
+function fromOption<T>(
+  option: None,
+  e?: () => Error,
+): InferErr<ResultInstance<T, Error>>;
+function fromOption<T, E = Error>(
+  option: None,
+  e: () => E,
+): InferErr<ResultInstance<T, E>>;
+function fromOption<T>(
+  option: Option<T>,
+  e?: () => Error,
+): ResultInstance<T, Error>;
+function fromOption<T, E = Error>(
+  option: Option<T>,
+  e: () => E,
+): ResultInstance<T, E>;
+function fromOption<T, E = Error>(
+  option: Option<T>,
+  e = () => new Error("Option is None") as E,
+): ResultInstance<T, E> {
+  if (option.some) return ok(option.value);
+  return err(e());
 }

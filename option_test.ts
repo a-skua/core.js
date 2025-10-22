@@ -14,7 +14,7 @@ import {
   type Some,
   some,
 } from "./option.ts";
-import { Result } from "./result.ts";
+import { err, ok, type Result } from "./result.ts";
 
 Deno.test("Option", async (t) => {
   const tests = [
@@ -83,10 +83,10 @@ Deno.test("OptionInstance", async (t) => {
       unknown[],
       Result<unknown, unknown>,
     ][] = [
-      [Option.some("value"), [], Result.ok("value")],
-      [Option.none(), [], Result.err(new Error("None"))],
-      [Option.some("value"), ["is none"], Result.ok("value")],
-      [Option.none(), ["is none"], Result.err("is none")],
+      [Option.some("value"), [], ok("value")],
+      [Option.none(), [], err(new Error("None"))],
+      [Option.some("value"), ["is none"], ok("value")],
+      [Option.none(), ["is none"], err("is none")],
     ];
 
     for (const [option, args, expected] of tests) {
@@ -346,6 +346,20 @@ Deno.test("Option.lazy", async (t) => {
       async () => {
         assertEquals(await Option.lazy(input).map(fn).eval(), expected);
       },
+    );
+  }
+});
+
+Deno.test("Option.fromResult", async (t) => {
+  const tests = [
+    [ok(1), some(1)],
+    [err("error"), none()],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Option.fromResult(${input}) => ${expected}`,
+      () => assertEquals(Option.fromResult(input), expected),
     );
   }
 });

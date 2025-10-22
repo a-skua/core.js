@@ -14,7 +14,7 @@ import {
   Result,
   type ResultInstance,
 } from "./result.ts";
-import { Option } from "./option.ts";
+import { none, type Option, some } from "./option.ts";
 
 Deno.test("ResultInstance", async (t) => {
   await t.step("(ResultInstance).toString", async (t) => {
@@ -62,8 +62,8 @@ Deno.test("ResultInstance", async (t) => {
 
   await t.step("(ResultInstance).toOption", async (t) => {
     const tests: [ResultInstance<string, string>, Option<string>][] = [
-      [Result.ok("value"), Option.some("value")],
-      [Result.err("error"), Option.none()],
+      [Result.ok("value"), some("value")],
+      [Result.err("error"), none()],
     ];
 
     for (const [result, expected] of tests) {
@@ -358,6 +358,26 @@ Deno.test("Result.lazy", async (t) => {
       },
     );
   }
+});
+
+Deno.test("Result.fromOption", async (t) => {
+  const tests = [
+    [some(1), ok(1)],
+    [none(), err(new Error("Option is None"))],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Result.fromOption(${input}) => ${expected}`,
+      () => assertEquals(Result.fromOption(input), expected),
+    );
+  }
+
+  await t.step("with custom error", () => {
+    const actual = Result.fromOption(none(), () => "Custom error");
+    const expected = err("Custom error");
+    assertEquals(actual, expected);
+  });
 });
 
 Deno.test("ok", async (t) => {

@@ -12,6 +12,7 @@ import {
   type Some,
   some,
 } from "./option.ts";
+import { err, ok, type Result } from "./result.ts";
 
 const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
   (n) => n > 0.5 ? Option.some(n) : Option.none(),
@@ -22,6 +23,7 @@ const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
   test<Some<number>>(some);
   test<Option<number>>(some);
 }
+
 {
   const none = { some: false } as const;
   test<None>(none);
@@ -553,7 +555,7 @@ try {
 {
   const option = await Option.andThen(
     { some: false },
-    Promise.resolve({ some: false }),
+    Promise.resolve({ some: false as const }),
     () => ({ some: false as const }),
     () => Promise.resolve({ some: false as const }),
   );
@@ -721,4 +723,20 @@ try {
   assert(isNone(option));
   // option.value;
   option.map((n) => n + 1);
+}
+
+{
+  const option = Option.fromResult(ok("OK!"));
+  test<Some<string>>(option);
+}
+
+{
+  const option = Option.fromResult(err("ERR!"));
+  test<None>(option);
+}
+
+{
+  const result = ok("OK!") as Result<string>;
+  const option = Option.fromResult(result);
+  test<OptionInstance<string>>(option);
 }
