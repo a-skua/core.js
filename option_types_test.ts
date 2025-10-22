@@ -740,3 +740,45 @@ try {
   const option = Option.fromResult(result);
   test<OptionInstance<string>>(option);
 }
+
+{
+  const option = Option.fromNullable("not null");
+  test<Some<string>>(option);
+}
+
+{
+  const option = Option.fromNullable(null);
+  test<None>(option);
+}
+
+{
+  const option = Option.fromNullable(undefined);
+  test<None>(option);
+}
+
+{
+  const value = "non-null value" as string | null | undefined;
+  const option = Option.fromNullable(value);
+  test<OptionInstance<string>>(option);
+}
+
+{
+  const option = Option.fromNullable(0);
+  test<Some<number>>(option);
+}
+
+{
+  const option = Option.fromNullable(null);
+  test<None>(option);
+}
+
+{
+  const option = Option.fromNullable(undefined);
+  test<None>(option);
+}
+
+{
+  const value = 0 as number | null | undefined;
+  const option = Option.fromNullable(value);
+  test<OptionInstance<number>>(option);
+}

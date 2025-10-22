@@ -294,6 +294,18 @@ export type Option<T> = Some<T> | None;
  * assertEquals(a, b);
  * ```
  *
+ * ### fromNullable
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Option, some } from "@askua/core/option";
+ *
+ * const a = Option.fromNullable(1);
+ * const b = some(1);
+ *
+ * assertEquals(a, b);
+ * ```
+ *
  * ## Instance Methods
  *
  * ### andThen
@@ -480,7 +492,7 @@ export type Option<T> = Some<T> | None;
  */
 export const Option: OptionToInstance & OptionStatic = Object.assign(
   toInstance,
-  { some, none, andThen, orElse, lazy, fromResult },
+  { some, none, andThen, orElse, lazy, fromResult, fromNullable },
 );
 
 /**
@@ -968,6 +980,22 @@ interface OptionStatic {
    * ```
    */
   fromResult: typeof fromResult;
+
+  /**
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const a: Some<number> = Option.fromNullable(1);
+   * assertEquals(a, some(1));
+   *
+   * const b: None = Option.fromNullable(null);
+   * assertEquals(b, none());
+   *
+   * const c: None = Option.fromNullable(undefined);
+   * assertEquals(c, none());
+   * ```
+   */
+  fromNullable: typeof fromNullable;
 }
 
 /**
@@ -1397,10 +1425,18 @@ function lazy<
   return new _Lazy(option);
 }
 
-function fromResult<T, _>(result: Ok<T>): InferSome<OptionInstance<T>>;
+function fromResult<T>(result: Ok<T>): InferSome<OptionInstance<T>>;
 function fromResult<T, E>(result: Err<E>): InferNone<OptionInstance<T>>;
 function fromResult<T, E>(result: Result<T, E>): OptionInstance<T>;
 function fromResult<T, E>(result: Result<T, E>): OptionInstance<T> {
   if (result.ok) return some(result.value);
   return none();
+}
+
+function fromNullable<T>(value: NonNullable<T>): InferSome<OptionInstance<T>>;
+function fromNullable<T>(value: null | undefined): InferNone<OptionInstance<T>>;
+function fromNullable<T>(value: T | null | undefined): OptionInstance<T>;
+function fromNullable<T>(value: T | null | undefined): OptionInstance<T> {
+  if (value === null || value === undefined) return none();
+  return some(value);
 }

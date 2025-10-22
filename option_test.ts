@@ -364,6 +364,25 @@ Deno.test("Option.fromResult", async (t) => {
   }
 });
 
+Deno.test("Option.fromNullable", async (t) => {
+  const tests: [
+    number | string | null | undefined,
+    OptionInstance<number | string>,
+  ][] = [
+    [1, some(1)],
+    [null, none()],
+    [undefined, none()],
+    ["value", some("value")],
+  ];
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Option.fromNullable(${input}) => ${expected}`,
+      () => assertEquals(Option.fromNullable(input), expected),
+    );
+  }
+});
+
 Deno.test("some", async (t) => {
   const tests = [
     ["value", { some: true, value: "value" }],
