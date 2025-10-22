@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
