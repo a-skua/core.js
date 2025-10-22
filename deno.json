@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
@@ -28,6 +28,10 @@
       "dependencies": ["tests:doc"]
     },
     "docs": "deno doc --output=docs --html mod.ts brand.ts option.ts result.ts",
+    "docs:serve": {
+      "command": "deno run --allow-net --allow-read=./docs jsr:@std/http/file-server ./docs",
+      "dependencies": ["docs"]
+    },
     "bench": "deno bench | sed s:$(dirname $(pwd))::",
     "check:format": "deno fmt --check",
     "check:lint": "deno lint",
