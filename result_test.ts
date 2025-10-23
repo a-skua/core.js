@@ -170,7 +170,42 @@ Deno.test("ResultInstance", async (t) => {
       await t.step(`${result}.map(${fn}) => ${expected}`, () => {
         assertEquals(
           result.map(fn),
-          expected as Result<number, string>,
+          expected,
+        );
+      });
+    }
+  });
+
+  await t.step("(ResultInstance).filter", async (t) => {
+    const tests: [
+      ResultInstance<number, string | Error>,
+      (n: number) => boolean,
+      (() => Error) | undefined,
+      Result<number, string | Error>,
+    ][] = [
+      [ok(1), (n) => n > 0, , ok(1)],
+      [ok(1), (n) => n > 0, () => new Error("Optional Error"), ok(1)],
+      [ok(0), (n) => n > 0, , err(new Error("Filtered out"))],
+      [
+        ok(0),
+        (n) => n > 0,
+        () => new Error("Optional Error"),
+        err(new Error("Optional Error")),
+      ],
+      [err("error"), (n) => n > 0, , err("error")],
+      [
+        err("error"),
+        (n) => n > 0,
+        () => new Error("Optional Error"),
+        err("error"),
+      ],
+    ];
+
+    for (const [result, fn, err, expected] of tests) {
+      await t.step(`${result}.filter(${fn}, ${err}) => ${expected}`, () => {
+        assertEquals(
+          result.filter(fn, err),
+          expected,
         );
       });
     }
@@ -464,6 +499,23 @@ Deno.test("Lazy", async (t) => {
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
       assertEquals(await lazy.eval(), expected);
     });
+  });
+
+  await t.step("(Lazy).filter", async (t) => {
+    const tests = [
+      [ok(1).lazy().filter((n) => n > 0), ok(1)],
+      [ok(1).lazy().filter((n) => n > 0, () => "ERR!"), ok(1)],
+      [ok(0).lazy().filter((n) => n > 0), err(new Error("Filtered out"))],
+      [ok(0).lazy().filter((n) => n > 0, () => "ERR!"), err("ERR!")],
+      [err(-1).lazy().filter((n) => n > 0), err(-1)],
+      [err(-1).lazy().filter((n) => n > 0, () => "ERR!"), err(-1)],
+    ] as const;
+
+    for (const [lazy, expected] of tests) {
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
   });
 
   await t.step("(Lazy).toString", async (t) => {

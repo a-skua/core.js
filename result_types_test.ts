@@ -573,3 +573,71 @@ try {
   const result = Result.fromOption(option, () => "ERR!");
   test<ResultInstance<number, string>>(result);
 }
+
+{
+  const result = ok(1).filter((n) => n > 0);
+  test<ResultInstance<number, Error>>(result);
+}
+
+{
+  const result = ok(1).filter((n) => n > 0, () => "ERR!");
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = ok<number, string>(1).filter((n) => n > 0);
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = ok<number, string>(1).filter((n) => n > 0, () => "ERR!");
+  test<ResultInstance<number, string>>(result);
+}
+
+{
+  const result = await ok(1).lazy()
+    .filter((n) => n > 0).eval();
+  test<ResultInstance<number, Error>>(result);
+}
+
+{
+  const result = await ok(1).lazy()
+    .filter((n) => Promise.resolve(n > 0)).eval();
+  test<ResultInstance<number, Error>>(result);
+}
+
+{
+  const result = await ok(0).lazy()
+    .filter((n) => n > 0, () => "ERR!").eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok(0).lazy()
+    .filter((n) => Promise.resolve(n > 0), () => "ERR!").eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok<number, string>(1).lazy()
+    .filter((n) => n > 0).eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok<number, string>(1).lazy()
+    .filter((n) => Promise.resolve(n > 0)).eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok<number, string>(1).lazy()
+    .filter((n) => n > 0, () => "ERR!").eval();
+  test<ResultInstance<number, string>>(result);
+}
+
+{
+  const result = await ok<number, string>(1).lazy()
+    .filter((n) => Promise.resolve(n > 0), () => "ERR!").eval();
+  test<ResultInstance<number, string>>(result);
+}

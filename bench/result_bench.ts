@@ -1,4 +1,5 @@
 import { Result } from "@askua/core/result";
+import { none, some } from "@askua/core/option";
 
 Deno.bench("Result => Ok(1)", () => {
   Result({ ok: true, value: 1 });
@@ -6,14 +7,6 @@ Deno.bench("Result => Ok(1)", () => {
 
 Deno.bench("Result => Err(0)", () => {
   Result({ ok: false, error: 0 });
-});
-
-Deno.bench("(Result).toOption: Ok(1)", () => {
-  Result.ok(1).toOption();
-});
-
-Deno.bench("(Result).toOption: Err(0)", () => {
-  Result.err(0).toOption();
 });
 
 Deno.bench("(Result).andThen: Ok(1)", () => {
@@ -130,6 +123,22 @@ Deno.bench("Result.orElse", async () => {
     () => Result.err(3),
     () => Promise.resolve(Result.err(4)),
   );
+});
+
+Deno.bench("Result.fromOption(Some(0))", () => {
+  Result.fromOption(some(0));
+});
+
+Deno.bench("Result.fromOption(Some(0), () => string)", () => {
+  Result.fromOption(some(0), () => "Error!");
+});
+
+Deno.bench("Result.fromOption(None)", () => {
+  Result.fromOption(none());
+});
+
+Deno.bench("Result.fromOption(None, () => string)", () => {
+  Result.fromOption(none(), () => "Error!");
 });
 
 Deno.bench("Result.andThen(...[len=1000])", async (t) => {

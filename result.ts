@@ -27,7 +27,7 @@
  *
  * const value = Result({ ok: true, value: 1 })
  *   .map((n) => n + 1)
- *   .andThen((n) => n >= 2 ? ok(n) : err(new Error("less than 2")))
+ *   .filter((n) => n >= 2, () => new Error("less than 2"))
  *   .unwrapOr(0);
  *
  * assertEquals(value, 2);
@@ -59,7 +59,7 @@
  * const result: ResultInstance<number> = ok(Math.random());
  *
  * const value = result
- *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("less than 0.5")))
+ *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
  *   .map((n) => n.toFixed(2))
  *   .unwrapOr("0.00");
  *
@@ -72,7 +72,7 @@
  * import { Result } from "@askua/core/result";
  *
  * const getNumber = () => ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")));
+ *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"));
  *
  * const list = [
  *   ...getNumber(),
@@ -91,7 +91,7 @@
  * const getNumber = () => Promise.resolve(ok(Math.random()));
  *
  * const result = await Result.lazy(getNumber())
- *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("less than 0.5")))
+ *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
@@ -385,6 +385,23 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
+ * ## filter
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
+ *
+ * assertEquals(
+ *   ok(1).filter((n) => n > 0),
+ *   ok(1),
+ * );
+ *
+ * assertEquals(
+ *   err("error").filter((n) => n > 0),
+ *   err("error"),
+ * );
+ * ```
+ *
  * ## unwrap
  *
  * ```ts
@@ -546,7 +563,14 @@ type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
  * @typeParam E - error type
  */
 interface ResultContext<T, E>
-  extends Iterable<T>, ToOption<T>, c.And<T>, c.Or<E>, c.Map<T>, c.Unwrap<T> {
+  extends
+    Iterable<T>,
+    ToOption<T>,
+    c.And<T>,
+    c.Or<E>,
+    c.Map<T>,
+    c.Filter<T>,
+    c.Unwrap<T> {
   /**
    * ```ts
    * import { Result } from "@askua/core/result";
@@ -638,6 +662,29 @@ interface ResultContext<T, E>
   /**
    * ```ts
    * import { Result } from "@askua/core/result";
+   * console.log("[Example] (Result).[Symbol.iterator]");
+   *
+   * const fn = () => ok(Math.random())
+   *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
+   *   .map((n) => n.toFixed(2))
+   *   .or(ok("0.00"));
+   *
+   * console.log(`Result: ${fn()}`);
+   * ```
+   */
+  filter(isOk: (value: T) => boolean): ResultInstance<T, E | Error>;
+  filter<E2>(
+    isOk: (value: T) => boolean,
+    err: () => E2,
+  ): ResultInstance<T, E | E2>;
+  filter<E2>(
+    isOk: (value: T) => boolean,
+    err?: () => E2,
+  ): ResultInstance<T, E | E2 | Error>;
+
+  /**
+   * ```ts
+   * import { Result } from "@askua/core/result";
    * console.log("[Example] (Result).unwrap");
    *
    * const fn = () => ok(Math.random())
@@ -706,10 +753,10 @@ interface ResultContext<T, E>
    * assertEquals(result, ok(2));
    * ```
    */
-  lazy(): Lazy<T, E, ResultInstance<T, E>>;
+  lazy(): ResultLazy<T, E, ResultInstance<T, E>>;
 }
 
-type LazyEval<
+type ResultLazyEval<
   T,
   E,
   R extends Result<T, E>,
@@ -726,8 +773,8 @@ type LazyEval<
  * @typeParam E - error type
  * @typeParam Eval - eval Result
  */
-interface Lazy<T, E, Eval extends Result<T, E>>
-  extends c.And<T>, c.Or<E>, c.Map<T> {
+interface ResultLazy<T, E, Eval extends Result<T, E>>
+  extends c.And<T>, c.Or<E>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
    * console.log("[Example] (Lazy).andThen");
@@ -746,8 +793,8 @@ interface Lazy<T, E, Eval extends Result<T, E>>
     R extends Result<T2, E2>,
     T2 = AndT<R>,
     E2 = AndE<R, E>,
-    Z extends Result<T2, E2> = LazyEval<T2, E2, R, Eval>,
-  >(fn: (value: T) => OrPromise<R>): Lazy<T2, E2, Z>;
+    Z extends Result<T2, E2> = ResultLazyEval<T2, E2, R, Eval>,
+  >(fn: (value: T) => OrPromise<R>): ResultLazy<T2, E2, Z>;
 
   /**
    * ```ts
@@ -767,8 +814,8 @@ interface Lazy<T, E, Eval extends Result<T, E>>
     R extends Result<T2, E2>,
     T2 = AndT<R>,
     E2 = AndE<R, E>,
-    Z extends Result<T2, E2> = LazyEval<T2, E2, R, Eval>,
-  >(result: OrPromise<R>): Lazy<T2, E2, Z>;
+    Z extends Result<T2, E2> = ResultLazyEval<T2, E2, R, Eval>,
+  >(result: OrPromise<R>): ResultLazy<T2, E2, Z>;
 
   /**
    * ```ts
@@ -792,8 +839,8 @@ interface Lazy<T, E, Eval extends Result<T, E>>
     R extends Result<T2, E2>,
     T2 = OrT<R, T>,
     E2 = OrE<R>,
-    Z extends Result<T2, E2> = LazyEval<T2, E2, R, Eval>,
-  >(fn: (error: E) => OrPromise<R>): Lazy<T2, E2, Z>;
+    Z extends Result<T2, E2> = ResultLazyEval<T2, E2, R, Eval>,
+  >(fn: (error: E) => OrPromise<R>): ResultLazy<T2, E2, Z>;
 
   /**
    * ```ts
@@ -814,8 +861,8 @@ interface Lazy<T, E, Eval extends Result<T, E>>
     R extends Result<T2, E2>,
     T2 = OrT<R, T>,
     E2 = OrE<R>,
-    Z extends Result<T2, E2> = LazyEval<T2, E2, R, Eval>,
-  >(result: OrPromise<R>): Lazy<T2, E2, Z>;
+    Z extends Result<T2, E2> = ResultLazyEval<T2, E2, R, Eval>,
+  >(result: OrPromise<R>): ResultLazy<T2, E2, Z>;
 
   /**
    * ```ts
@@ -833,8 +880,46 @@ interface Lazy<T, E, Eval extends Result<T, E>>
    */
   map<
     T2,
-    Z extends Result<T2, E> = LazyEval<T2, E, ResultInstance<T2, E>, Eval>,
-  >(fn: (value: T) => OrPromise<T2>): Lazy<T2, E, Z>;
+    Z extends Result<T2, E> = ResultLazyEval<
+      T2,
+      E,
+      ResultInstance<T2, E>,
+      Eval
+    >,
+  >(fn: (value: T) => OrPromise<T2>): ResultLazy<T2, E, Z>;
+
+  filter<
+    Z extends Result<T, E | Error> = ResultLazyEval<
+      T,
+      E | Error,
+      ResultInstance<T, E | Error>,
+      Eval
+    >,
+  >(isOk: (value: T) => OrPromise<boolean>): ResultLazy<T, E | Error, Z>;
+  filter<
+    E2,
+    Z extends Result<T, E | E2> = ResultLazyEval<
+      T,
+      E | E2,
+      ResultInstance<T, E | E2>,
+      Eval
+    >,
+  >(
+    isOk: (value: T) => OrPromise<boolean>,
+    err: () => E2,
+  ): ResultLazy<T, E | E2, Z>;
+  filter<
+    E2,
+    Z extends Result<T, E | E2 | Error> = ResultLazyEval<
+      T,
+      E | E2 | Error,
+      ResultInstance<T, E | E2 | Error>,
+      Eval
+    >,
+  >(
+    isOk: (value: T) => OrPromise<boolean>,
+    err?: () => E2,
+  ): ResultLazy<T, E | E2 | Error, Z>;
 
   /**
    * ```ts
@@ -1073,6 +1158,14 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
     return ok(fn(this.value)) as V;
   }
 
+  filter<E2>(
+    isOk: (v: T) => boolean,
+    e: () => E2 = () => new Error("Filtered out") as E2,
+  ): ResultInstance<T, E | E2> {
+    if (isOk(this.value)) return this as never;
+    return err(e());
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -1085,7 +1178,7 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
     return this.value;
   }
 
-  lazy<Z extends Result<T, E>>(): Lazy<T, E, Z> {
+  lazy<Z extends Result<T, E>>(): ResultLazy<T, E, Z> {
     return new _Lazy(this as never);
   }
 
@@ -1127,6 +1220,10 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     return this as never;
   }
 
+  filter(): ResultInstance<T, E> {
+    return this;
+  }
+
   orElse<U, V>(fn: (error: E) => U): V {
     return fn(this.error) as never;
   }
@@ -1147,7 +1244,7 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     return fn(this.error);
   }
 
-  lazy<Z extends Result<T, E>>(): Lazy<T, E, Z> {
+  lazy<Z extends Result<T, E>>(): ResultLazy<T, E, Z> {
     return new _Lazy(this as never);
   }
 
@@ -1165,16 +1262,17 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
 }
 
 type Op<T, U, E, D> =
-  | { andThen: (value: T) => Promise<Result<U, D>> }
-  | { and: Promise<Result<U, D>> }
-  | { orElse: (error: E) => Promise<Result<U, D>> }
-  | { or: Promise<Result<U, D>> }
-  | { map: (value: T) => Promise<U> };
+  | { andThen: (value: T) => OrPromise<Result<U, D>> }
+  | { and: OrPromise<Result<U, D>> }
+  | { orElse: (error: E) => OrPromise<Result<U, D>> }
+  | { or: OrPromise<Result<U, D>> }
+  | { map: (value: T) => OrPromise<U> }
+  | { filter: (value: T) => OrPromise<boolean>; err?: () => E };
 
 /**
  * impl Lazy<T, E, Eval>
  */
-class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
+class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<T, E, Eval> {
   readonly op: Op<T, never, E, never>[] = [];
 
   constructor(
@@ -1204,6 +1302,11 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
 
   map<U, V>(map: U): V {
     this.op.push({ map } as typeof this.op[number]);
+    return this as never;
+  }
+
+  filter<Op, E, U>(filter: Op, err?: E): U {
+    this.op.push({ filter, err } as typeof this.op[number]);
     return this as never;
   }
 
@@ -1239,6 +1342,15 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements Lazy<T, E, Eval> {
         const p = op.map(result.value);
         result = ok(p instanceof Promise ? await p : p);
         continue;
+      }
+
+      if ("filter" in op && result.ok) {
+        const p = op.filter(result.value);
+        const isOk = p instanceof Promise ? await p : p;
+        if (!isOk) {
+          const e = op.err ? op.err() : new Error("Filtered out") as E;
+          result = err(e);
+        }
       }
     }
     return result as Eval;
@@ -1467,16 +1579,15 @@ function lazy<
   T = NextT<Eval, never>,
   E = Eval extends ResultInstance<unknown, infer E> ? NextE<Eval, E>
     : NextE<Eval, never>,
->(result: Fn): Lazy<T, E, Eval> {
+>(result: Fn): ResultLazy<T, E, Eval> {
   return new _Lazy(result);
 }
 
-function fromOption<T, E = Error>(
+function fromOption<T>(
   option: Some<T>,
-): InferOk<ResultInstance<T, E>>;
+): InferOk<ResultInstance<T, Error>>;
 function fromOption<T>(
   option: None,
-  e?: () => Error,
 ): InferErr<ResultInstance<T, Error>>;
 function fromOption<T, E = Error>(
   option: None,
@@ -1484,16 +1595,15 @@ function fromOption<T, E = Error>(
 ): InferErr<ResultInstance<T, E>>;
 function fromOption<T>(
   option: Option<T>,
-  e?: () => Error,
 ): ResultInstance<T, Error>;
 function fromOption<T, E = Error>(
   option: Option<T>,
   e: () => E,
 ): ResultInstance<T, E>;
-function fromOption<T, E = Error>(
+function fromOption<T, E>(
   option: Option<T>,
-  e = () => new Error("Option is None") as E,
+  e?: () => E,
 ): ResultInstance<T, E> {
   if (option.some) return ok(option.value);
-  return err(e());
+  return e ? err(e()) : err(new Error("Option is None") as E);
 }
