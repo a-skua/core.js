@@ -7,7 +7,7 @@
  * import { some, none } from "@askua/core";
  *
  * const n = some(Math.random())
- *   .andThen((n) => n >= 0.5 ? some(n) : none())
+ *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
  *
  * console.log(n.unwrapOr("n is less than 0.5"));
@@ -19,7 +19,7 @@
  * import { ok, err } from "@askua/core";
  *
  * const n = ok(Math.random())
- *   .andThen((n) => n >= 0.5 ? ok(n) : err(new Error("n is less than 0.5")))
+ *   .filter((n) => n >= 0.5, () => new Error("n is less than 0.5"))
  *   .map((n) => n.toFixed(2));
  *
  * console.log(n.unwrapOrElse((e) => e.message));

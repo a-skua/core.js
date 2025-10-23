@@ -22,7 +22,7 @@ const PassedNumber = Brand<number, "Passed">;
 const getNumber = () =>
   Option.some(Math.random())
     .map((n) => n * 100)
-    .andThen((n) => n >= 50 ? Option.some(n) : Option.none<number>())
+    .filter((n) => n >= 50)
     .map((n) => PassedNumber(n));
 
 const option = await Option
