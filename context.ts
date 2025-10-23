@@ -69,6 +69,22 @@ export interface Map<T, U = unknown, V = unknown> {
 }
 
 /**
+ * Filter
+ */
+export interface Filter<T, U = unknown> {
+  /**
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   * import { some, none } from "@askua/core/option";
+   *
+   * const option = some(0).filter((n) => n > 0);
+   * assertEquals(option, none());
+   * ```
+   */
+  filter(fn: (value: T) => boolean): U;
+}
+
+/**
  * Unwrap
  */
 export interface Unwrap<T> {
