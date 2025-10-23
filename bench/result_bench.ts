@@ -76,28 +76,28 @@ Deno.bench("for (const v of Ok(1))", () => {
   }
 });
 
-Deno.bench("for (const _ of Err(0))", () => {
-  const values = [];
-  for (const v of Result.err(0)) {
-    values.push(v); // never
-  }
-});
+// Deno.bench("for (const _ of Err(0))", () => {
+//   const values = [];
+//   for (const v of Result.err(0)) {
+//     values.push(v); // never
+//   }
+// });
 
 Deno.bench("[...Ok(1)]", () => {
   [...Result.ok(1)];
 });
 
-Deno.bench("[...Err(0)]", () => {
-  [...Result.err(0)];
-});
+// Deno.bench("[...Err(0)]", () => {
+//   [...Result.err(0)];
+// });
 
 Deno.bench("Array.from(Ok(1))", () => {
   Array.from(Result.ok(1));
 });
 
-Deno.bench("Array.from(Err(0))", () => {
-  Array.from(Result.err(0));
-});
+// Deno.bench("Array.from(Err(0))", () => {
+//   Array.from(Result.err(0));
+// });
 
 Deno.bench("Result.ok", () => {
   Result.ok(1);

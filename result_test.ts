@@ -31,12 +31,10 @@ Deno.test("ResultInstance", async (t) => {
   });
 
   await t.step("(ResultInstance).[Symbol.iterator]", async (t) => {
-    const tests: [ResultInstance<unknown, unknown>, unknown[]][] = [
-      [Result.ok("value"), ["value"]],
-      [Result.err("error"), []],
-    ];
+    await t.step("Ok<T>", async (t) => {
+      const result = Result.ok("value");
+      const expected = ["value"];
 
-    for (const [result, expected] of tests) {
       await t.step(`for (const v of ${result})`, () => {
         let i = 0;
         for (const value of result) {
@@ -44,20 +42,36 @@ Deno.test("ResultInstance", async (t) => {
         }
         assertEquals(i, expected.length);
       });
-    }
 
-    for (const [result, expected] of tests) {
       await t.step(`Array.from(${result}) => [${expected}]`, () => {
         const array = Array.from(result);
         assertEquals(array, expected);
       });
-    }
 
-    for (const [input, expected] of tests) {
-      await t.step(`[...${input}] => [${expected}]`, () => {
-        assertEquals([...input], expected);
+      await t.step(`[...${result}] => [${expected}]`, () => {
+        assertEquals([...result], expected);
       });
-    }
+    });
+
+    await t.step("Err<E>", async (t) => {
+      const result = Result.err("error");
+
+      await t.step(`for (const v of ${result})`, () => {
+        assertThrows(() => {
+          for (const _ of result) {
+            assert(false);
+          }
+        });
+      });
+
+      await t.step(`Array.from(${result})`, () => {
+        assertThrows(() => Array.from(result));
+      });
+
+      await t.step(`[...${result}]`, () => {
+        assertThrows(() => [...result]);
+      });
+    });
   });
 
   await t.step("(ResultInstance).toOption", async (t) => {

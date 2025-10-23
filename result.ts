@@ -72,7 +72,11 @@
  * import { Result } from "@askua/core/result";
  *
  * const getNumber = () => ok(Math.random())
- *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"));
+ *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
+ *   .orElse((e) => {
+ *     console.error(`Error: ${e}`);
+ *     return ok(-1);
+ *   });
  *
  * const list = [
  *   ...getNumber(),
@@ -468,7 +472,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * ## [Symbol.iterator]
  *
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { assertEquals, assertThrows } from "@std/assert";
  * import { ok, err } from "@askua/core/result";
  *
  * assertEquals(
@@ -476,10 +480,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  *   [1],
  * );
  *
- * assertEquals(
- *   [...err("error")],
- *   [],
- * );
+ * assertThrows(() => [...err("error")]);
  * ```
  *
  * ## toString
@@ -662,7 +663,7 @@ interface ResultContext<T, E>
   /**
    * ```ts
    * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).[Symbol.iterator]");
+   * console.log("[Example] (Result).filter");
    *
    * const fn = () => ok(Math.random())
    *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
@@ -976,17 +977,19 @@ interface ResultStatic {
   /**
    * ```ts
    * import { err } from "@askua/core/result";
-   * import { assert, assertEquals, assertObjectMatch } from "@std/assert";
+   * import { assert, assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
    *
    * const result = err("is error");
    *
    * assertEquals(result.toString(), "Err(is error)");
    * assertObjectMatch(result, { ok: false, error: "is error" });
-   * assertEquals(Array.from(result), []);
+   * assertThrows(() => Array.from(result));
    *
-   * for (const _ of result) {
-   *   assert(false);
-   * }
+   * assertThrows(() => {
+   *   for (const _ of result) {
+   *     assert(false);
+   *   }
+   * });
    * ```
    */
   err: typeof err;
@@ -1253,11 +1256,7 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
   }
 
   [Symbol.iterator](): Iterator<T> {
-    return Object.assign(this, {
-      next(): IteratorResult<T> {
-        return { done: true, value: undefined };
-      },
-    });
+    throw this.error;
   }
 }
 
