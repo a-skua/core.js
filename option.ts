@@ -27,7 +27,7 @@
  *
  * const value = Option({ some: true, value: 1 })
  *   .map((n) => n + 1)
- *   .andThen((n) => n >= 2 ? some(n) : none())
+ *   .filter((n) => n >= 2)
  *   .unwrapOr(0);
  * assertEquals(value, 2);
  * ```
@@ -58,7 +58,7 @@
  * const option: OptionInstance<number> = some(Math.random());
  *
  * const value = option
- *   .andThen((n) => n >= 0.5 ? some(n) : none())
+ *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
  *   .unwrapOr("0.00");
  *
@@ -70,8 +70,7 @@
  * ```ts
  * import { some, none } from "@askua/core/option";
  *
- * const getNumber = () => some(Math.random())
- *   .andThen((n) => n >= 0.5 ? some(n) : none());
+ * const getNumber = () => some(Math.random()).filter((n) => n >= 0.5);
  *
  * const list = [
  *   ...getNumber(),
@@ -90,7 +89,7 @@
  * const getNumber = () => Promise.resolve(some(Math.random()));
  *
  * const option = await Option.lazy(getNumber())
- *   .andThen((n) => n >= 0.5 ? some(n) : none())
+ *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
@@ -393,6 +392,23 @@ export type Option<T> = Some<T> | None;
  * );
  * ```
  *
+ * ### filter
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * assertEquals(
+ *   some(1).filter((n) => n > 0),
+ *   some(1),
+ * );
+ *
+ * assertEquals(
+ *   some(0).filter((n) => n > 0),
+ *   none(),
+ * );
+ * ```
+ *
  * ### unwrap
  *
  * ```ts
@@ -549,6 +565,7 @@ interface OptionContext<T>
     c.And<T>,
     c.Or<never>,
     c.Map<T>,
+    c.Filter<T>,
     c.Unwrap<T> {
   /**
    * ```ts
@@ -627,6 +644,19 @@ interface OptionContext<T>
 
   /**
    * ```ts
+   * console.log("[Example] (Option).filter");
+   *
+   * const fn = () => some(Math.random())
+   *  .filter((n) => n >= 0.5)
+   *  .map((n) => n.toFixed(2));
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
+   */
+  filter(fn: (value: T) => boolean): OptionInstance<T>;
+
+  /**
+   * ```ts
    * console.log("[Example] (Option).unwrap");
    *
    * const fn = () => some(Math.random())
@@ -679,7 +709,7 @@ interface OptionContext<T>
    * assertEquals(option, some(2));
    * ```
    */
-  lazy(): Lazy<T, OptionInstance<T>>;
+  lazy(): OptionLazy<T, OptionInstance<T>>;
 
   /**
    * ```ts
@@ -695,10 +725,10 @@ interface OptionContext<T>
   toString(): string;
 }
 
-type LazyEval<T, O extends Option<T>, Eval extends Option<unknown>> = O extends
-  OptionInstance<unknown>
-  ? (Eval extends OptionInstance<unknown> ? OptionInstance<T> : Option<T>)
-  : O;
+type OptionLazyEval<T, O extends Option<T>, Eval extends Option<unknown>> =
+  O extends OptionInstance<unknown>
+    ? (Eval extends OptionInstance<unknown> ? OptionInstance<T> : Option<T>)
+    : O;
 
 /**
  * Option Lazy eval
@@ -706,8 +736,8 @@ type LazyEval<T, O extends Option<T>, Eval extends Option<unknown>> = O extends
  * @typeParam T - value type
  * @typeParam Eval - eval Option
  */
-interface Lazy<T, Eval extends Option<T>>
-  extends c.And<T>, c.Or<never>, c.Map<T> {
+interface OptionLazy<T, Eval extends Option<T>>
+  extends c.And<T>, c.Or<never>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
    * console.log("[Example] (Lazy).andThen");
@@ -725,8 +755,8 @@ interface Lazy<T, Eval extends Option<T>>
   andThen<
     O extends Option<T2>,
     T2 = AndT<O>,
-    Z extends Option<T2> = LazyEval<T2, O, Eval>,
-  >(fn: (value: T) => OrPromise<O>): Lazy<T2, Z>;
+    Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
+  >(fn: (value: T) => OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -745,8 +775,8 @@ interface Lazy<T, Eval extends Option<T>>
   and<
     O extends Option<T2>,
     T2 = AndT<O>,
-    Z extends Option<T2> = LazyEval<T2, O, Eval>,
-  >(option: OrPromise<O>): Lazy<T2, Z>;
+    Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
+  >(option: OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -766,8 +796,8 @@ interface Lazy<T, Eval extends Option<T>>
   orElse<
     O extends Option<T2>,
     T2 = OrT<O, T>,
-    Z extends Option<T2> = LazyEval<T2, O, Eval>,
-  >(fn: () => OrPromise<O>): Lazy<T2, Z>;
+    Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
+  >(fn: () => OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -787,8 +817,8 @@ interface Lazy<T, Eval extends Option<T>>
   or<
     O extends Option<T2>,
     T2 = OrT<O, T>,
-    Z extends Option<T2> = LazyEval<T2, O, Eval>,
-  >(option: OrPromise<O>): Lazy<T2, Z>;
+    Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
+  >(option: OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -806,8 +836,26 @@ interface Lazy<T, Eval extends Option<T>>
    */
   map<
     T2,
-    Z extends Option<T2> = LazyEval<T2, OptionInstance<T2>, Eval>,
-  >(fn: (value: T) => OrPromise<T2>): Lazy<T2, Z>;
+    Z extends Option<T2> = OptionLazyEval<T2, OptionInstance<T2>, Eval>,
+  >(fn: (value: T) => OrPromise<T2>): OptionLazy<T2, Z>;
+
+  /**
+   * ```ts
+   * console.log("[Example] (Lazy).filter");
+   *
+   * const getNumber = () => Promise.resolve(some(Math.random()));
+   *
+   * const fn = () => Option.lazy(getNumber())
+   *   .filter((n) => n >= 0.5)
+   *   .map((n) => Promise.resolve(n.toFixed(2)))
+   *   .eval();
+   *
+   * console.log(`Option: ${await fn()}`);
+   * ```
+   */
+  filter<Z extends Option<T> = OptionLazyEval<T, OptionInstance<T>, Eval>>(
+    fn: (value: T) => OrPromise<boolean>,
+  ): OptionLazy<T, Z>;
 
   /**
    * ```ts
@@ -841,7 +889,7 @@ interface Lazy<T, Eval extends Option<T>>
 /**
  * Static Methods
  */
-interface OptionStatic {
+type OptionStatic = {
   /**
    * ```ts
    * import { assertEquals, assertObjectMatch } from "@std/assert";
@@ -996,7 +1044,7 @@ interface OptionStatic {
    * ```
    */
   fromNullable: typeof fromNullable;
-}
+};
 
 /**
  * Option ToResult
@@ -1055,6 +1103,11 @@ class _Some<T> implements Some<T>, OptionContext<T> {
     return some(fn(this.value)) as V;
   }
 
+  filter(fn: (v: T) => boolean): OptionInstance<T> {
+    if (fn(this.value)) return this;
+    return none();
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -1067,7 +1120,7 @@ class _Some<T> implements Some<T>, OptionContext<T> {
     return this.value as never;
   }
 
-  lazy<Z extends Option<T>>(): Lazy<T, Z> {
+  lazy<Z extends Option<T>>(): OptionLazy<T, Z> {
     return new _Lazy(this as never);
   }
 
@@ -1117,6 +1170,10 @@ class _None<T> implements None, OptionContext<T> {
     return this as never;
   }
 
+  filter(): InferNone<OptionInstance<T>> {
+    return this;
+  }
+
   unwrap(): T {
     throw new Error("None");
   }
@@ -1129,7 +1186,7 @@ class _None<T> implements None, OptionContext<T> {
     return fn();
   }
 
-  lazy<Z extends Option<T>>(): Lazy<T, Z> {
+  lazy<Z extends Option<T>>(): OptionLazy<T, Z> {
     return new _Lazy(this as never);
   }
 
@@ -1154,12 +1211,13 @@ type Op<T, U> =
   | { and: Promise<Option<U>> }
   | { orElse: () => Promise<Option<U>> }
   | { or: Promise<Option<U>> }
-  | { map: (value: T) => Promise<U> };
+  | { map: (value: T) => Promise<U> }
+  | { filter: (value: T) => Promise<boolean> };
 
 /**
  * impl Lazy<T, Eval>
  */
-class _Lazy<T, Eval extends Option<T>> implements Lazy<T, Eval> {
+class _Lazy<T, Eval extends Option<T>> implements OptionLazy<T, Eval> {
   readonly op: Op<T, never>[] = [];
 
   constructor(
@@ -1188,6 +1246,11 @@ class _Lazy<T, Eval extends Option<T>> implements Lazy<T, Eval> {
 
   map<U, Op>(map: Op): U {
     this.op.push({ map } as typeof this.op[number]);
+    return this as never;
+  }
+
+  filter<U, Op>(filter: Op): U {
+    this.op.push({ filter } as typeof this.op[number]);
     return this as never;
   }
 
@@ -1222,6 +1285,13 @@ class _Lazy<T, Eval extends Option<T>> implements Lazy<T, Eval> {
       if ("map" in op && option.some) {
         const p = op.map(option.value);
         option = some(p instanceof Promise ? await p : p);
+        continue;
+      }
+
+      if ("filter" in op && option.some) {
+        const p = op.filter(option.value);
+        const result = p instanceof Promise ? await p : p;
+        if (!result) option = none();
         continue;
       }
     }
@@ -1421,7 +1491,7 @@ function lazy<
   Eval extends Option<T> = Fn extends (() => infer O) | infer O ? Awaited<O>
     : never,
   T = NextT<Eval, never>,
->(option: Fn): Lazy<T, Eval> {
+>(option: Fn): OptionLazy<T, Eval> {
   return new _Lazy(option);
 }
 

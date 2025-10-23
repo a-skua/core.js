@@ -181,6 +181,24 @@ Deno.test("OptionInstance", async (t) => {
     }
   });
 
+  await t.step("(OptionInstance).filter", async (t) => {
+    const tests: [
+      OptionInstance<number>,
+      (n: number) => boolean,
+      Option<number>,
+    ][] = [
+      [some(1), (n) => n > 0, some(1)],
+      [some(0), (n) => n > 0, none()],
+      [none(), (n) => n > 0, none()],
+    ] as const;
+
+    for (const [option, fn, expected] of tests) {
+      await t.step(`${option}.filter(${fn}) => ${expected}`, () => {
+        assertEquals(option.filter(fn), expected);
+      });
+    }
+  });
+
   await t.step("(OptionInstance).unwrap", async (t) => {
     const tests = [
       [Option.some(1), 1],
@@ -473,17 +491,39 @@ Deno.test("Lazy", async (t) => {
     });
   });
 
+  await t.step("(Lazy).filter", async (t) => {
+    const tests = [
+      [some(1).lazy().filter((n) => n > 0), some(1)],
+      [some(1).lazy().filter((n) => Promise.resolve(n > 0)), some(1)],
+      [some(0).lazy().filter((n) => n > 0), none()],
+      [some(0).lazy().filter((n) => Promise.resolve(n > 0)), none()],
+      [none().lazy().filter((n) => n > 0), none()],
+      [none().lazy().filter((n) => Promise.resolve(n > 0)), none()],
+    ] as const;
+
+    for (const [lazy, expected] of tests) {
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
+  });
+
   await t.step("(Lazy).toString", async (t) => {
     const tests = [
       [
         Option.lazy(Option.some(1)),
         "Lazy<Some(1)>",
       ],
-
       [
         Option.lazy(Option.some(1))
           .map((n) => n + 1),
         "Lazy<Some(1).map((n)=>n + 1)>",
+      ],
+      [
+        Option.lazy(Option.some(1))
+          .filter((n) => n > 0)
+          .map((n) => n + 1),
+        "Lazy<Some(1).filter((n)=>n > 0).map((n)=>n + 1)>",
       ],
       [
         Option.lazy(Option.some(1))
@@ -516,6 +556,7 @@ Deno.test("Lazy", async (t) => {
         "Lazy<Some(1).map((n)=>n + 1).andThen((n)=>Option.some(n + 1)).and(None).orElse(()=>Option.none()).or(Some(1))>",
       ],
     ] as const;
+
     for (const [lazy, expected] of tests) {
       await t.step(`(Lazy).toString() => ${expected}`, () => {
         assertEquals(`${lazy}`, expected);

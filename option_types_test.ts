@@ -782,3 +782,68 @@ try {
   const option = Option.fromNullable(value);
   test<OptionInstance<number>>(option);
 }
+
+{
+  const option = some(1).filter((n) => n > 0).map((n) => n + 1);
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = some(0).filter((n) => n > 0).map((n) => n + 1);
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = none().filter((n) => n > 0).map((n) => n + 1);
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = none().filter((n) => n > 0);
+  test<OptionInstance<never>>(option);
+}
+
+{
+  const option = await some(1).lazy()
+    .filter((n) => n > 0).map((n) => n + 1).eval();
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = await some(1).lazy()
+    .filter((n) => Promise.resolve(n > 0)).map((n) => n + 1).eval();
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = await some(0).lazy()
+    .filter((n) => n > 0).map((n) => n + 1).eval();
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = await some(0).lazy()
+    .filter((n) => Promise.resolve(n > 0)).map((n) => n + 1).eval();
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = await none().lazy()
+    .filter((n) => n > 0).map((n) => n + 1).eval();
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option = await none().lazy()
+    .filter((n) => n > 0).eval();
+  test<OptionInstance<never>>(option);
+}
+
+{
+  const option = await none().lazy()
+    .filter((n) => n > 0)
+    .andThen((value) => ({ some: true, value }))
+    .map((n) => n + 1)
+    .eval();
+  test<Option<number>>(option);
+}
