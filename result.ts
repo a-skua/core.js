@@ -338,7 +338,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## orElse
+ * ### orElse
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -355,7 +355,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## or
+ * ### or
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -372,7 +372,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## map
+ * ### map
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -389,7 +389,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## filter
+ * ### filter
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -406,7 +406,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## unwrap
+ * ### unwrap
  *
  * ```ts
  * import { assertEquals, assertThrows } from "@std/assert";
@@ -420,7 +420,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * assertThrows(() => err(new Error("error")).unwrap());
  * ```
  *
- * ## unwrapOr
+ * ### unwrapOr
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -437,7 +437,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## unwrapOrElse
+ * ### unwrapOrElse
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -454,7 +454,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * );
  * ```
  *
- * ## lazy
+ * ### lazy
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -469,7 +469,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * assertEquals(a, b);
  * ```
  *
- * ## [Symbol.iterator]
+ * ### [Symbol.iterator]
  *
  * ```ts
  * import { assertEquals, assertThrows } from "@std/assert";
@@ -483,7 +483,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * assertThrows(() => [...err("error")]);
  * ```
  *
- * ## toString
+ * ### toString
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
