@@ -432,6 +432,43 @@ Deno.test("Result.fromOption", async (t) => {
   });
 });
 
+Deno.test("Result.fromNullable", async (t) => {
+  const tests: [number | null | undefined, Result<number>][] = [
+    [1, ok(1)],
+    [null, err(new Error("Nullable"))],
+    [undefined, err(new Error("Nullable"))],
+  ] as const;
+
+  for (const [input, expected] of tests) {
+    await t.step(
+      `Result.fromOption(${input}) => ${expected}`,
+      () => assertEquals(Result.fromNullable(input), expected),
+    );
+  }
+
+  await t.step("with custom error", async (t) => {
+    const tests: [
+      number | null | undefined,
+      (() => string) | undefined,
+      Result<number, string | Error>,
+    ][] = [
+      [1, , ok(1)],
+      [1, () => "error", ok(1)],
+      [null, , err(new Error("Nullable"))],
+      [null, () => "error", err("error")],
+      [undefined, , err(new Error("Nullable"))],
+      [undefined, () => "error", err("error")],
+    ] as const;
+
+    for (const [input, option, expected] of tests) {
+      await t.step(
+        `Result.fromOption(${input}) => ${expected}`,
+        () => assertEquals(Result.fromNullable(input, option), expected),
+      );
+    }
+  });
+});
+
 Deno.test("ok", async (t) => {
   const tests = [
     ["value", { ok: true, value: "value" }],

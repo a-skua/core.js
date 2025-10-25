@@ -695,3 +695,50 @@ try {
   const result = err(1) as ResultInstance<string, number>;
   if (isErr(result)) test<ResultInstance<number, number>>(result);
 }
+
+{
+  const result = Result.fromNullable(1);
+  test<Result<number, string>>(result);
+}
+
+{
+  const result = Result.fromNullable(1, () => -1);
+  test<Result<number, number>>(result);
+}
+
+{
+  const result = Result.fromNullable(1);
+  test<Result<number, string>>(result);
+}
+
+{
+  const result = Result.fromNullable(1, () => "error");
+  test<Result<number>>(result);
+}
+
+{
+  const result = Result.fromNullable(null);
+  test<Result<number>>(result);
+}
+
+{
+  const result = Result.fromNullable(null, () => "error");
+  test<Result<number, string>>(result);
+}
+
+{
+  const result = Result.fromNullable(undefined);
+  test<Result<number>>(result);
+}
+
+{
+  const value = 1 as number | null;
+  const result = Result.fromNullable(value);
+  test<Result<number>>(result);
+}
+
+{
+  const value = 1 as number | null;
+  const result = Result.fromNullable(value, () => "error");
+  test<Result<number, string>>(result);
+}
