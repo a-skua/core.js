@@ -282,6 +282,13 @@ try {
   console.debug(e);
 }
 
+try {
+  const result = resultNumber.unwrap(() => new Error("my error"));
+  test<number>(result);
+} catch (e) {
+  console.debug(e);
+}
+
 {
   const result = resultNumber.unwrapOr("error");
   test<number | string>(result);

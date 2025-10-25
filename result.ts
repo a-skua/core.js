@@ -698,6 +698,8 @@ interface ResultContext<T, E>
    * ```
    */
   unwrap(): T;
+  unwrap<E extends Error>(err: () => E): T;
+  unwrap<E extends Error>(err?: () => E): T;
 
   /**
    * ```ts
@@ -1235,8 +1237,12 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     return result as never;
   }
 
-  unwrap(): T {
-    throw this.error;
+  unwrap(err?: () => Error): T {
+    if (err) throw err();
+
+    if (this.error instanceof Error) throw this.error;
+
+    throw new Error(`${this.error}`);
   }
 
   unwrapOr<U>(value: U): U {

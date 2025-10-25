@@ -240,12 +240,14 @@ Deno.test("ResultInstance", async (t) => {
 
   await t.step("(ResultInstance).unwrap => throw", async (t) => {
     const tests = [
-      [Result.err(new Error("error")), Error],
+      [() => err(new Error("error")).unwrap(), Error],
+      [() => err("error").unwrap(), Error],
+      [() => err("").unwrap(() => new Error("error")), Error],
     ] as const;
 
-    for (const [result, expected] of tests) {
-      await t.step(`${result}.unwrap() => throw ${expected}`, () => {
-        assertThrows(() => result.unwrap(), expected);
+    for (const [doing, expected] of tests) {
+      await t.step(`${doing} => throw ${expected}`, () => {
+        assertThrows(doing, expected);
       });
     }
   });
