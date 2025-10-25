@@ -153,7 +153,7 @@ export interface Err<E> {
  * ```
  */
 export type InferOk<R extends Result<unknown, unknown>> = R extends
-  ResultContext<infer T, infer E> ? ResultContext<T, E> & Ok<T>
+  ResultContext<infer T, infer _> ? ResultContext<T, never> & Ok<T>
   : Ok<R extends Ok<infer T> ? T : never>;
 
 /**
@@ -167,7 +167,7 @@ export type InferOk<R extends Result<unknown, unknown>> = R extends
  * ```
  */
 export type InferErr<R extends Result<unknown, unknown>> = R extends
-  ResultContext<infer T, infer E> ? ResultContext<T, E> & Err<E>
+  ResultContext<infer _, infer E> ? ResultContext<never, E> & Err<E>
   : Err<R extends Err<infer E> ? E : never>;
 
 /**
@@ -246,7 +246,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * import type { ResultInstance } from "@askua/core/result";
  * import { Result, ok } from "@askua/core/result";
  *
- * const a = await Result.andThen(
+ * const a: ResultInstance<[number, number, number, number]> = await Result.andThen(
  *   ok(1),
  *   () => ok(2),
  *   Promise.resolve(ok(3)),
@@ -1416,14 +1416,14 @@ export function ok<T, E = Error>(value: T): InferOk<ResultInstance<T, E>> {
  * @typeParam E error type
  */
 export function isOk<T, E>(
-  result: Result<T, E>,
+  result: ResultInstance<T, E>,
 ): result is InferOk<typeof result>;
 /**
  * @typeParam T value type
  * @typeParam E error type
  */
 export function isOk<T, E>(
-  result: ResultInstance<T, E>,
+  result: Result<T, E>,
 ): result is InferOk<typeof result>;
 export function isOk<T, E>({ ok }: Result<T, E>) {
   return ok;
@@ -1465,14 +1465,14 @@ export function err<T = never, E = Error>(
  * @typeParam E error type
  */
 export function isErr<T, E>(
-  result: Result<T, E>,
+  result: ResultInstance<T, E>,
 ): result is InferErr<typeof result>;
 /**
  * @typeParam T value type
  * @typeParam E error type
  */
 export function isErr<T, E>(
-  result: ResultInstance<T, E>,
+  result: Result<T, E>,
 ): result is InferErr<typeof result>;
 export function isErr<T, E>({ ok }: Result<T, E>) {
   return !ok;

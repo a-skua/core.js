@@ -4,6 +4,8 @@ import {
   err,
   type InferErr,
   type InferOk,
+  isErr,
+  isOk,
   type Ok,
   ok,
   Result,
@@ -665,4 +667,24 @@ try {
   const result = await ok<number, string>(1).lazy()
     .filter((n) => Promise.resolve(n > 0), () => "ERR!").eval();
   test<ResultInstance<number, string>>(result);
+}
+
+{
+  const result = ok(1) as Result<number>;
+  if (isOk(result)) test<Result<number, string>>(result);
+}
+
+{
+  const result = ok(1) as ResultInstance<number>;
+  if (isOk(result)) test<ResultInstance<number, string>>(result);
+}
+
+{
+  const result = err(1) as Result<string, number>;
+  if (isErr(result)) test<Result<number, number>>(result);
+}
+
+{
+  const result = err(1) as ResultInstance<string, number>;
+  if (isErr(result)) test<ResultInstance<number, number>>(result);
 }
