@@ -676,11 +676,11 @@ interface ResultContext<T, E>
   filter(isOk: (value: T) => boolean): ResultInstance<T, E | Error>;
   filter<E2>(
     isOk: (value: T) => boolean,
-    err: () => E2,
+    err: (value: T) => E2,
   ): ResultInstance<T, E | E2>;
   filter<E2>(
     isOk: (value: T) => boolean,
-    err?: () => E2,
+    err?: (value: T) => E2,
   ): ResultInstance<T, E | E2 | Error>;
 
   /**
@@ -907,7 +907,7 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
     >,
   >(
     isOk: (value: T) => OrPromise<boolean>,
-    err: () => E2,
+    err: (value: T) => E2,
   ): ResultLazy<T, E | E2, Z>;
   filter<
     E2,
@@ -919,7 +919,7 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
     >,
   >(
     isOk: (value: T) => OrPromise<boolean>,
-    err?: () => E2,
+    err?: (value: T) => E2,
   ): ResultLazy<T, E | E2 | Error, Z>;
 
   /**
@@ -1163,10 +1163,10 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
 
   filter<E2>(
     isOk: (v: T) => boolean,
-    e: () => E2 = () => new Error("Filtered out") as E2,
+    e: (v: T) => E2 = (v) => new Error(`Filtered out: "${v}"`) as E2,
   ): ResultInstance<T, E | E2> {
     if (isOk(this.value)) return this as never;
-    return err(e());
+    return err(e(this.value));
   }
 
   unwrap(): T {
@@ -1266,7 +1266,7 @@ type Op<T, U, E, D> =
   | { orElse: (error: E) => OrPromise<Result<U, D>> }
   | { or: OrPromise<Result<U, D>> }
   | { map: (value: T) => OrPromise<U> }
-  | { filter: (value: T) => OrPromise<boolean>; err?: () => E };
+  | { filter: (value: T) => OrPromise<boolean>; err?: (value: T) => E };
 
 /**
  * impl Lazy<T, E, Eval>
@@ -1347,7 +1347,9 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<T, E, Eval> {
         const p = op.filter(result.value);
         const isOk = p instanceof Promise ? await p : p;
         if (!isOk) {
-          const e = op.err ? op.err() : new Error("Filtered out") as E;
+          const e = op.err
+            ? op.err(result.value)
+            : new Error(`Filtered out: "${result.value}"`) as E;
           result = err(e);
         }
       }

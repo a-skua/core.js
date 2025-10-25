@@ -585,12 +585,25 @@ try {
 }
 
 {
+  const result = ok(1).filter((n) => n > 0, (n) => `Err(${n})!`);
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
   const result = ok<number, string>(1).filter((n) => n > 0);
   test<ResultInstance<number, string | Error>>(result);
 }
 
 {
   const result = ok<number, string>(1).filter((n) => n > 0, () => "ERR!");
+  test<ResultInstance<number, string>>(result);
+}
+
+{
+  const result = ok<number, string>(1).filter(
+    (n) => n > 0,
+    (n) => `Err(${n})!`,
+  );
   test<ResultInstance<number, string>>(result);
 }
 
@@ -614,7 +627,19 @@ try {
 
 {
   const result = await ok(0).lazy()
+    .filter((n) => n > 0, (n) => `Err(${n})!`).eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok(0).lazy()
     .filter((n) => Promise.resolve(n > 0), () => "ERR!").eval();
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = await ok(0).lazy()
+    .filter((n) => Promise.resolve(n > 0), (n) => `Err(${n})!`).eval();
   test<ResultInstance<number, string | Error>>(result);
 }
 

@@ -194,23 +194,24 @@ Deno.test("ResultInstance", async (t) => {
     const tests: [
       ResultInstance<number, string | Error>,
       (n: number) => boolean,
-      (() => Error) | undefined,
+      ((n?: number) => string | Error) | undefined,
       Result<number, string | Error>,
     ][] = [
       [ok(1), (n) => n > 0, , ok(1)],
-      [ok(1), (n) => n > 0, () => new Error("Optional Error"), ok(1)],
-      [ok(0), (n) => n > 0, , err(new Error("Filtered out"))],
+      [ok(1), (n) => n > 0, () => new Error("Result Error"), ok(1)],
+      [ok(0), (n) => n > 0, , err(new Error('Filtered out: "0"'))],
+      [ok(0), (n) => n > 0, () => "Result Error", err("Result Error")],
       [
         ok(0),
         (n) => n > 0,
-        () => new Error("Optional Error"),
-        err(new Error("Optional Error")),
+        (n) => `Result Error: ${n}`,
+        err("Result Error: 0"),
       ],
       [err("error"), (n) => n > 0, , err("error")],
       [
         err("error"),
         (n) => n > 0,
-        () => new Error("Optional Error"),
+        () => new Error("Result Error"),
         err("error"),
       ],
     ];
@@ -521,6 +522,7 @@ Deno.test("Lazy", async (t) => {
       [ok(1).lazy().filter((n) => n > 0, () => "ERR!"), ok(1)],
       [ok(0).lazy().filter((n) => n > 0), err(new Error("Filtered out"))],
       [ok(0).lazy().filter((n) => n > 0, () => "ERR!"), err("ERR!")],
+      [ok(0).lazy().filter((n) => n > 0, (n) => `Err(${n})!`), err("Err(0)!")],
       [err(-1).lazy().filter((n) => n > 0), err(-1)],
       [err(-1).lazy().filter((n) => n > 0, () => "ERR!"), err(-1)],
     ] as const;
