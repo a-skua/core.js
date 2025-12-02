@@ -457,6 +457,26 @@ try {
 }
 
 {
+  const option = optionNumber;
+  test<number | false>(option.unwrap(() => false));
+}
+
+{
+  const option = some(1);
+  test<number>(option.unwrap());
+}
+
+{
+  const option = none();
+  test<number | "0">(option.unwrap(() => "0"));
+}
+
+{
+  const option = some(1);
+  test<number | string>(option.unwrap(() => "0"));
+}
+
+{
   const option = optionNumber.unwrapOr("2");
   test<number | "2">(option);
   test<number | string>(option);

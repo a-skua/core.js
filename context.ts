@@ -97,6 +97,7 @@ export interface Unwrap<T> {
    * assertEquals(option, 1);
    * ```
    */
+  unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
 
   /**
@@ -107,6 +108,8 @@ export interface Unwrap<T> {
    * const option = Option.none<number>().unwrapOr(1);
    * assertEquals(option, 1);
    * ```
+   *
+   * @deprecated use unwrap(() => T);
    */
   unwrapOr<U>(defaultValue: U): T | U;
 
@@ -118,6 +121,8 @@ export interface Unwrap<T> {
    * const option = Option.none<number>().unwrapOrElse(() => 1);
    * assertEquals(option, 1);
    * ```
+   *
+   * @deprecated use unwrap(() => T);
    */
   unwrapOrElse<U>(fn: () => U): T | U;
 }

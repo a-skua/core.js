@@ -211,6 +211,19 @@ Deno.test("OptionInstance", async (t) => {
     }
   });
 
+  await t.step("(OptionInstance).unwrap(orElse)", async (t) => {
+    const tests: [OptionInstance<number>, () => number, number][] = [
+      [some(1), () => -1, 1],
+      [none(), () => -1, -1],
+    ];
+
+    for (const [option, orElse, expected] of tests) {
+      await t.step(`${option}.unwrap(${orElse}) => ${expected}`, () => {
+        assertEquals(option.unwrap(orElse), expected);
+      });
+    }
+  });
+
   await t.step("(OptionInstance).unwrap => throw", async (t) => {
     const tests = [
       [Option.none(), Error],

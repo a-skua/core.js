@@ -1,4 +1,4 @@
-import { Result } from "@askua/core/result";
+import { ok, Result } from "@askua/core/result";
 import { none, some } from "@askua/core/option";
 
 Deno.bench("Result => Ok(1)", () => {
@@ -67,6 +67,14 @@ Deno.bench("(Result).unwrapOrElse: Ok(1)", () => {
 
 Deno.bench("(Result).unwrapOrElse: Err(0)", () => {
   Result.err(0).unwrapOrElse(() => 1);
+});
+
+Deno.bench("ok(1).unwrapOr(Error)", () => {
+  ok(1).unwrapOr(new Error("Failed"));
+});
+
+Deno.bench("ok(1).unwrapOrElse(() => Error)", () => {
+  ok(1).unwrapOrElse(() => new Error("Failed"));
 });
 
 Deno.bench("for (const v of Ok(1))", () => {

@@ -28,7 +28,7 @@
  * const value = Result({ ok: true, value: 1 })
  *   .map((n) => n + 1)
  *   .filter((n) => n >= 2, () => new Error("less than 2"))
- *   .unwrapOr(0);
+ *   .unwrap(() => 0);
  *
  * assertEquals(value, 2);
  * ```
@@ -61,7 +61,7 @@
  * const value = result
  *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
  *   .map((n) => n.toFixed(2))
- *   .unwrapOr("0.00");
+ *   .unwrap(() => "0.00");
  *
  * console.log(value);
  * ```
@@ -99,7 +99,7 @@
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
- * console.log(result.unwrapOr("0.00"));
+ * console.log(result.unwrap(() => "0.00"));
  * ```
  *
  * @module
@@ -302,6 +302,29 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  * assertEquals(a, b);
  * ```
  *
+ * ### try
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, ok, err } from "@askua/core/result";
+ *
+ * {
+ *   const a = Result.try(() => {
+ *     throw new Error("error");
+ *   });
+ *   const b = err(new Error("error"));
+ *
+ *   assertEquals(a, b);
+ * }
+ *
+ * {
+ *   const a = Result.try(() => 1);
+ *   const b = ok(1);
+ *
+ *   assertEquals(a, b);
+ * }
+ * ```
+ *
  * ## Instance Methods
  *
  * ### andThen
@@ -417,45 +440,53 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  *   1,
  * );
  *
+ * assertEquals(
+ *   err(new Error).unwrap(() => 1),
+ *   1,
+ * );
+ *
  * assertThrows(() => err(new Error("error")).unwrap());
  * ```
  *
  * ### unwrapOr
  *
+ * DEPRECATED: use `unwrap(() => U)`
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { ok, err } from "@askua/core/result";
  *
  * assertEquals(
- *   ok(1).unwrapOr(0),
+ *   ok(1).unwrap(() => 0),
  *   1,
  * );
  *
  * assertEquals(
- *   err("error").unwrapOr(0),
+ *   err("error").unwrap(() => 0),
  *   0,
  * );
  * ```
  *
  * ### unwrapOrElse
  *
+ * DEPRECATED: use `unwrap(() => U)`
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { ok, err } from "@askua/core/result";
  *
  * assertEquals(
- *   ok(1).unwrapOrElse(() => 0),
+ *   ok(1).unwrap(() => 0),
  *   1,
  * );
  *
  * assertEquals(
- *   err("error").unwrapOrElse(() => 0),
+ *   err("error").unwrap(() => 0),
  *   0,
  * );
  * ```
  *
  * ### fromNullable
  *
+ * DEPRECATED: use `Option.fromNullable` and `Result.fromOption`
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { Result, ok } from "@askua/core/result";
@@ -514,7 +545,7 @@ export type Result<T, E = Error> = Ok<T> | Err<E>;
  */
 export const Result: ResultToInstance & ResultStatic = Object.assign(
   toInstance,
-  { ok, err, andThen, orElse, lazy, fromOption, fromNullable },
+  { ok, err, andThen, orElse, lazy, fromOption, fromNullable, try: tryResult },
 );
 
 /**
@@ -709,9 +740,8 @@ interface ResultContext<T, E>
    * console.log(`Result: ${fn()}`);
    * ```
    */
+  unwrap<U>(orElse: (error: E) => U): T | U;
   unwrap(): T;
-  unwrap<E extends Error>(err: () => E): T;
-  unwrap<E extends Error>(err?: () => E): T;
 
   /**
    * ```ts
@@ -721,9 +751,12 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .andThen((n) => ok(n.toFixed(2)))
-   *   .unwrapOr("0.00");
+   *   .unwrap(() => "0.00");
    *
    * console.log(`Result: ${fn()}`);
+   * ```
+   *
+   * @deprecated use `unwrap(() => U)`
    */
   unwrapOr<T2>(value: T2): T | T2;
 
@@ -735,13 +768,15 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .andThen((n) => ok(n.toFixed(2)))
-   *   .unwrapOrElse((e) => {
+   *   .unwrap((e) => {
    *     console.error(`Error: ${e}`);
    *     return "0.00";
    *   });
    *
    * console.log(`Result: ${fn()}`);
    * ```
+   *
+   * @deprecated use `unwrap(() => U)`
    */
   unwrapOrElse<T2>(fn: (error: E) => T2): T | T2;
 
@@ -1132,8 +1167,27 @@ interface ResultStatic {
    * const c: Err<Error> = Result.fromNullable(undefined);
    * assertEquals(c, err(new Error("Nullable")));
    * ```
+   *
+   * @deprecated use `Option.fromNullable` and `Result.fromOption`
    */
   fromNullable: typeof fromNullable;
+
+  /**
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const a = Result.try(() => {
+   *   return "is ok";
+   * });
+   * assertEquals(a, ok("is ok"));
+   *
+   * const b = Result.try(() => {
+   *   throw new Error("is error");
+   * });
+   * assertEquals(b, err(new Error("is error")));
+   * ```
+   */
+  try: typeof tryResult;
 }
 
 /**
@@ -1265,8 +1319,10 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     return result as never;
   }
 
-  unwrap(err?: () => Error): T {
-    if (err) throw err();
+  unwrap<U>(orElse: (error: E) => U): T | U;
+  unwrap(): T;
+  unwrap<U>(orElse?: (error: E) => U): T | U {
+    if (orElse) return orElse(this.error);
 
     if (this.error instanceof Error) throw this.error;
 
@@ -1665,4 +1721,12 @@ function fromNullable<T>(
     return err(e ? e() : new Error("Nullable"));
   }
   return ok(v);
+}
+
+function tryResult<T, E = Error>(fn: () => T): ResultInstance<T, E> {
+  try {
+    return ok(fn());
+  } catch (e) {
+    return err(e as E);
+  }
 }

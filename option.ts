@@ -28,7 +28,7 @@
  * const value = Option({ some: true, value: 1 })
  *   .map((n) => n + 1)
  *   .filter((n) => n >= 2)
- *   .unwrapOr(0);
+ *   .unwrap(() => 0);
  * assertEquals(value, 2);
  * ```
  *
@@ -60,7 +60,7 @@
  * const value = option
  *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
- *   .unwrapOr("0.00");
+ *   .unwrap(() => "0.00");
  *
  * console.log(value);
  * ```
@@ -93,7 +93,7 @@
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
- * console.log(option.unwrapOr("0.00"));
+ * console.log(option.unwrap(() => "0.00"));
  * ```
  *
  * @module
@@ -420,39 +420,46 @@ export type Option<T> = Some<T> | None;
  *   1,
  * );
  *
+ * assertEquals(
+ *   none().unwrap(() => 1),
+ *   1,
+ * );
+ *
  * assertThrows(() => none().unwrap());
  * ```
  *
  * ### unwrapOr
  *
+ * DEPRECATED: use `unwrap(() => U);`
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).unwrapOr(0),
+ *   some(1).unwrap(() => 0),
  *   1,
  * );
  *
  * assertEquals(
- *   none().unwrapOr(0),
+ *   none().unwrap(() => 0),
  *   0,
  * );
  * ```
  *
  * ### unwrapOrElse
  *
+ * DEPRECATED: use `unwrap(() => U);`
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).unwrapOrElse(() => 0),
+ *   some(1).unwrap(() => 0),
  *   1,
  * );
  *
  * assertEquals(
- *   none().unwrapOrElse(() => 0),
+ *   none().unwrap(() => 0),
  *   0,
  * );
  * ```
@@ -667,7 +674,19 @@ interface OptionContext<T>
    *
    * console.log(`Option: ${fn()}`);
    * ```
+   *
+   * ```ts
+   * console.log("[Example] (Option).unwrap");
+   *
+   * const fn = () => some(Math.random())
+   *   .andThen((n) => n >= 0.5 ? some(n) : none())
+   *   .andThen((n) => some(n.toFixed(2)))
+   *   .unwrap(() => "0.00");
+   *
+   * console.log(`Option: ${fn()}`);
+   * ```
    */
+  unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
 
   /**
@@ -677,10 +696,12 @@ interface OptionContext<T>
    * const fn = () => some(Math.random())
    *   .andThen((n) => n >= 0.5 ? some(n) : none())
    *   .andThen((n) => some(n.toFixed(2)))
-   *   .unwrapOr("0.00");
+   *   .unwrap(() => "0.00");
    *
    * console.log(`Option: ${fn()}`);
    * ```
+   *
+   * @deprecated use `unwrap(() => U);
    */
   unwrapOr<T2>(value: T2): T | T2;
 
@@ -691,10 +712,12 @@ interface OptionContext<T>
    * const fn = () => some(Math.random())
    *   .andThen((n) => n >= 0.5 ? some(n) : none())
    *   .andThen((n) => some(n.toFixed(2)))
-   *   .unwrapOrElse(() => "0.00");
+   *   .unwrap(() => "0.00");
    *
    * console.log(`Option: ${fn()}`);
    * ```
+   *
+   * @deprecated use `unwrap(() => U);
    */
   unwrapOrElse<T2>(fn: () => T2): T | T2;
 
@@ -1116,8 +1139,8 @@ class _Some<T> implements Some<T>, OptionContext<T> {
     return this.value;
   }
 
-  unwrapOrElse<U>(): U {
-    return this.value as never;
+  unwrapOrElse(): T {
+    return this.value;
   }
 
   lazy<Z extends Option<T>>(): OptionLazy<T, Z> {
@@ -1174,7 +1197,8 @@ class _None<T> implements None, OptionContext<T> {
     return this;
   }
 
-  unwrap(): T {
+  unwrap<U>(orElse?: () => U): T | U {
+    if (orElse) return orElse();
     throw new Error("None");
   }
 

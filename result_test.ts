@@ -242,12 +242,24 @@ Deno.test("ResultInstance", async (t) => {
     const tests = [
       [() => err(new Error("error")).unwrap(), Error],
       [() => err("error").unwrap(), Error],
-      [() => err("").unwrap(() => new Error("error")), Error],
     ] as const;
 
     for (const [doing, expected] of tests) {
       await t.step(`${doing} => throw ${expected}`, () => {
         assertThrows(doing, expected);
+      });
+    }
+  });
+
+  await t.step("(ResultInstance).unwrap(orElse) => throw", async (t) => {
+    const tests: [ResultInstance<number>, () => number, number][] = [
+      [err(new Error("test")), () => 1, 1],
+      [ok(0), () => 1, 0],
+    ] as const;
+
+    for (const [result, orElse, expected] of tests) {
+      await t.step(`${result}.unwrap(${orElse}) => ${expected}`, () => {
+        assertEquals(result.unwrap(orElse), expected);
       });
     }
   });
@@ -467,6 +479,21 @@ Deno.test("Result.fromNullable", async (t) => {
       );
     }
   });
+});
+
+Deno.test("Result.try", async (t) => {
+  const tests: [() => number, ResultInstance<number>][] = [
+    [() => 1, ok(1)],
+    [() => {
+      throw new Error("test");
+    }, err(new Error("test"))],
+  ];
+
+  for (const [input, expected] of tests) {
+    await t.step(`Result.try(${input}) => ${expected}`, () => {
+      assertEquals(Result.try(input), expected);
+    });
+  }
 });
 
 Deno.test("ok", async (t) => {

@@ -282,11 +282,9 @@ try {
   console.debug(e);
 }
 
-try {
-  const result = resultNumber.unwrap(() => new Error("my error"));
-  test<number>(result);
-} catch (e) {
-  console.debug(e);
+{
+  const result = resultNumber;
+  test<number | false>(result.unwrap(() => false));
 }
 
 {
@@ -741,4 +739,25 @@ try {
   const value = 1 as number | null;
   const result = Result.fromNullable(value, () => "error");
   test<Result<number, string>>(result);
+}
+
+{
+  const fn = (): number => {
+    throw new Error("test");
+  };
+  test<Result<number, Error>>(Result.try(fn));
+}
+
+{
+  const fn = (): number => {
+    throw new Error("test");
+  };
+  test<Result<number, Error>>(Result.try<number>(fn));
+}
+
+{
+  const fn = (): number => {
+    throw false;
+  };
+  test<Result<number, false>>(Result.try<number, false>(fn));
 }
