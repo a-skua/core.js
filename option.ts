@@ -176,6 +176,17 @@ export type InferNone<O extends Option<unknown>> = O extends
 export type Option<T> = Some<T> | None;
 
 /**
+ * Motivation:
+ * ```ts
+ * JSON.stringify(some(1)); // '{"value":1,"some":true}'
+ * JSON.stringify(none());  // '{"some":false}'
+ * JSON.stringify([1]);     // '[1]'
+ * JSON.stringify(0);       // '0'
+ * ```
+ */
+export type SerializedOption<T> = [T] | 0;
+
+/**
  * Option is Object base type, Some<T> and None.
  *
  * ```ts
@@ -584,6 +595,8 @@ interface OptionContext<T>
    *
    * console.log(`Option: ${fn()}`);
    * ```
+   *
+   * @deprecated
    */
   andThen<O extends Option<T2>, T2 = AndT<O>>(
     fn: (value: T) => O,
@@ -615,6 +628,8 @@ interface OptionContext<T>
    *
    * console.log(`Option: ${fn()}`);
    * ```
+   *
+   * @deprecated
    */
   orElse<O extends Option<T2>, T2 = OrT<O, T>>(
     fn: () => O,

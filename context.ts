@@ -10,6 +10,7 @@ export interface And<T, U = unknown> {
    * const option = Option.some(1).andThen((v) => Option.some(v + 1));
    * assertEquals(option, Option.some(2));
    * ```
+   * @deprecated
    */
   andThen(fn: (v: T) => U): U;
 
@@ -37,6 +38,7 @@ export interface Or<T, U = unknown, V = unknown> {
    * const option = Option.none<number>().orElse(() => Option.some(0));
    * assertEquals(option, Option.some(0));
    * ```
+   * @deprecated
    */
   orElse(fn: (() => U) | ((v: T) => U)): V;
 

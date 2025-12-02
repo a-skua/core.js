@@ -186,6 +186,17 @@ export type InferErr<R extends Result<unknown, unknown>> = R extends
 export type Result<T, E = Error> = Ok<T> | Err<E>;
 
 /**
+ * Motivation:
+ * ```ts
+ * JSON.stringify(ok(1));           // '{"value":1,"ok":true}'
+ * JSON.stringify(err("is error")); // '{"error":"is error","ok":false}'
+ * JSON.stringify([0, 1]);          // '[0,1]'
+ * JSON.stringify([1, "is error"]); // '[1,"is error"]'
+ * ```
+ */
+export type SerializedResult<T, E> = [1, T] | [0, E];
+
+/**
  * Result is Object base type, Ok<T> and Err<E>.
  *
  * ```ts
@@ -626,6 +637,7 @@ interface ResultContext<T, E>
    *
    * console.log(`Result: ${fn()}`);
    * ```
+   * @deprecated
    */
   andThen<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
     fn: (value: T) => R,
@@ -664,6 +676,7 @@ interface ResultContext<T, E>
    *
    * console.log(`Result: ${fn()}`);
    * ```
+   * @deprecated
    */
   orElse<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
     fn: (error: E) => R,
