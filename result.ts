@@ -1736,9 +1736,19 @@ function fromNullable<T>(
   return ok(v);
 }
 
-function tryResult<T, E = Error>(fn: () => T): ResultInstance<T, E> {
+function tryResult<T, E = unknown>(
+  fn: () => T,
+): T extends Promise<infer U> ? Promise<ResultInstance<U, E>>
+  : ResultInstance<T, E>;
+function tryResult<T, E = unknown>(
+  fn: () => T | Promise<T>,
+): ResultInstance<T, E> | Promise<ResultInstance<T, E>> {
   try {
-    return ok(fn());
+    const v = fn();
+    if (v instanceof Promise) {
+      return v.then((v) => ok(v)).catch((e) => err(e));
+    }
+    return ok(v);
   } catch (e) {
     return err(e as E);
   }

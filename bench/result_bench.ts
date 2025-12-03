@@ -208,3 +208,31 @@ Deno.bench("Result.lazy().eval()", async () => {
     .map((n) => Promise.resolve(n + 1))
     .eval();
 });
+
+Deno.bench("Result.try(fn: () => number)", () => {
+  Result.try(() => 1);
+});
+
+Deno.bench(
+  "Result.try(fn: () => Promise<number>)",
+  async () => {
+    await Result.try(() => Promise.resolve(1));
+  },
+);
+
+Deno.bench("Result.try(fn: () => throw number)", () => {
+  Result.try(() => {
+    throw 1;
+  });
+});
+
+Deno.bench(
+  "Result.try(fn: () => Promise<throw number>)",
+  async () => {
+    await Result.try(() => {
+      return new Promise(() => {
+        throw 1;
+      });
+    });
+  },
+);

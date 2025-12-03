@@ -745,14 +745,16 @@ try {
   const fn = (): number => {
     throw new Error("test");
   };
-  test<Result<number, Error>>(Result.try(fn));
+  const result = Result.try(fn);
+  test<Result<number, unknown>>(result);
 }
 
 {
-  const fn = (): number => {
+  const fn = (): Promise<number> => {
     throw new Error("test");
   };
-  test<Result<number, Error>>(Result.try<number>(fn));
+  const result = Result.try(fn);
+  test<Promise<Result<number, unknown>>>(result);
 }
 
 {
