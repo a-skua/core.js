@@ -4,31 +4,23 @@
 export type Context<_> = unknown;
 
 /**
- * And
+ * ## Context And
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * const a = some(1).and((n) => some(n + 1));
+ * assertEquals(a, some(2));
+ *
+ * const b = none().and((n) => some(n + 1));
+ * assertEquals(b, none());
+ * ```
  */
-export interface And<T, U = unknown> {
-  /**
-   * ```ts
-   * import { assertEquals } from "@std/assert";
-   * import { Option } from "@askua/core/option";
-   *
-   * const option = Option.some(1).andThen((v) => Option.some(v + 1));
-   * assertEquals(option, Option.some(2));
-   * ```
-   * @deprecated
-   */
-  andThen(fn: (v: T) => U): U;
-
-  /**
-   * ```ts
-   * import { assertEquals } from "@std/assert";
-   * import { Option } from "@askua/core/option";
-   *
-   * const option = Option.some(1).and(Option.some(2));
-   * assertEquals(option, Option.some(2));
-   * ```
-   */
-  and(value: U): U;
+export interface And<T> {
+  and<U>(andThen: (value: T) => Context<U>): Context<U>;
 }
 
 /**
@@ -65,7 +57,7 @@ export interface Or<T> {
  * ```
  */
 export interface Map<T> {
-  map<U>(fn: (value: T) => U): Context<U>;
+  map<U>(then: (value: T) => U): Context<U>;
 }
 
 /**
@@ -84,7 +76,7 @@ export interface Map<T> {
  */
 export interface Filter<T> {
   /** */
-  filter(fn: (value: T) => boolean): Context<T>;
+  filter(then: (value: T) => boolean): Context<T>;
 }
 
 /**

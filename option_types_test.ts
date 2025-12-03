@@ -302,44 +302,47 @@ const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
 }
 
 {
-  const option = optionNumber.and({ some: true, value: 1 });
+  const option = optionNumber.and(() => ({ some: true, value: 1 }));
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.and({ some: false });
+  const option = optionNumber.and(() => ({ some: false }));
   test<Option<never>>(option);
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.and(Option.some(1));
+  const option = optionNumber.and(() => some(1));
   test<OptionInstance<number>>(option);
 }
 
 {
-  const option = optionNumber.and(Option.none());
+  const option = optionNumber.and(() => none());
   test<OptionInstance<never>>(option);
   test<OptionInstance<number>>(option);
 }
 
 {
-  const option = optionNumber.and<Option<number>>({ some: true, value: 1 });
+  const option = optionNumber.and<Option<number>>(() => ({
+    some: true,
+    value: 1,
+  }));
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.and<Option<number>>({ some: false });
+  const option = optionNumber.and<Option<number>>(() => ({ some: false }));
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.and<Option<number>>(Option.some(1));
+  const option = optionNumber.and<Option<number>>(() => some(1));
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.and<Option<number>>(Option.none());
+  const option = optionNumber.and<Option<number>>(() => none());
   test<Option<number>>(option);
 }
 
@@ -512,10 +515,10 @@ try {
 {
   const option = await optionNumber
     .lazy()
-    .and({ some: true, value: 2 })
-    .and(Promise.resolve({ some: true, value: 3 }))
-    .and(Option.some(4))
-    .and(Promise.resolve(Option.some("5")))
+    .and(() => ({ some: true, value: 2 }))
+    .and(() => Promise.resolve({ some: true, value: 3 }))
+    .and(() => some(4))
+    .and(() => Promise.resolve(some("5")))
     .eval();
   test<Option<string>>(option);
 }

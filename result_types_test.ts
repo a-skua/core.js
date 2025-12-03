@@ -139,25 +139,25 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).andThen((
 }
 {
   const result = resultNumber
-    .and(Result.ok(1));
+    .and(() => ok(1));
   test<ResultInstance<number>>(result);
 }
 
 {
   const result = resultNumber
-    .and(Result.err("error"));
+    .and(() => err("error"));
   test<ResultInstance<never, string | Error>>(result);
 }
 
 {
   const result = resultNumber
-    .and<Result<number, string>>(Result.ok(1));
+    .and<Result<number, string>>(() => ok(1));
   test<Result<number, string | Error>>(result);
 }
 
 {
   const result = resultNumber
-    .and<Result<number, string>>(Result.err("error"));
+    .and<Result<number, string>>(() => err("error"));
   test<Result<number, string | Error>>(result);
 }
 
@@ -337,10 +337,10 @@ try {
 {
   const result = await resultNumber
     .lazy()
-    .and({ ok: true, value: "1" as const })
-    .and(Promise.resolve({ ok: true, value: "2" as const }))
-    .and<ResultInstance<"3">>(Result.ok("3"))
-    .and(Promise.resolve(Result.ok("4" as const)))
+    .and(() => ({ ok: true, value: "1" as const }))
+    .and(() => Promise.resolve({ ok: true, value: "2" as const }))
+    .and(() => ok("3" as const))
+    .and(() => Promise.resolve(ok("4" as const)))
     .eval();
   test<Result<"4">>(result);
 }
@@ -348,10 +348,10 @@ try {
 {
   const result = await resultNumber
     .lazy()
-    .and<Result<number, "1">>({ ok: false, error: "1" })
-    .and(Promise.resolve({ ok: false, error: "2" as const }))
-    .and(Result.err("3" as const))
-    .and(Promise.resolve(Result.err("4" as const)))
+    .and<Result<number, "1">>(() => ({ ok: false, error: "1" }))
+    .and(() => Promise.resolve({ ok: false, error: "2" as const }))
+    .and(() => err("3" as const))
+    .and(() => Promise.resolve(err("4" as const)))
     .eval();
   test<Result<never, Error | "1" | "2" | "3" | "4">>(result);
 }

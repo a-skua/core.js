@@ -325,12 +325,12 @@ export type SerializedOption<T> = [T] | 0;
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).andThen((n) => some(n + 1)),
+ *   some(1).and((n) => some(n + 1)),
  *   some(2),
  * );
  *
  * assertEquals(
- *   some(1).andThen(() => none()),
+ *   some(1).and(() => none()),
  *   none(),
  * );
  * ```
@@ -342,12 +342,12 @@ export type SerializedOption<T> = [T] | 0;
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).and(some(2)),
+ *   some(1).and(() => some(2)),
  *   some(2),
  * );
  *
  * assertEquals(
- *   some(1).and(none()),
+ *   some(1).and(() => none()),
  *   none(),
  * );
  * ```
@@ -590,8 +590,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).andThen");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)));
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)));
    *
    * console.log(`Option: ${fn()}`);
    * ```
@@ -607,14 +607,14 @@ interface OptionContext<T>
    * console.log("[Example] (Option).and");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .and(some("TOO LARGE"));
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and(() => some("TOO LARGE"));
    *
    * console.log(`Option: ${fn()}`);
    * ```
    */
   and<O extends Option<T2>, T2 = AndT<O>>(
-    option: O,
+    andThen: (value: T) => O,
   ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
@@ -622,8 +622,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).orElse");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .orElse(() => some("0.00"));
    *
    * console.log(`Option: ${fn()}`);
@@ -640,8 +640,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).or");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .or(() => some("0.00"));
    *
    * console.log(`Option: ${fn()}`);
@@ -656,7 +656,7 @@ interface OptionContext<T>
    * console.log("[Example] (Option).map");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => n >= 0.5 ? some(n) : none())
    *   .map((n) => n.toFixed(2));
    *
    * console.log(`Option: ${fn()}`);
@@ -682,8 +682,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).unwrap");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .or(() => some("0.00"))
    *   .unwrap();
    *
@@ -694,8 +694,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).unwrap");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .unwrap(() => "0.00");
    *
    * console.log(`Option: ${fn()}`);
@@ -709,8 +709,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).unwrapOr");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .unwrap(() => "0.00");
    *
    * console.log(`Option: ${fn()}`);
@@ -725,8 +725,8 @@ interface OptionContext<T>
    * console.log("[Example] (Option).unwrapOrElse");
    *
    * const fn = () => some(Math.random())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none())
-   *   .andThen((n) => some(n.toFixed(2)))
+   *   .and((n) => n >= 0.5 ? some(n) : none())
+   *   .and((n) => some(n.toFixed(2)))
    *   .unwrap(() => "0.00");
    *
    * console.log(`Option: ${fn()}`);
@@ -742,7 +742,7 @@ interface OptionContext<T>
    *
    * const option = await some(1)
    *   .lazy()
-   *   .and(some(2))
+   *   .and(() => some(2))
    *   .eval();
    * assertEquals(option, some(2));
    * ```
@@ -783,8 +783,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const getNumber = () => Promise.resolve(some(Math.random()));
    *
    * const fn = () => Option.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
-   *   .andThen((n) => Promise.resolve(some(n.toFixed(2))))
+   *   .and((n) => n >= 0.5 ? some(n) : none<number>())
+   *   .and((n) => Promise.resolve(some(n.toFixed(2))))
    *   .eval();
    *
    * console.log(`Option: ${await fn()}`);
@@ -805,8 +805,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const getNumber = () => Promise.resolve(some(Math.random()));
    *
    * const fn = () => Option.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
-   *   .and(Promise.resolve(some("TOO LARGE")))
+   *   .and((n) => n >= 0.5 ? some(n) : none<number>())
+   *   .and(() => Promise.resolve(some("TOO LARGE")))
    *   .eval();
    *
    * console.log(`Option: ${await fn()}`);
@@ -816,7 +816,7 @@ interface OptionLazy<T, Eval extends Option<T>>
     O extends Option<T2>,
     T2 = AndT<O>,
     Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
-  >(option: OrPromise<O>): OptionLazy<T2, Z>;
+  >(andThen: (value: T) => OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -825,8 +825,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const getNumber = () => Promise.resolve(some(Math.random()));
    *
    * const fn = () => Option.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
-   *   .andThen((n) => Promise.resolve(some(n.toFixed(2))))
+   *   .and((n) => n >= 0.5 ? some(n) : none<number>())
+   *   .and((n) => Promise.resolve(some(n.toFixed(2))))
    *   .orElse(() => Promise.resolve(some("0.50")))
    *   .eval();
    *
@@ -848,8 +848,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const getNumber = () => Promise.resolve(some(Math.random()));
    *
    * const fn = () => Option.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
-   *   .andThen((n) => Promise.resolve(some(n.toFixed(2))))
+   *   .and((n) => n >= 0.5 ? some(n) : none<number>())
+   *   .and((n) => Promise.resolve(some(n.toFixed(2))))
    *   .or(() => Promise.resolve(some("0.50")))
    *   .eval();
    *
@@ -869,7 +869,7 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const getNumber = () => Promise.resolve(some(Math.random()));
    *
    * const fn = () => Option.lazy(getNumber())
-   *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
+   *   .and((n) => n >= 0.5 ? some(n) : none<number>())
    *   .map((n) => Promise.resolve(n.toFixed(2)))
    *   .eval();
    *
@@ -974,7 +974,7 @@ type OptionStatic = {
    * console.log("[Example] Option.andThen");
    *
    * const getNumber = () => some(Math.random())
-   *   .andThen((n) => n >= 0.2 ? some(n) : none())
+   *   .and((n) => n >= 0.2 ? some(n) : none())
    *   .map((n) => n.toFixed(2));
    *
    * const fn = () => Option.andThen(
@@ -1006,7 +1006,7 @@ type OptionStatic = {
    * console.log("[Example] Option.orElse");
    *
    * const getNumber = () => some(Math.random())
-   *   .andThen((n) => n >= 0.8 ? some(n) : none())
+   *   .and((n) => n >= 0.8 ? some(n) : none())
    *   .map((n) => n.toFixed(2));
    *
    * const fn = () => Option.orElse(
@@ -1038,7 +1038,7 @@ type OptionStatic = {
    * console.log("[Example] Option.lazy");
    *
    * const option = await Option.lazy(some(1))
-   *   .and(some(2))
+   *   .and(() => some(2))
    *   .eval();
    *
    * console.log(`Option: ${option}`);
@@ -1048,7 +1048,7 @@ type OptionStatic = {
    * console.log("[Example] Option.lazy");
    *
    * const option = await Option.lazy(() => some(1))
-   *   .and(some(2))
+   *   .and(() => some(2))
    *   .map((n) => n.toFixed(2))
    *   .eval();
    *
@@ -1125,12 +1125,12 @@ class _Some<T> implements Some<T>, OptionContext<T> {
     return ok(this.value) as R;
   }
 
-  andThen<U, V>(fn: (v: T) => U): V {
+  andThen<U>(fn: (value: T) => U) {
     return fn(this.value) as never;
   }
 
-  and<U, V>(option: U): V {
-    return option as never;
+  and<U>(andThen: (value: T) => U) {
+    return andThen(this.value) as never;
   }
 
   orElse() {
@@ -1192,11 +1192,11 @@ class _None<T> implements None, OptionContext<T> {
     return err(error) as R;
   }
 
-  andThen<U>(): U {
+  andThen() {
     return this as never;
   }
 
-  and<U>(): U {
+  and() {
     return this as never;
   }
 
@@ -1251,7 +1251,7 @@ class _None<T> implements None, OptionContext<T> {
  */
 type Op<T, U> =
   | { andThen: (value: T) => OrPromise<Option<U>> }
-  | { and: OrPromise<Option<U>> }
+  | { and: (value: T) => OrPromise<Option<U>> }
   | { orElse: () => OrPromise<Option<U>> }
   | { or: () => OrPromise<Option<U>> }
   | { map: (value: T) => OrPromise<U> }
@@ -1310,7 +1310,8 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazy<T, Eval> {
       }
 
       if ("and" in op && option.some) {
-        option = op.and instanceof Promise ? await op.and : op.and;
+        const p = op.and(option.value);
+        option = p instanceof Promise ? await p : p;
         continue;
       }
 
