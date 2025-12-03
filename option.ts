@@ -359,12 +359,12 @@ export type SerializedOption<T> = [T] | 0;
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).orElse(() => some(2)),
+ *   some(1).or(() => some(2)),
  *   some(1),
  * );
  *
  * assertEquals(
- *   none().orElse(() => some(2)),
+ *   none().or(() => some(2)),
  *   some(2),
  * );
  * ```
@@ -624,7 +624,7 @@ interface OptionContext<T>
    * const fn = () => some(Math.random())
    *   .and((n) => n >= 0.5 ? some(n) : none())
    *   .and((n) => some(n.toFixed(2)))
-   *   .orElse(() => some("0.00"));
+   *   .or(() => some("0.00"));
    *
    * console.log(`Option: ${fn()}`);
    * ```
@@ -827,7 +827,7 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const fn = () => Option.lazy(getNumber())
    *   .and((n) => n >= 0.5 ? some(n) : none<number>())
    *   .and((n) => Promise.resolve(some(n.toFixed(2))))
-   *   .orElse(() => Promise.resolve(some("0.50")))
+   *   .or(() => Promise.resolve(some("0.50")))
    *   .eval();
    *
    * console.log(`Option: ${await fn()}`);

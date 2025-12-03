@@ -16,36 +16,12 @@ Deno.bench("none()", () => {
   none();
 });
 
-Deno.bench("(Option).toResult: Some(1)", () => {
-  Option.some(1).toResult();
+Deno.bench("some(1).and((n) => some(n + 1))", () => {
+  some(1).and((n) => some(n + 1));
 });
 
-Deno.bench("(Option).toResult: None", () => {
-  Option.none<number>().toResult();
-});
-
-Deno.bench("(Option).andThen: Some(1)", () => {
-  Option.some(1).andThen((n) => Option.some(n));
-});
-
-Deno.bench("(Option).andThen: None", () => {
-  Option.none<number>().andThen((n) => Option.some(n));
-});
-
-Deno.bench("(Option).and: Some(1)", () => {
-  Option.some(1).and(Option.some(2));
-});
-
-Deno.bench("(Option).and: None", () => {
-  Option.none<number>().and(Option.some(2));
-});
-
-Deno.bench("(Option).orElse: Some(1)", () => {
-  Option.some(1).orElse(() => Option.some(0));
-});
-
-Deno.bench("(Option).orElse: None", () => {
-  Option.none<number>().orElse(() => Option.some(0));
+Deno.bench("none().and((n) => some(n + 1))", () => {
+  none().and((n) => some(n + 1));
 });
 
 Deno.bench("some(1).or(() => some(0))", () => {
@@ -56,12 +32,24 @@ Deno.bench("none().or(() => some(0))", () => {
   none().or(() => some(0));
 });
 
-Deno.bench("(Option).map: Some(1)", () => {
-  Option.some(1).map((n) => n + 1);
+Deno.bench("some(1).map((n) => n + 1)", () => {
+  some(1).map((n) => n + 1);
 });
 
-Deno.bench("(Option).map: None", () => {
-  Option.none<number>().map((n) => n + 1);
+Deno.bench("none().map((n) => n + 1)", () => {
+  none().map((n) => n + 1);
+});
+
+Deno.bench("some(1).filter((n) => n > 0)", () => {
+  some(1).filter((n) => n > 0);
+});
+
+Deno.bench("some(0).filter((n) => n > 0)", () => {
+  some(0).filter((n) => n > 0);
+});
+
+Deno.bench("none().filter((n) => n > 0)", () => {
+  none().filter((n) => n > 0);
 });
 
 Deno.bench("some(1).unwrap()", () => {
@@ -74,30 +62,6 @@ Deno.bench("some(1).unwrap(() => 0)", () => {
 
 Deno.bench("none().unwrap(() => 0)", () => {
   none().unwrap(() => 0);
-});
-
-Deno.bench("(Option).unwrapOr: Some(1)", () => {
-  Option.some(1).unwrapOr(0);
-});
-
-Deno.bench("(Option).unwrapOr: None", () => {
-  Option.none<number>().unwrapOr(0);
-});
-
-Deno.bench("(Option).unwrapOrElse: Some(1)", () => {
-  Option.some(1).unwrapOrElse(() => 0);
-});
-
-Deno.bench("(Option).unwrapOrElse: None", () => {
-  Option.none<number>().unwrapOr(() => 0);
-});
-
-Deno.bench("some(1).unwrapOr(Error)", () => {
-  some(1).unwrapOr(new Error("test"));
-});
-
-Deno.bench("some(1).unwrapOrElse(() => Error)", () => {
-  some(1).unwrapOr(() => new Error("test"));
 });
 
 Deno.bench("for (const v of Some(1))", () => {
@@ -205,12 +169,12 @@ Deno.bench("Option.lazy()...eval()", async () => {
   await Option.lazy(() => none<number>())
     .or(() => none<number>())
     .or(() => Promise.resolve(none<number>()))
-    .orElse(() => none<number>())
-    .orElse(() => Promise.resolve(some(1)))
-    .and(some(2))
-    .and(Promise.resolve(some(3)))
-    .andThen((n) => some(n + 1))
-    .andThen((n) => Promise.resolve(some(n + 1)))
+    .or(() => none<number>())
+    .or(() => Promise.resolve(some(1)))
+    .and(() => some(2))
+    .and(() => Promise.resolve(some(3)))
+    .and((n) => some(n + 1))
+    .and((n) => Promise.resolve(some(n + 1)))
     .map((n) => n + 1)
     .map((n) => Promise.resolve(n + 1))
     .eval();

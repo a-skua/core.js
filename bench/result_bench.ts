@@ -17,28 +17,12 @@ Deno.bench("err(0)", () => {
   err(0);
 });
 
-Deno.bench("(Result).andThen: Ok(1)", () => {
-  Result.ok(1).andThen((v) => Result.ok(v));
+Deno.bench("ok(1).and((n) => ok(n + 1))", () => {
+  ok(1).and((n) => ok(n + 1));
 });
 
-Deno.bench("(Result).andThen: Err(0)", () => {
-  Result.ok(0).andThen((v) => Result.ok(v));
-});
-
-Deno.bench("(Result).and: Ok(1)", () => {
-  Result.ok(1).and(Result.ok(2));
-});
-
-Deno.bench("(Result).and: Err(0)", () => {
-  Result.err(0).and(Result.ok(1));
-});
-
-Deno.bench("(Result).orElse: Ok(1)", () => {
-  Result.ok(1).orElse(() => Result.ok(0));
-});
-
-Deno.bench("(Result).orElse: Err(0)", () => {
-  Result.err(0).orElse(() => Result.ok(1));
+Deno.bench("err(0).and((n) => ok(n + 1))", () => {
+  err(0).and((n) => ok(n + 1));
 });
 
 Deno.bench("ok(1).or(() => ok(0))", () => {
@@ -49,12 +33,28 @@ Deno.bench("err(0).or(() => ok(0))", () => {
   err(1).or(() => ok(0));
 });
 
-Deno.bench("(Result).map: Ok(1)", () => {
-  Result.ok(1).map((v) => v + 1);
+Deno.bench("ok(1).map((n) => n + 1)", () => {
+  ok(1).map((n) => n + 1);
 });
 
-Deno.bench("(Result).map: Err(0)", () => {
-  Result.err<number, number>(0).map((v) => v + 1);
+Deno.bench("err(0).map((n) => n + 1)", () => {
+  err(0).map((n) => n + 1);
+});
+
+Deno.bench("ok(1).filter((n) => n > 0)", () => {
+  ok(1).filter((n) => n > 0);
+});
+
+Deno.bench("ok(0).filter((n) => n > 0)", () => {
+  ok(0).filter((n) => n > 0);
+});
+
+Deno.bench("ok(0).filter((n) => n > 0, () => 0)", () => {
+  ok(0).filter((n) => n > 0, () => 0);
+});
+
+Deno.bench("err(0).filter((n) => n + 0)", () => {
+  err(0).filter((n) => n > 0);
 });
 
 Deno.bench("ok(1).unwrap()", () => {
@@ -69,30 +69,6 @@ Deno.bench("err(1).unwrap(() => 0)", () => {
   err(1).unwrap(() => 0);
 });
 
-Deno.bench("(Result).unwrapOr: Ok(1)", () => {
-  Result.err(1).unwrapOr(0);
-});
-
-Deno.bench("(Result).unwrapOr: Err(0)", () => {
-  Result.err(0).unwrapOr(1);
-});
-
-Deno.bench("(Result).unwrapOrElse: Ok(1)", () => {
-  Result.err(1).unwrapOrElse(() => 0);
-});
-
-Deno.bench("(Result).unwrapOrElse: Err(0)", () => {
-  Result.err(0).unwrapOrElse(() => 1);
-});
-
-Deno.bench("ok(1).unwrapOr(Error)", () => {
-  ok(1).unwrapOr(new Error("Failed"));
-});
-
-Deno.bench("ok(1).unwrapOrElse(() => Error)", () => {
-  ok(1).unwrapOrElse(() => new Error("Failed"));
-});
-
 Deno.bench("for (const v of Ok(1))", () => {
   const values = [];
   for (const v of Result.ok(1)) {
@@ -100,35 +76,12 @@ Deno.bench("for (const v of Ok(1))", () => {
   }
 });
 
-// Deno.bench("for (const _ of Err(0))", () => {
-//   const values = [];
-//   for (const v of Result.err(0)) {
-//     values.push(v); // never
-//   }
-// });
-
 Deno.bench("[...Ok(1)]", () => {
   [...Result.ok(1)];
 });
 
-// Deno.bench("[...Err(0)]", () => {
-//   [...Result.err(0)];
-// });
-
 Deno.bench("Array.from(Ok(1))", () => {
   Array.from(Result.ok(1));
-});
-
-// Deno.bench("Array.from(Err(0))", () => {
-//   Array.from(Result.err(0));
-// });
-
-Deno.bench("Result.ok", () => {
-  Result.ok(1);
-});
-
-Deno.bench("Result.err", () => {
-  Result.err(0);
 });
 
 Deno.bench("Result.andThen", async () => {
@@ -214,12 +167,12 @@ Deno.bench("Result.lazy()...eval()", async () => {
   await Result.lazy(() => err<number, number>(0))
     .or(() => err<number, number>(0))
     .or(() => Promise.resolve(err<number, number>(0)))
-    .orElse(() => err<number, number>(0))
-    .orElse(() => Promise.resolve(err<number, number>(0)))
-    .and(ok(1))
-    .and(Promise.resolve(ok(2)))
-    .andThen((n) => ok(n + 1))
-    .andThen((n) => Promise.resolve(ok(n + 1)))
+    .or(() => err<number, number>(0))
+    .or(() => Promise.resolve(err<number, number>(0)))
+    .and(() => ok(1))
+    .and(() => Promise.resolve(ok(2)))
+    .and((n) => ok(n + 1))
+    .and((n) => Promise.resolve(ok(n + 1)))
     .map((n) => n + 1)
     .map((n) => Promise.resolve(n + 1))
     .eval();

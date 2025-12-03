@@ -96,71 +96,72 @@ Deno.test("OptionInstance", async (t) => {
     }
   });
 
-  await t.step("(OptionInstance).andThen", async (t) => {
-    const tests: [
-      OptionInstance<number>,
-      (n: number) => Option<unknown> & OptionInstance<unknown>,
-      Option<unknown>,
-    ][] = [
-      [Option.some(1), (n) => Option.some(n + 1), Option.some(2)],
-      [Option.some(1), () => Option.none(), Option.none()],
-      [Option.none(), (n) => Option.some(n + 1), Option.none()],
-      [Option.some(1), (n) => Option.some(`${n}`), Option.some("1")],
-      [Option.none(), (n) => Option.some(`${n}`), Option.none()],
-    ] as const;
-
-    for (const [option, fn, expected] of tests) {
-      await t.step(`${option}.andThen(${fn}) => ${expected}`, () => {
-        assertEquals(option.andThen(fn), expected);
-      });
-    }
-  });
-
   await t.step("(OptionInstance).and", async (t) => {
-    const tests: [
-      OptionInstance<number>,
-      () => Option<unknown> & OptionInstance<unknown>,
-      Option<unknown>,
-    ][] = [
-      [some(1), () => some(2), some(2)],
-      [some(1), () => none(), none()],
-      [none(), () => some(2), none()],
-      [some(1), () => some("1"), some("1")],
-      [none(), () => some("1"), none()],
-    ] as const;
+    {
+      const tests: [
+        OptionInstance<number>,
+        (n: number) => Option<unknown> & OptionInstance<unknown>,
+        Option<unknown>,
+      ][] = [
+        [Option.some(1), (n) => Option.some(n + 1), Option.some(2)],
+        [Option.some(1), () => Option.none(), Option.none()],
+        [Option.none(), (n) => Option.some(n + 1), Option.none()],
+        [Option.some(1), (n) => Option.some(`${n}`), Option.some("1")],
+        [Option.none(), (n) => Option.some(`${n}`), Option.none()],
+      ] as const;
 
-    for (const [option, andThen, expected] of tests) {
-      await t.step(`${option}.and(${andThen}) => ${expected}`, () => {
-        assertEquals(option.and(andThen), expected);
-      });
+      for (const [option, fn, expected] of tests) {
+        await t.step(`${option}.and(${fn}) => ${expected}`, () => {
+          assertEquals(option.and(fn), expected);
+        });
+      }
+    }
+
+    {
+      const tests: [
+        OptionInstance<number>,
+        () => Option<unknown> & OptionInstance<unknown>,
+        Option<unknown>,
+      ][] = [
+        [some(1), () => some(2), some(2)],
+        [some(1), () => none(), none()],
+        [none(), () => some(2), none()],
+        [some(1), () => some("1"), some("1")],
+        [none(), () => some("1"), none()],
+      ] as const;
+
+      for (const [option, andThen, expected] of tests) {
+        await t.step(`${option}.and(${andThen}) => ${expected}`, () => {
+          assertEquals(option.and(andThen), expected);
+        });
+      }
     }
   });
 
-  await t.step("(OptionInstance).orElse", async (t) => {
-    const fn = () => Option.some(0);
+  await t.step("(OptionInstance).or", async (t) => {
+    const orElse = () => Option.some(0);
     const tests: [OptionInstance<number>, Option<number>][] = [
       [Option.some(1), Option.some(1)],
       [Option.none(), Option.some(0)],
     ];
 
     for (const [option, expected] of tests) {
-      await t.step(`${option}.orElse(${fn}) => ${expected}`, () => {
-        assertEquals(option.orElse(fn), expected);
-      });
-    }
-  });
-
-  await t.step("(OptionInstance).or", async (t) => {
-    const orElse = () => some(0);
-    const tests: [OptionInstance<number>, Option<number>][] = [
-      [some(1), some(1)],
-      [none(), some(0)],
-    ];
-
-    for (const [option, expected] of tests) {
       await t.step(`${option}.or(${orElse}) => ${expected}`, () => {
         assertEquals(option.or(orElse), expected);
       });
+    }
+    {
+      const orElse = () => some(0);
+      const tests: [OptionInstance<number>, Option<number>][] = [
+        [some(1), some(1)],
+        [none(), some(0)],
+      ];
+
+      for (const [option, expected] of tests) {
+        await t.step(`${option}.or(${orElse}) => ${expected}`, () => {
+          assertEquals(option.or(orElse), expected);
+        });
+      }
     }
   });
 
@@ -236,28 +237,28 @@ Deno.test("OptionInstance", async (t) => {
     }
   });
 
-  await t.step("(OptionInstance).unwrapOr", async (t) => {
+  await t.step("(OptionInstance).unwrap", async (t) => {
     const tests = [
-      [Option.some(1), 0, 1],
-      [Option.none<number>(), 0, 0],
+      [Option.some(1), () => 0, 1],
+      [Option.none<number>(), () => 0, 0],
     ] as const;
 
-    for (const [option, value, expected] of tests) {
-      await t.step(`${option}.unwrapOr(${value}) => ${expected}`, () => {
-        assertEquals(option.unwrapOr(value), expected);
+    for (const [option, orElse, expected] of tests) {
+      await t.step(`${option}.unwrap(${orElse}) => ${expected}`, () => {
+        assertEquals(option.unwrap(orElse), expected);
       });
     }
   });
 
-  await t.step("(OptionInstance).unwrapOrElse", async (t) => {
+  await t.step("(OptionInstance).unwrap", async (t) => {
     const tests = [
       [Option.some(1), () => 2, 1],
       [Option.none<number>(), () => 2, 2],
     ] as const;
 
-    for (const [option, fn, expected] of tests) {
-      await t.step(`${option}.unwrapOrElse(${fn}) => ${expected}`, () => {
-        assertEquals(option.unwrapOrElse(fn), expected);
+    for (const [option, orElse, expected] of tests) {
+      await t.step(`${option}.unwrap(${orElse}) => ${expected}`, () => {
+        assertEquals(option.unwrap(orElse), expected);
       });
     }
   });
@@ -444,35 +445,37 @@ Deno.test("none", async (t) => {
 });
 
 Deno.test("Lazy", async (t) => {
-  await t.step("(Lazy).andThen", async (t) => {
-    const lazy = Option.some(1)
-      .lazy()
-      .andThen((n) => Promise.resolve(Option.some(n + 1)))
-      .andThen((n) => Option.some(n + 1));
-
-    const expected = Option.some(3);
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
-  });
-
   await t.step("(Lazy).and", async (t) => {
-    const lazy = Option.some(1)
-      .lazy()
-      .and(() => Promise.resolve(some(2)))
-      .and(() => some(3));
+    {
+      const lazy = Option.some(1)
+        .lazy()
+        .and((n) => Promise.resolve(Option.some(n + 1)))
+        .and((n) => Option.some(n + 1));
 
-    const expected = Option.some(3);
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
+      const expected = Option.some(3);
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
+
+    {
+      const lazy = Option.some(1)
+        .lazy()
+        .and(() => Promise.resolve(some(2)))
+        .and(() => some(3));
+
+      const expected = Option.some(3);
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
   });
 
-  await t.step("(Lazy).orElse", async (t) => {
+  await t.step("(Lazy).or", async (t) => {
     const lazy = Option.none<number>()
       .lazy()
-      .orElse(() => Promise.resolve(Option.none()))
-      .orElse(() => Option.some(3));
+      .or(() => Promise.resolve(Option.none()))
+      .or(() => Option.some(3));
 
     const expected = Option.some(3);
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
@@ -541,32 +544,32 @@ Deno.test("Lazy", async (t) => {
       [
         Option.lazy(Option.some(1))
           .map((n) => n + 1)
-          .andThen((n) => some(n + 1)),
-        "Lazy<Some(1).map((n)=>n + 1).andThen((n)=>some(n + 1))>",
+          .and((n) => some(n + 1)),
+        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1))>",
       ],
       [
         Option.lazy(Option.some(1))
           .map((n) => n + 1)
-          .andThen((n) => some(n + 1))
+          .and((n) => some(n + 1))
           .and(() => none()),
-        "Lazy<Some(1).map((n)=>n + 1).andThen((n)=>some(n + 1)).and(()=>none())>",
+        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none())>",
       ],
       [
         Option.lazy(Option.some(1))
           .map((n) => n + 1)
-          .andThen((n) => some(n + 1))
+          .and((n) => some(n + 1))
           .and(() => none())
-          .orElse(() => Option.none()),
-        "Lazy<Some(1).map((n)=>n + 1).andThen((n)=>some(n + 1)).and(()=>none()).orElse(()=>Option.none())>",
+          .or(() => Option.none()),
+        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none()).or(()=>Option.none())>",
       ],
       [
         Option.lazy(Option.some(1))
           .map((n) => n + 1)
-          .andThen((n) => some(n + 1))
+          .and((n) => some(n + 1))
           .and(() => none())
-          .orElse(() => none())
+          .or(() => none())
           .or(() => some(1)),
-        "Lazy<Some(1).map((n)=>n + 1).andThen((n)=>some(n + 1)).and(()=>none()).orElse(()=>none()).or(()=>some(1))>",
+        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none()).or(()=>none()).or(()=>some(1))>",
       ],
     ] as const;
 

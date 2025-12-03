@@ -100,44 +100,46 @@ Deno.test("ResultInstance", async (t) => {
     }
   });
 
-  await t.step("(ResultInstance).andThen", async (t) => {
-    const tests: [
-      ResultInstance<number, string>,
-      (n: number) => Result<number, string>,
-      Result<number, string>,
-    ][] = [
-      [Result.ok(1), (n) => Result.ok(n + 1), Result.ok(2)],
-      [Result.ok(1), () => Result.err("error"), Result.err("error")],
-      [Result.err("error"), (n) => Result.ok(n + 1), Result.err("error")],
-    ];
-
-    for (const [result, fn, expected] of tests) {
-      await t.step(`${result}.andThen(${fn}) => ${expected}`, () => {
-        assertEquals(result.andThen(fn), expected);
-      });
-    }
-  });
-
   await t.step("(ResultInstance).and", async (t) => {
-    const tests: [
-      ResultInstance<number, string>,
-      () => Result<number, string>,
-      ResultInstance<number, string>,
-    ][] = [
-      [ok(1), () => ok(2), ok(2)],
-      [ok(1), () => err("error"), err("error")],
-      [err("error"), () => ok(2), err("error")],
-    ];
+    {
+      const tests: [
+        ResultInstance<number, string>,
+        (n: number) => Result<number, string>,
+        Result<number, string>,
+      ][] = [
+        [Result.ok(1), (n) => Result.ok(n + 1), Result.ok(2)],
+        [Result.ok(1), () => Result.err("error"), Result.err("error")],
+        [Result.err("error"), (n) => Result.ok(n + 1), Result.err("error")],
+      ];
 
-    for (const [result, andThen, expected] of tests) {
-      await t.step(`${result}.and(${andThen}) => ${expected}`, () => {
-        assertEquals(result.and(andThen), expected);
-      });
+      for (const [result, fn, expected] of tests) {
+        await t.step(`${result}.and(${fn}) => ${expected}`, () => {
+          assertEquals(result.and(fn), expected);
+        });
+      }
+    }
+
+    {
+      const tests: [
+        ResultInstance<number, string>,
+        () => Result<number, string>,
+        ResultInstance<number, string>,
+      ][] = [
+        [ok(1), () => ok(2), ok(2)],
+        [ok(1), () => err("error"), err("error")],
+        [err("error"), () => ok(2), err("error")],
+      ];
+
+      for (const [result, andThen, expected] of tests) {
+        await t.step(`${result}.and(${andThen}) => ${expected}`, () => {
+          assertEquals(result.and(andThen), expected);
+        });
+      }
     }
   });
 
-  await t.step("(ResultInstance).orElse", async (t) => {
-    const fn = (e: string) => Result.ok(e + "!!");
+  await t.step("(ResultInstance).or", async (t) => {
+    const orElse = (e: string) => Result.ok(e + "!!");
     const tests: [
       ResultInstance<number, string>,
       ResultInstance<number | string, string>,
@@ -147,26 +149,26 @@ Deno.test("ResultInstance", async (t) => {
     ];
 
     for (const [result, expected] of tests) {
-      await t.step(`${result}.orElse(${fn}) => ${expected}`, () => {
-        assertEquals(result.orElse(fn), expected);
-      });
-    }
-  });
-
-  await t.step("(ResultInstance).or", async (t) => {
-    const orElse = () => Result.ok(-1);
-    const tests: [
-      ResultInstance<number, string>,
-      ResultInstance<number, string | Error>,
-    ][] = [
-      [Result.ok(1), Result.ok(1)],
-      [Result.err("error"), Result.ok(-1)],
-    ];
-
-    for (const [result, expected] of tests) {
       await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
         assertEquals(result.or(orElse), expected);
       });
+    }
+
+    {
+      const orElse = () => Result.ok(-1);
+      const tests: [
+        ResultInstance<number, string>,
+        ResultInstance<number, string | Error>,
+      ][] = [
+        [ok(1), ok(1)],
+        [err("error"), ok(-1)],
+      ];
+
+      for (const [result, expected] of tests) {
+        await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
+          assertEquals(result.or(orElse), expected);
+        });
+      }
     }
   });
 
@@ -545,48 +547,52 @@ Deno.test("err", async (t) => {
 });
 
 Deno.test("Lazy", async (t) => {
-  await t.step("(Lazy).andThen", async (t) => {
-    const lazy = Result.lazy(Result.ok(1))
-      .andThen((n) => Promise.resolve(Result.ok(n + 1)))
-      .andThen((n) => Result.ok(n + 1));
-
-    const expected = Result.ok(3) as ResultInstance<number>;
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
-  });
-
   await t.step("(Lazy).and", async (t) => {
-    const lazy = Result.lazy(Result.ok(1))
-      .and(() => Promise.resolve(ok(2)))
-      .and(() => ok(3));
+    {
+      const lazy = Result.lazy(Result.ok(1))
+        .and((n) => Promise.resolve(Result.ok(n + 1)))
+        .and((n) => Result.ok(n + 1));
 
-    const expected = Result.ok(3) as ResultInstance<number>;
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
-  });
+      const expected = Result.ok(3) as ResultInstance<number>;
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
 
-  await t.step("(Lazy).orElse", async (t) => {
-    const lazy = Result.lazy(Result.err("error"))
-      .orElse((e) => Result.err(e + "!"))
-      .orElse((e) => Result.err(e + "!"));
+    {
+      const lazy = Result.lazy(Result.ok(1))
+        .and(() => Promise.resolve(ok(2)))
+        .and(() => ok(3));
 
-    const expected = Result.err("error!!");
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
+      const expected = Result.ok(3) as ResultInstance<number>;
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
   });
 
   await t.step("(Lazy).or", async (t) => {
-    const lazy = Result.lazy(Result.err("error"))
-      .or(() => Promise.resolve(Result.err("error!")))
-      .or(() => Result.err("error!!"));
+    {
+      const lazy = Result.lazy(Result.err("error"))
+        .or((e) => Result.err(e + "!"))
+        .or((e) => Result.err(e + "!"));
 
-    const expected = Result.err("error!!");
-    await t.step(`${lazy}.eval() => ${expected}`, async () => {
-      assertEquals(await lazy.eval(), expected);
-    });
+      const expected = Result.err("error!!");
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
+
+    {
+      const lazy = Result.lazy(Result.err("error"))
+        .or(() => Promise.resolve(Result.err("error!")))
+        .or(() => Result.err("error!!"));
+
+      const expected = Result.err("error!!");
+      await t.step(`${lazy}.eval() => ${expected}`, async () => {
+        assertEquals(await lazy.eval(), expected);
+      });
+    }
   });
 
   await t.step("(Lazy).map", async (t) => {
@@ -633,32 +639,32 @@ Deno.test("Lazy", async (t) => {
       [
         Result.lazy(Result.ok(1))
           .map((n) => n + 1)
-          .andThen((n) => Result.ok(n + 1)),
-        "Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>Result.ok(n + 1))>",
+          .and((n) => Result.ok(n + 1)),
+        "Lazy<Ok(1).map((n)=>n + 1).and((n)=>Result.ok(n + 1))>",
       ],
       [
         Result.lazy(Result.ok(1))
           .map((n) => n + 1)
-          .andThen((n) => ok(n + 1))
+          .and((n) => ok(n + 1))
           .and(() => err("error")),
-        'Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>ok(n + 1)).and(()=>err("error"))>',
+        'Lazy<Ok(1).map((n)=>n + 1).and((n)=>ok(n + 1)).and(()=>err("error"))>',
       ],
       [
         Result.lazy(Result.ok(1))
           .map((n) => n + 1)
-          .andThen((n) => ok(n + 1))
+          .and((n) => ok(n + 1))
           .and(() => err("error"))
-          .orElse((e) => err(e)),
-        'Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>ok(n + 1)).and(()=>err("error")).orElse((e)=>err(e))>',
+          .or((e) => err(e)),
+        'Lazy<Ok(1).map((n)=>n + 1).and((n)=>ok(n + 1)).and(()=>err("error")).or((e)=>err(e))>',
       ],
       [
         Result.lazy(Result.ok(1))
           .map((n) => n + 1)
-          .andThen((n) => ok(n + 1))
+          .and((n) => ok(n + 1))
           .and(() => err("error"))
-          .orElse((e) => err(e))
+          .or((e) => err(e))
           .or(() => ok(1)),
-        'Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>ok(n + 1)).and(()=>err("error")).orElse((e)=>err(e)).or(()=>ok(1))>',
+        'Lazy<Ok(1).map((n)=>n + 1).and((n)=>ok(n + 1)).and(()=>err("error")).or((e)=>err(e)).or(()=>ok(1))>',
       ],
     ] as const;
     for (const [lazy, expected] of tests) {

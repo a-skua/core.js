@@ -73,7 +73,7 @@
  *
  * const getNumber = () => ok(Math.random())
  *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
- *   .orElse((e) => {
+ *   .or((e) => {
  *     console.error(`Error: ${e}`);
  *     return ok(-1);
  *   });
@@ -379,12 +379,12 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * import { ok, err } from "@askua/core/result";
  *
  * assertEquals(
- *   ok(1).orElse(() => ok(2)),
+ *   ok(1).or(() => ok(2)),
  *   ok(1),
  * );
  *
  * assertEquals(
- *   err("error").orElse(() => ok(2)),
+ *   err("error").or(() => ok(2)),
  *   ok(2),
  * );
  * ```
@@ -669,7 +669,7 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .and((n) => ok(n.toFixed(2)))
-   *   .orElse((e) => {
+   *   .or((e) => {
    *     console.error(`Error: ${e}`);
    *     return ok(0);
    *   })
@@ -891,7 +891,7 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
    * const fn = () => Result.lazy(getNumber())
    *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
    *   .and((n) => ok(n.toFixed(2)))
-   *   .orElse((e) => {
+   *   .or((e) => {
    *     console.error(`Error: ${e}`);
    *     return Promise.resolve(ok("0.50"));
    *   })
