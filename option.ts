@@ -240,14 +240,14 @@ export type SerializedOption<T> = [T] | 0;
  * );
  * ```
  *
- * ### andThen
+ * ### and
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import type { OptionInstance } from "@askua/core/option";
  * import { Option, some } from "@askua/core/option";
  *
- * const a = await Option.andThen(
+ * const a = await Option.and(
  *   some(1),
  *   () => some(2),
  *   Promise.resolve(some(3)),
@@ -258,14 +258,14 @@ export type SerializedOption<T> = [T] | 0;
  * assertEquals(a, b);
  * ```
  *
- * ### orElse
+ * ### or
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import type { OptionInstance } from "@askua/core/option";
  * import { Option, some, none } from "@askua/core/option";
  *
- * const a = await Option.orElse(
+ * const a = await Option.or(
  *   none<number>(),
  *   Promise.resolve(none<number>()),
  *   () => none<number>(),
@@ -318,7 +318,7 @@ export type SerializedOption<T> = [T] | 0;
  *
  * ## Instance Methods
  *
- * ### andThen
+ * ### and
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -330,18 +330,6 @@ export type SerializedOption<T> = [T] | 0;
  * );
  *
  * assertEquals(
- *   some(1).and(() => none()),
- *   none(),
- * );
- * ```
- *
- * ### and
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * assertEquals(
  *   some(1).and(() => some(2)),
  *   some(2),
  * );
@@ -349,23 +337,6 @@ export type SerializedOption<T> = [T] | 0;
  * assertEquals(
  *   some(1).and(() => none()),
  *   none(),
- * );
- * ```
- *
- * ### orElse
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * assertEquals(
- *   some(1).or(() => some(2)),
- *   some(1),
- * );
- *
- * assertEquals(
- *   none().or(() => some(2)),
- *   some(2),
  * );
  * ```
  *
@@ -432,47 +403,16 @@ export type SerializedOption<T> = [T] | 0;
  * );
  *
  * assertEquals(
+ *   some(1).unwrap(() => 0),
+ *   1,
+ * );
+ *
+ * assertEquals(
  *   none().unwrap(() => 1),
  *   1,
  * );
  *
  * assertThrows(() => none().unwrap());
- * ```
- *
- * ### unwrapOr
- *
- * DEPRECATED: use `unwrap(() => U);`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * assertEquals(
- *   some(1).unwrap(() => 0),
- *   1,
- * );
- *
- * assertEquals(
- *   none().unwrap(() => 0),
- *   0,
- * );
- * ```
- *
- * ### unwrapOrElse
- *
- * DEPRECATED: use `unwrap(() => U);`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * assertEquals(
- *   some(1).unwrap(() => 0),
- *   1,
- * );
- *
- * assertEquals(
- *   none().unwrap(() => 0),
- *   0,
- * );
  * ```
  *
  * ### lazy
@@ -526,7 +466,17 @@ export type SerializedOption<T> = [T] | 0;
  */
 export const Option: OptionToInstance & OptionStatic = Object.assign(
   toInstance,
-  { some, none, andThen, orElse, lazy, fromResult, fromNullable },
+  {
+    some,
+    none,
+    and,
+    or,
+    andThen: and,
+    orElse: or,
+    lazy,
+    fromResult,
+    fromNullable,
+  },
 );
 
 /**
@@ -971,13 +921,13 @@ type OptionStatic = {
 
   /**
    * ```ts
-   * console.log("[Example] Option.andThen");
+   * console.log("[Example] Option.and");
    *
    * const getNumber = () => some(Math.random())
    *   .and((n) => n >= 0.2 ? some(n) : none())
    *   .map((n) => n.toFixed(2));
    *
-   * const fn = () => Option.andThen(
+   * const fn = () => Option.and(
    *   () => getNumber(),
    *   () => getNumber(),
    *   () => getNumber(),
@@ -989,7 +939,7 @@ type OptionStatic = {
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
-   * const option = await Option.andThen(
+   * const option = await Option.and(
    *   some(1),
    *   () => some(2),
    *   Promise.resolve(some(3)),
@@ -999,17 +949,22 @@ type OptionStatic = {
    * assertEquals(option, "1, 2, 3, 4");
    * ```
    */
-  andThen: typeof andThen;
+  and: typeof and;
+
+  /**
+   * @deprecated use `and` method
+   */
+  andThen: typeof and;
 
   /**
    * ```ts
-   * console.log("[Example] Option.orElse");
+   * console.log("[Example] Option.or");
    *
    * const getNumber = () => some(Math.random())
    *   .and((n) => n >= 0.8 ? some(n) : none())
    *   .map((n) => n.toFixed(2));
    *
-   * const fn = () => Option.orElse(
+   * const fn = () => Option.or(
    *   () => getNumber(),
    *   () => getNumber(),
    *   () => getNumber(),
@@ -1021,7 +976,7 @@ type OptionStatic = {
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
-   * const option = await Option.orElse(
+   * const option = await Option.or(
    *   none<number>(),
    *   Promise.resolve(none<number>()),
    *   () => none<number>(),
@@ -1031,7 +986,12 @@ type OptionStatic = {
    * assertEquals(option, "4.00");
    * ```
    */
-  orElse: typeof orElse;
+  or: typeof or;
+
+  /**
+   * @deprecated use `or` method
+   */
+  orElse: typeof or;
 
   /**
    * ```ts
@@ -1454,7 +1414,7 @@ export function isNone<T>({ some }: Option<T>) {
   return !some;
 }
 
-async function andThen<
+async function and<
   O extends Fn[number] extends (() => infer O) | infer O
     ? (Awaited<O> extends OptionInstance<infer _> ? OptionInstance<T>
       : (Awaited<O> extends Option<infer _> ? Option<T> : unknown))
@@ -1496,7 +1456,7 @@ async function andThen<
   return some(values) as O;
 }
 
-async function orElse<
+async function or<
   O extends Fn[number] extends (() => infer O) | infer O
     ? (Awaited<O> extends OptionInstance<infer _> ? OptionInstance<T>
       : (Awaited<O> extends Option<infer _> ? Option<T> : never))

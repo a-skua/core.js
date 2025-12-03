@@ -14,7 +14,7 @@ import {
   Result,
   type ResultInstance,
 } from "./result.ts";
-import { none, type Option, some } from "./option.ts";
+import { none, some } from "./option.ts";
 
 Deno.test("ResultInstance", async (t) => {
   await t.step("(ResultInstance).toString", async (t) => {
@@ -72,19 +72,6 @@ Deno.test("ResultInstance", async (t) => {
         assertThrows(() => [...result]);
       });
     });
-  });
-
-  await t.step("(ResultInstance).toOption", async (t) => {
-    const tests: [ResultInstance<string, string>, Option<string>][] = [
-      [Result.ok("value"), some("value")],
-      [Result.err("error"), none()],
-    ];
-
-    for (const [result, expected] of tests) {
-      await t.step(`${result}.toOption() => ${expected}`, () => {
-        assertEquals(result.toOption(), expected);
-      });
-    }
   });
 
   await t.step("(ResultInstance).toString", async (t) => {
@@ -266,20 +253,20 @@ Deno.test("ResultInstance", async (t) => {
     }
   });
 
-  await t.step("(ResultInstance).unwrapOr", async (t) => {
+  await t.step("(ResultInstance).unwrap", async (t) => {
     const tests: [ResultInstance<number, Error>, number, number][] = [
       [Result.ok(1), 0, 1],
       [Result.err(new Error("error")), 0, 0],
     ] as const;
 
     for (const [result, defaultValue, expected] of tests) {
-      await t.step(`${result}.unwrapOr(${defaultValue}) => ${expected}`, () => {
-        assertEquals(result.unwrapOr(defaultValue), expected);
+      await t.step(`${result}.unwrap(${defaultValue}) => ${expected}`, () => {
+        assertEquals(result.unwrap(() => defaultValue), expected);
       });
     }
   });
 
-  await t.step("(ResultInstance).unwrapOrElse", async (t) => {
+  await t.step("(ResultInstance).unwrap", async (t) => {
     const tests: [
       ResultInstance<number, Error>,
       (e: Error) => number,
@@ -295,8 +282,8 @@ Deno.test("ResultInstance", async (t) => {
     ] as const;
 
     for (const [result, fn, expected] of tests) {
-      await t.step(`${result}.unwrapOrElse(${fn}) => ${expected}`, () => {
-        assertEquals(result.unwrapOrElse(fn), expected);
+      await t.step(`${result}.unwrap(${fn}) => ${expected}`, () => {
+        assertEquals(result.unwrap(fn), expected);
       });
     }
   });
@@ -332,7 +319,7 @@ Deno.test("Result.err", async (t) => {
   }
 });
 
-Deno.test("Result.andThen", async (t) => {
+Deno.test("Result.and", async (t) => {
   type Arg =
     | Promise<Result<unknown, unknown>>
     | Result<unknown, unknown>
@@ -365,12 +352,12 @@ Deno.test("Result.andThen", async (t) => {
 
   for (const [args, expected] of tests) {
     await t.step(`Result.andThen(${args}) => ${expected}`, async () => {
-      assertEquals(await Result.andThen(...args), expected);
+      assertEquals(await Result.and(...args), expected);
     });
   }
 });
 
-Deno.test("Result.orElse", async (t) => {
+Deno.test("Result.or", async (t) => {
   type Arg =
     | Promise<Result<unknown, unknown>>
     | Result<unknown, unknown>
@@ -400,7 +387,7 @@ Deno.test("Result.orElse", async (t) => {
 
   for (const [args, expected] of tests) {
     await t.step(`Result.orElse(${args}) => ${expected}`, async () => {
-      assertEquals(await Result.orElse(...args), expected);
+      assertEquals(await Result.or(...args), expected);
     });
   }
 });
@@ -443,43 +430,6 @@ Deno.test("Result.fromOption", async (t) => {
     const actual = Result.fromOption(none(), () => "Custom error");
     const expected = err("Custom error");
     assertEquals(actual, expected);
-  });
-});
-
-Deno.test("Result.fromNullable", async (t) => {
-  const tests: [number | null | undefined, Result<number>][] = [
-    [1, ok(1)],
-    [null, err(new Error("Nullable"))],
-    [undefined, err(new Error("Nullable"))],
-  ] as const;
-
-  for (const [input, expected] of tests) {
-    await t.step(
-      `Result.fromOption(${input}) => ${expected}`,
-      () => assertEquals(Result.fromNullable(input), expected),
-    );
-  }
-
-  await t.step("with custom error", async (t) => {
-    const tests: [
-      number | null | undefined,
-      (() => string) | undefined,
-      Result<number, string | Error>,
-    ][] = [
-      [1, , ok(1)],
-      [1, () => "error", ok(1)],
-      [null, , err(new Error("Nullable"))],
-      [null, () => "error", err("error")],
-      [undefined, , err(new Error("Nullable"))],
-      [undefined, () => "error", err("error")],
-    ] as const;
-
-    for (const [input, option, expected] of tests) {
-      await t.step(
-        `Result.fromOption(${input}) => ${expected}`,
-        () => assertEquals(Result.fromNullable(input, option), expected),
-      );
-    }
   });
 });
 

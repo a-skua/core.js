@@ -14,7 +14,7 @@ import {
   type Some,
   some,
 } from "./option.ts";
-import { err, ok, type Result } from "./result.ts";
+import { err, ok } from "./result.ts";
 
 Deno.test("Option", async (t) => {
   const tests = [
@@ -73,25 +73,6 @@ Deno.test("OptionInstance", async (t) => {
     for (const [input, expected] of tests) {
       await t.step(`[...Option(${input})] => [${expected}]`, () => {
         assertEquals([...Option(input)], expected);
-      });
-    }
-  });
-
-  await t.step("(OptionInstance).toResult", async (t) => {
-    const tests: [
-      OptionInstance<unknown>,
-      unknown[],
-      Result<unknown, unknown>,
-    ][] = [
-      [Option.some("value"), [], ok("value")],
-      [Option.none(), [], err(new Error("None"))],
-      [Option.some("value"), ["is none"], ok("value")],
-      [Option.none(), ["is none"], err("is none")],
-    ];
-
-    for (const [option, args, expected] of tests) {
-      await t.step(`${option}.toResult(${args}) => ${expected}`, () => {
-        assertEquals(option.toResult(...args), expected);
       });
     }
   });
@@ -293,7 +274,7 @@ Deno.test("Option.none", async (t) => {
   }
 });
 
-Deno.test("Option.andThen", async (t) => {
+Deno.test("Option.and", async (t) => {
   type Arg =
     | Promise<Option<unknown>>
     | Option<unknown>
@@ -320,13 +301,13 @@ Deno.test("Option.andThen", async (t) => {
   ];
 
   for (const [args, expected] of tests) {
-    await t.step(`Option.andThen(${args})() => ${expected}`, async () => {
-      assertEquals(await Option.andThen(...args), expected);
+    await t.step(`Option.and(${args})() => ${expected}`, async () => {
+      assertEquals(await Option.and(...args), expected);
     });
   }
 });
 
-Deno.test("Option.orElse", async (t) => {
+Deno.test("Option.or", async (t) => {
   type Arg =
     | Promise<Option<unknown>>
     | Option<unknown>
@@ -357,8 +338,8 @@ Deno.test("Option.orElse", async (t) => {
   ];
 
   for (const [args, expected] of tests) {
-    await t.step(`(Option.orElse(${args}) => ${expected}`, async () => {
-      assertEquals(await Option.orElse(...args), expected);
+    await t.step(`(Option.or(${args}) => ${expected}`, async () => {
+      assertEquals(await Option.or(...args), expected);
     });
   }
 });

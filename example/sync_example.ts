@@ -1,4 +1,4 @@
-import { Option } from "@askua/core/option";
+import { none, Option, some } from "@askua/core/option";
 
 async function test(name: string, fn: () => Promise<unknown>) {
   console.time(name);
@@ -9,33 +9,33 @@ async function test(name: string, fn: () => Promise<unknown>) {
 }
 
 const getNumber = () =>
-  Option.some(Math.random())
-    .andThen((n) => n >= 0.1 ? Option.some<number>(n) : Option.none<number>());
+  some(Math.random())
+    .and((n) => n >= 0.1 ? some<number>(n) : none<number>());
 
-test("Option.andThen(...Promise[])", () =>
+test("Option.and(...Promise[])", () =>
   Option
-    .lazy(Option.andThen(getNumber(), getNumber(), getNumber()))
+    .lazy(Option.and(getNumber(), getNumber(), getNumber()))
     .map((n) => n.reduce((v, n) => v + n) * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Option.andThen(...() => Promise[])", () =>
+test("Option.and(...() => Promise[])", () =>
   Option
-    .lazy(Option.andThen(getNumber, getNumber, getNumber))
+    .lazy(Option.and(getNumber, getNumber, getNumber))
     .map((n) => n.reduce((v, n) => v + n) * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Option.orElse(...Promise[])", () =>
+test("Option.or(...Promise[])", () =>
   Option
-    .lazy(Option.orElse(getNumber(), getNumber(), getNumber()))
+    .lazy(Option.or(getNumber(), getNumber(), getNumber()))
     .map((n) => n * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Option.orElse(...() => Promise[])", () =>
+test("Option.or(...() => Promise[])", () =>
   Option
-    .lazy(Option.orElse(getNumber, getNumber, getNumber))
+    .lazy(Option.or(getNumber, getNumber, getNumber))
     .map((n) => n * 100)
     .map((n) => n.toFixed(2))
     .eval());

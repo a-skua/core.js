@@ -1,4 +1,4 @@
-import { type Ok, Result, type ResultInstance } from "@askua/core/result";
+import { err, ok, Result, type ResultInstance } from "@askua/core/result";
 
 declare function bar(): ResultInstance<number>;
 
@@ -15,135 +15,131 @@ Result({ ok: false, error: "error" });
 
 Result<string, Error>({ ok: true, value: "ok" });
 Result<string, string>({ ok: false, error: "error" });
-Result<number, Error>(Result.ok(1));
-Result<number, number>(Result.err(-1));
+Result<number, Error>(ok(1));
+Result<number, number>(err(-1));
 Result(foo());
 
 Result({ ok: false, error: "error" })
   .map((n) => n + 1)
-  .and<ResultInstance<string, number>>(Result.err(-1))
-  .and(Result.ok(1))
-  .andThen<ResultInstance<string, number>>(() => Result.err(-1))
-  .andThen<ResultInstance<number, string>>(() => Result.ok(1))
-  .andThen((n) => n > 0 ? Result.ok(n) : Result.err(-1))
-  .and(Result.ok(0))
+  .and<ResultInstance<string, number>>(() => err(-1))
+  .and(() => ok(1))
+  .and<ResultInstance<string, number>>(() => err(-1))
+  .and<ResultInstance<number, string>>(() => ok(1))
+  .and((n) => n > 0 ? ok(n) : err(-1))
+  .and(() => ok(0))
   .lazy()
   .map((n) => n + 1)
   .map((n) => !!n)
   .map((n) => Promise.resolve(n.toString()))
-  .and<Result<number, string>>(Result.err(""))
-  .and(Result.ok(""))
-  .andThen<Result<string, number>>((s) =>
-    s.length > 0 ? Result.ok(s) : Result.err(-1)
-  )
-  .andThen(() => ({ ok: true, value: 1 }))
-  .andThen(() => Promise.resolve({ ok: true, value: 1 }))
-  .andThen((_): Ok<number> => ({ ok: true, value: 1 }))
-  .andThen((_) => ({ ok: true, value: 1 }) as const)
-  .andThen((_) => ({ ok: true as const, value: 1 }))
-  .andThen((_) => ({ ok: true, value: 1 }))
-  .andThen<{ ok: true; value: 1 }>((_) =>
-    Promise.resolve({ ok: true, value: 1 })
-  )
-  .andThen((_) => Result.ok(1))
-  .andThen(() => ({ ok: false, error: -1 }))
-  .andThen((_) => ({ ok: false, error: -1 }))
+  .and<Result<number, string>>(() => err(""))
+  .and(() => ok(""))
+  .and<Result<string, number>>((s) => s.length > 0 ? ok(s) : err(-1))
+  .and(() => ({ ok: true, value: 1 }))
+  .and(() => Promise.resolve({ ok: true, value: 1 }))
+  .and((_) => ({ ok: true, value: 1 }))
+  .and((_) => ({ ok: true, value: 1 }) as const)
+  .and((_) => ({ ok: true as const, value: 1 }))
+  .and((_) => ({ ok: true, value: 1 }))
+  .and<{ ok: true; value: 1 }>((_) => Promise.resolve({ ok: true, value: 1 }))
+  .and((_) => ok(1))
+  .and(() => ({ ok: false, error: -1 }))
+  .and((_) => ({ ok: false, error: -1 }))
   .eval();
 
-Result.ok(null)
-  .or(Result.ok(""))
-  .or(Result.err(""))
-  .orElse(() => Result.ok(1))
-  .orElse<ResultInstance<string, number>>(() => Result.err(-1))
+ok(null)
+  .or(() => ok(""))
+  .or(() => err(""))
+  .or(() => ok(1))
+  .or<ResultInstance<string, number>>(() => err(-1))
   .lazy()
   .eval();
 
-Result.ok(null)
+ok(null)
   .lazy()
-  .or(Result.ok(""))
-  .or(Result.err(""))
-  .orElse<Result<number>>(() => Result.ok(1))
-  .orElse(() => Result.err(-1))
+  .or(() => ok(""))
+  .or(() => err(""))
+  .or<Result<number>>(() => ok(1))
+  .or(() => err(-1))
   .eval();
 
 function foo(): Result<number> {
-  return Result.ok<number>(1);
+  return ok<number>(1);
 }
 
-Result.orElse<Result<number | string, number | string>>(
-  Result.ok(1),
-  Result.err(-1),
+Result.or<Result<number | string, number | string>>(
+  ok(1),
+  err(-1),
 );
 
-Result.orElse(
-  Result.ok(1),
-  Result.err(-1),
-  Result.ok(""),
-  Result.err(""),
+Result.or(
+  ok(1),
+  err(-1),
+  ok(""),
+  err(""),
   { ok: true, value: null },
   { ok: false, error: null },
 );
 
-Result.andThen(
-  Result.ok(1),
-  Result.err(-1),
-  Result.ok(""),
-  Result.err(""),
+Result.and(
+  ok(1),
+  err(-1),
+  ok(""),
+  err(""),
   { ok: true, value: null },
   { ok: false, error: null },
   foo,
   foo(),
 );
 
-Result.andThen<Result<[number, number], Error | number>>(
-  Result.ok(1),
-  Result.err(-1),
+Result.and<Result<[number, number], Error | number>>(
+  ok(1),
+  err(-1),
 );
 
-Result.lazy(Result.ok(1)).eval();
-Result.lazy(Result.err("error")).eval();
+Result.lazy(ok(1)).eval();
+Result.lazy(err("error")).eval();
 Result.lazy({ ok: true, value: 1 }).eval();
 Result.lazy({ ok: false, error: "error" }).eval();
-Result.lazy(() => Result.ok(1)).eval();
-Result.lazy(() => Result.err("error")).eval();
+Result.lazy(() => ok(1)).eval();
+Result.lazy(() => err("error")).eval();
 Result.lazy(() => ({ ok: true, value: 1 })).eval();
 Result.lazy(() => ({ ok: false, error: "error" })).eval();
 
-Result.lazy(Result.andThen(
-  Result.ok(1),
-  Result.err(-1),
-  Result.ok(""),
-  Result.err(""),
+Result.lazy(Result.and(
+  ok(1),
+  err(-1),
+  ok(""),
+  err(""),
   { ok: true, value: null },
   { ok: false, error: null },
 )).eval();
 
-Result.lazy(Result.andThen(
-  Result.ok(""),
-  Result.err(""),
-  { ok: true, value: null },
-  { ok: false, error: null },
-  foo(),
-  foo,
-)).eval();
-
-Result.lazy(Result.orElse(
-  Result.ok(1),
-  Result.err(-1),
-  Result.ok(""),
-  Result.err(""),
-  { ok: true, value: null },
-  { ok: false, error: null },
-)).eval();
-
-Result.lazy(Result.orElse(
-  Result.ok(""),
-  Result.err(""),
+Result.lazy(Result.and(
+  ok(""),
+  err(""),
   { ok: true, value: null },
   { ok: false, error: null },
   foo(),
   foo,
 )).eval();
 
-Result.lazy<Result<number, string>>(Result.ok(1));
-Result.lazy<Result<string, number>>(Result.err(1));
+Result.lazy(Result.or(
+  ok(1),
+  err(-1),
+  ok(""),
+  err(""),
+  { ok: true, value: null },
+  { ok: false, error: null },
+)).eval();
+
+Result.lazy(Result.or(
+  ok(""),
+  err(""),
+  { ok: true, value: null },
+  { ok: false, error: null },
+  foo(),
+  foo,
+)).eval();
+
+Result.lazy<Result<number, string>>(ok(1));
+Result.lazy<Result<string, number>>(err(1));

@@ -16,6 +16,18 @@ Deno.bench("none()", () => {
   none();
 });
 
+Deno.bench("Option.fromNullable(null)", () => {
+  Option.fromNullable(null);
+});
+
+Deno.bench("Option.fromNullable(undefined)", () => {
+  Option.fromNullable(undefined);
+});
+
+Deno.bench("Option.fromNullable(1)", () => {
+  Option.fromNullable(1);
+});
+
 Deno.bench("some(1).and((n) => some(n + 1))", () => {
   some(1).and((n) => some(n + 1));
 });
@@ -64,6 +76,55 @@ Deno.bench("none().unwrap(() => 0)", () => {
   none().unwrap(() => 0);
 });
 
+Deno.bench("[...some(1)]", () => {
+  [...some(1)];
+});
+
+Deno.bench("[...none()]", () => {
+  [...none()];
+});
+
+Deno.bench("some(1).lazy().map((n) => n + 1).eval()", async () => {
+  await some(1).lazy().map((n) => n + 1).eval();
+});
+
+Deno.bench("none().lazy().map((n) => n + 1).eval()", async () => {
+  await none().lazy().map((n) => n + 1).eval();
+});
+
+Deno.bench("Option.and(...)", async () => {
+  await Option.and(
+    Option.some(1),
+    Promise.resolve(Option.some(2)),
+    () => Option.some(3),
+    () => Promise.resolve(Option.some(4)),
+  );
+});
+
+Deno.bench("Option.or(...)", async () => {
+  await Option.or(
+    Option.none(),
+    Promise.resolve(Option.none()),
+    () => Option.none(),
+    () => Promise.resolve(Option.none()),
+  );
+});
+
+Deno.bench("Option.lazy()...eval()", async () => {
+  await Option.lazy(() => none<number>())
+    .or(() => none<number>())
+    .or(() => Promise.resolve(none<number>()))
+    .or(() => none<number>())
+    .or(() => Promise.resolve(some(1)))
+    .and(() => some(2))
+    .and(() => Promise.resolve(some(3)))
+    .and((n) => some(n + 1))
+    .and((n) => Promise.resolve(some(n + 1)))
+    .map((n) => n + 1)
+    .map((n) => Promise.resolve(n + 1))
+    .eval();
+});
+
 Deno.bench("for (const v of Some(1))", () => {
   const values = [];
   for (const v of Option.some(1)) {
@@ -78,14 +139,6 @@ Deno.bench("for (const _ of None)", () => {
   }
 });
 
-Deno.bench("[...Some(1)]", () => {
-  [...Option.some(1)];
-});
-
-Deno.bench("[...None)]", () => {
-  [...Option.none()];
-});
-
 Deno.bench("Array.from(Some(1))", () => {
   Array.from(Option.some(1));
 });
@@ -94,33 +147,7 @@ Deno.bench("Array.from(None)", () => {
   Array.from(Option.none());
 });
 
-Deno.bench("Option.some", () => {
-  Option.some(1);
-});
-
-Deno.bench("Option.none", () => {
-  Option.none<number>();
-});
-
-Deno.bench("Option.andThen", async () => {
-  await Option.andThen(
-    Option.some(1),
-    Promise.resolve(Option.some(2)),
-    () => Option.some(3),
-    () => Promise.resolve(Option.some(4)),
-  );
-});
-
-Deno.bench("Option.orElse", async () => {
-  await Option.orElse(
-    Option.none(),
-    Promise.resolve(Option.none()),
-    () => Option.none(),
-    () => Promise.resolve(Option.none()),
-  );
-});
-
-Deno.bench("Option.andThen(...[len=1000])", async (t) => {
+Deno.bench("Option.and(...[len=1000])", async (t) => {
   const args = Array.from(
     { length: 1000 },
     (_, i) => {
@@ -138,11 +165,11 @@ Deno.bench("Option.andThen(...[len=1000])", async (t) => {
   );
 
   t.start();
-  await Option.andThen(...args);
+  await Option.and(...args);
   t.end();
 });
 
-Deno.bench("Option.orElse(...[len=1000])", async (t) => {
+Deno.bench("Option.or(...[len=1000])", async (t) => {
   const args = Array.from(
     { length: 1000 },
     (_, i) => {
@@ -161,21 +188,6 @@ Deno.bench("Option.orElse(...[len=1000])", async (t) => {
   type Arg = typeof args[number];
 
   t.start();
-  await Option.orElse(...args as [Arg, ...Arg[]]);
+  await Option.or(...args as [Arg, ...Arg[]]);
   t.end();
-});
-
-Deno.bench("Option.lazy()...eval()", async () => {
-  await Option.lazy(() => none<number>())
-    .or(() => none<number>())
-    .or(() => Promise.resolve(none<number>()))
-    .or(() => none<number>())
-    .or(() => Promise.resolve(some(1)))
-    .and(() => some(2))
-    .and(() => Promise.resolve(some(3)))
-    .and((n) => some(n + 1))
-    .and((n) => Promise.resolve(some(n + 1)))
-    .map((n) => n + 1)
-    .map((n) => Promise.resolve(n + 1))
-    .eval();
 });

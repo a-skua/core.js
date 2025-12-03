@@ -17,6 +17,34 @@ Deno.bench("err(0)", () => {
   err(0);
 });
 
+Deno.bench("Result.try(fn: () => number)", () => {
+  Result.try(() => 1);
+});
+
+Deno.bench(
+  "Result.try(fn: () => Promise<number>)",
+  async () => {
+    await Result.try(() => Promise.resolve(1));
+  },
+);
+
+Deno.bench("Result.try(fn: () => throw number)", () => {
+  Result.try(() => {
+    throw 1;
+  });
+});
+
+Deno.bench(
+  "Result.try(fn: () => Promise<throw number>)",
+  async () => {
+    await Result.try(() => {
+      return new Promise(() => {
+        throw 1;
+      });
+    });
+  },
+);
+
 Deno.bench("ok(1).and((n) => ok(n + 1))", () => {
   ok(1).and((n) => ok(n + 1));
 });
@@ -69,6 +97,59 @@ Deno.bench("err(1).unwrap(() => 0)", () => {
   err(1).unwrap(() => 0);
 });
 
+Deno.bench("[...ok(1)]", () => {
+  [...ok(1)];
+});
+
+Deno.bench("Result.and(...)", async () => {
+  await Result.and(
+    ok(1),
+    Promise.resolve(ok(2)),
+    () => ok(3),
+    () => Promise.resolve(ok(4)),
+  );
+});
+
+Deno.bench("Result.or(...)", async () => {
+  await Result.or(
+    err(1),
+    Promise.resolve(err(2)),
+    () => err(3),
+    () => Promise.resolve(err(4)),
+  );
+});
+
+Deno.bench("Result.fromOption(some(0))", () => {
+  Result.fromOption(some(0));
+});
+
+Deno.bench("Result.fromOption(some(0), () => string)", () => {
+  Result.fromOption(some(0), () => "Error!");
+});
+
+Deno.bench("Result.fromOption(none())", () => {
+  Result.fromOption(none());
+});
+
+Deno.bench("Result.fromOption(none(), () => string)", () => {
+  Result.fromOption(none(), () => "Error!");
+});
+
+Deno.bench("Result.lazy()...eval()", async () => {
+  await Result.lazy(() => err<number, number>(0))
+    .or(() => err<number, number>(0))
+    .or(() => Promise.resolve(err<number, number>(0)))
+    .or(() => err<number, number>(0))
+    .or(() => Promise.resolve(err<number, number>(0)))
+    .and(() => ok(1))
+    .and(() => Promise.resolve(ok(2)))
+    .and((n) => ok(n + 1))
+    .and((n) => Promise.resolve(ok(n + 1)))
+    .map((n) => n + 1)
+    .map((n) => Promise.resolve(n + 1))
+    .eval();
+});
+
 Deno.bench("for (const v of Ok(1))", () => {
   const values = [];
   for (const v of Result.ok(1)) {
@@ -76,49 +157,11 @@ Deno.bench("for (const v of Ok(1))", () => {
   }
 });
 
-Deno.bench("[...Ok(1)]", () => {
-  [...Result.ok(1)];
-});
-
 Deno.bench("Array.from(Ok(1))", () => {
   Array.from(Result.ok(1));
 });
 
-Deno.bench("Result.andThen", async () => {
-  await Result.andThen(
-    Result.ok(1),
-    Promise.resolve(Result.ok(2)),
-    () => Result.ok(3),
-    () => Promise.resolve(Result.ok(4)),
-  );
-});
-
-Deno.bench("Result.orElse", async () => {
-  await Result.orElse(
-    Result.err(1),
-    Promise.resolve(Result.err(2)),
-    () => Result.err(3),
-    () => Promise.resolve(Result.err(4)),
-  );
-});
-
-Deno.bench("Result.fromOption(Some(0))", () => {
-  Result.fromOption(some(0));
-});
-
-Deno.bench("Result.fromOption(Some(0), () => string)", () => {
-  Result.fromOption(some(0), () => "Error!");
-});
-
-Deno.bench("Result.fromOption(None)", () => {
-  Result.fromOption(none());
-});
-
-Deno.bench("Result.fromOption(None, () => string)", () => {
-  Result.fromOption(none(), () => "Error!");
-});
-
-Deno.bench("Result.andThen(...[len=1000])", async (t) => {
+Deno.bench("Result.and(...[len=1000])", async (t) => {
   const args = Array.from(
     { length: 1000 },
     (_, i) => {
@@ -136,11 +179,11 @@ Deno.bench("Result.andThen(...[len=1000])", async (t) => {
   );
 
   t.start();
-  await Result.andThen(...args);
+  await Result.and(...args);
   t.end();
 });
 
-Deno.bench("Result.orElse(...[len=1000])", async (t) => {
+Deno.bench("Result.or(...[len=1000])", async (t) => {
   const args = Array.from(
     { length: 1000 },
     (_, i) => {
@@ -159,49 +202,6 @@ Deno.bench("Result.orElse(...[len=1000])", async (t) => {
   type Arg = typeof args[number];
 
   t.start();
-  await Result.orElse(...args as [Arg, ...Arg[]]);
+  await Result.or(...args as [Arg, ...Arg[]]);
   t.end();
 });
-
-Deno.bench("Result.lazy()...eval()", async () => {
-  await Result.lazy(() => err<number, number>(0))
-    .or(() => err<number, number>(0))
-    .or(() => Promise.resolve(err<number, number>(0)))
-    .or(() => err<number, number>(0))
-    .or(() => Promise.resolve(err<number, number>(0)))
-    .and(() => ok(1))
-    .and(() => Promise.resolve(ok(2)))
-    .and((n) => ok(n + 1))
-    .and((n) => Promise.resolve(ok(n + 1)))
-    .map((n) => n + 1)
-    .map((n) => Promise.resolve(n + 1))
-    .eval();
-});
-
-Deno.bench("Result.try(fn: () => number)", () => {
-  Result.try(() => 1);
-});
-
-Deno.bench(
-  "Result.try(fn: () => Promise<number>)",
-  async () => {
-    await Result.try(() => Promise.resolve(1));
-  },
-);
-
-Deno.bench("Result.try(fn: () => throw number)", () => {
-  Result.try(() => {
-    throw 1;
-  });
-});
-
-Deno.bench(
-  "Result.try(fn: () => Promise<throw number>)",
-  async () => {
-    await Result.try(() => {
-      return new Promise(() => {
-        throw 1;
-      });
-    });
-  },
-);

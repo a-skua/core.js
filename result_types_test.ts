@@ -426,7 +426,7 @@ try {
 }
 
 {
-  const result = await Result.andThen(
+  const result = await Result.and(
     resultNumber,
     Promise.resolve(resultNumber),
     () => resultNumber,
@@ -436,7 +436,7 @@ try {
 }
 
 {
-  const result = await Result.andThen<Result<[number, number, number, number]>>(
+  const result = await Result.and<Result<[number, number, number, number]>>(
     resultNumber,
     Promise.resolve(resultNumber),
     () => resultNumber,
@@ -446,7 +446,7 @@ try {
 }
 
 {
-  const result = await Result.andThen<Result<[number, never], string>>(
+  const result = await Result.and<Result<[number, never], string>>(
     () => ({ ok: true, value: Math.random() }),
     () => ({ ok: false, error: "error" }),
   );
@@ -454,7 +454,7 @@ try {
 }
 
 {
-  const result = await Result.andThen<ResultInstance<[number, never], string>>(
+  const result = await Result.and<ResultInstance<[number, never], string>>(
     () => Promise.resolve(Result.ok(Math.random())),
     () => Promise.resolve(Result.err("error")),
   );
@@ -462,7 +462,7 @@ try {
 }
 
 {
-  const result = await Result.orElse<
+  const result = await Result.or<
     ResultInstance<number | "1" | "2" | "3" | "4", Error | "error">
   >(
     resultNumber,
@@ -484,7 +484,7 @@ try {
 }
 
 {
-  const result = await Result.lazy(Result.andThen(
+  const result = await Result.lazy(Result.and(
     resultNumber,
     resultNumber,
     resultNumber,
@@ -499,14 +499,14 @@ try {
 }
 
 {
-  const result = await Result.lazy<Result<[number]>>(Result.andThen(
+  const result = await Result.lazy<Result<[number]>>(Result.and(
     resultNumber,
   )).eval();
   test<Result<[number]>>(result);
 }
 
 {
-  const result = await Result.lazy(Result.orElse(
+  const result = await Result.lazy(Result.or(
     () => resultNumber,
     () => resultNumber,
     () => resultNumber,
@@ -692,53 +692,6 @@ try {
 {
   const result = err(1) as ResultInstance<string, number>;
   if (isErr(result)) test<ResultInstance<number, number>>(result);
-}
-
-{
-  const result = Result.fromNullable(1);
-  test<Result<number, string>>(result);
-}
-
-{
-  const result = Result.fromNullable(1, () => -1);
-  test<Result<number, number>>(result);
-}
-
-{
-  const result = Result.fromNullable(1);
-  test<Result<number, string>>(result);
-}
-
-{
-  const result = Result.fromNullable(1, () => "error");
-  test<Result<number>>(result);
-}
-
-{
-  const result = Result.fromNullable(null);
-  test<Result<number>>(result);
-}
-
-{
-  const result = Result.fromNullable(null, () => "error");
-  test<Result<number, string>>(result);
-}
-
-{
-  const result = Result.fromNullable(undefined);
-  test<Result<number>>(result);
-}
-
-{
-  const value = 1 as number | null;
-  const result = Result.fromNullable(value);
-  test<Result<number>>(result);
-}
-
-{
-  const value = 1 as number | null;
-  const result = Result.fromNullable(value, () => "error");
-  test<Result<number, string>>(result);
 }
 
 {

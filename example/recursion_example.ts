@@ -1,4 +1,4 @@
-import { Option } from "@askua/core";
+import { none, Option, some } from "@askua/core";
 
 async function test(name: string, fn: () => Promise<unknown> | unknown) {
   console.time(name);
@@ -9,15 +9,15 @@ async function test(name: string, fn: () => Promise<unknown> | unknown) {
 }
 
 const getNumber = () =>
-  Option.some(Math.random())
+  some(Math.random())
     .map((n) => n * 100)
-    .andThen((n) => n >= 99.9 ? Option.some(n) : Option.none<number>());
+    .and((n) => n >= 99.9 ? some(n) : none<number>());
 
 const retryGetNumber = (retry = 0): { n: string; retry: number } =>
   getNumber()
     .map((n) => n.toFixed(2))
     .map((n) => ({ n, retry }))
-    .unwrapOrElse(() => retryGetNumber(retry + 1));
+    .unwrap(() => retryGetNumber(retry + 1));
 
 test("retryGetNumber", () => retryGetNumber());
 
@@ -30,7 +30,7 @@ const asyncRetryGetNumber = (
     .map((n) => n.toFixed(2))
     .map((n) => ({ n, retry }))
     .eval().then((option) =>
-      option.unwrapOrElse(() => asyncRetryGetNumber(retry + 1))
+      option.unwrap(() => asyncRetryGetNumber(retry + 1))
     );
 
 test("asyncRetryGetNumber", () => asyncRetryGetNumber());

@@ -250,14 +250,14 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * );
  * ```
  *
- * ### andThen
+ * ### and
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import type { ResultInstance } from "@askua/core/result";
  * import { Result, ok } from "@askua/core/result";
  *
- * const a: ResultInstance<[number, number, number, number]> = await Result.andThen(
+ * const a: ResultInstance<[number, number, number, number]> = await Result.and(
  *   ok(1),
  *   () => ok(2),
  *   Promise.resolve(ok(3)),
@@ -268,14 +268,14 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * assertEquals(a, b);
  * ```
  *
- * ### orElse
+ * ### or
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
  * import type { ResultInstance } from "@askua/core/result";
  * import { Result, ok } from "@askua/core/result";
  *
- * const a = await Result.orElse(
+ * const a = await Result.or(
  *   err("error"),
  *   () => err("error"),
  *   Promise.resolve(err("error")),
@@ -298,6 +298,19 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  *   .eval();
  *
  * assertEquals(result, ok("1.00"));
+ * ```
+ *
+ * ### fromNullable
+ *
+ * DEPRECATED: use `Option.fromNullable` and `Result.fromOption`
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { Result, ok } from "@askua/core/result";
+ *
+ * const a = Result.fromNullable(1);
+ * const b = ok(1);
+ *
+ * assertEquals(a, b);
  * ```
  *
  * ### fromOption
@@ -338,7 +351,7 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  *
  * ## Instance Methods
  *
- * ### andThen
+ * ### and
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
@@ -350,42 +363,13 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * );
  *
  * assertEquals(
- *   err("error").and((n) => ok(n + 1)),
- *   err("error"),
- * );
- * ```
- *
- * ### and
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
  *   ok(1).and(() => ok(2)),
  *   ok(2),
  * );
  *
  * assertEquals(
- *   err("error").and(() => ok(2)),
+ *   err("error").and((n) => ok(n + 1)),
  *   err("error"),
- * );
- * ```
- *
- * ### orElse
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).or(() => ok(2)),
- *   ok(1),
- * );
- *
- * assertEquals(
- *   err("error").or(() => ok(2)),
- *   ok(2),
  * );
  * ```
  *
@@ -452,60 +436,11 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * );
  *
  * assertEquals(
- *   err(new Error).unwrap(() => 1),
+ *   err("error").unwrap(() => 1),
  *   1,
  * );
  *
  * assertThrows(() => err(new Error("error")).unwrap());
- * ```
- *
- * ### unwrapOr
- *
- * DEPRECATED: use `unwrap(() => U)`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).unwrap(() => 0),
- *   1,
- * );
- *
- * assertEquals(
- *   err("error").unwrap(() => 0),
- *   0,
- * );
- * ```
- *
- * ### unwrapOrElse
- *
- * DEPRECATED: use `unwrap(() => U)`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).unwrap(() => 0),
- *   1,
- * );
- *
- * assertEquals(
- *   err("error").unwrap(() => 0),
- *   0,
- * );
- * ```
- *
- * ### fromNullable
- *
- * DEPRECATED: use `Option.fromNullable` and `Result.fromOption`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok } from "@askua/core/result";
- *
- * const a = Result.fromNullable(1);
- * const b = ok(1);
- *
- * assertEquals(a, b);
  * ```
  *
  * ### lazy
@@ -556,7 +491,18 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  */
 export const Result: ResultToInstance & ResultStatic = Object.assign(
   toInstance,
-  { ok, err, andThen, orElse, lazy, fromOption, fromNullable, try: tryCatch },
+  {
+    ok,
+    err,
+    and,
+    or,
+    andThen: and,
+    orElse: or,
+    lazy,
+    fromOption,
+    fromNullable,
+    try: tryCatch,
+  },
 );
 
 /**
@@ -1064,13 +1010,13 @@ interface ResultStatic {
    * ```ts
    * import { Result } from "@askua/core/result";
    *
-   * console.log("[Example] Result.andThen");
+   * console.log("[Example] Result.and");
    *
    * const getNumber = (count: number) => ok(Math.random())
    *   .and((n) => n >= 0.2 ? ok(n) : err<number>(new Error(`${count}: less than 0.2`)))
    *   .map((n) => n.toFixed(2));
    *
-   * const fn = () => Result.andThen(
+   * const fn = () => Result.and(
    *   () => getNumber(1),
    *   () => getNumber(2),
    *   () => getNumber(3),
@@ -1083,7 +1029,7 @@ interface ResultStatic {
    * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.andThen(
+   * const result = await Result.and(
    *   ok(1),
    *   () => ok(2),
    *   Promise.resolve(ok(3)),
@@ -1093,17 +1039,22 @@ interface ResultStatic {
    * assertEquals(result, "1, 2, 3, 4");
    * ```
    */
-  andThen: typeof andThen;
+  and: typeof and;
+
+  /**
+   * @deprecated use `and` method
+   */
+  andThen: typeof and;
 
   /**
    * ```ts
-   * console.log("[Example] Result.orElse");
+   * console.log("[Example] Result.or");
    *
    * const getNumber = (count: number) => ok(Math.random())
    *   .and((n) => n >= 0.8 ? ok(n) : err<number>(new Error(`${count}: less than 0.8`)))
    *   .map((n) => n.toFixed(2));
    *
-   * const fn = () => Result.orElse(
+   * const fn = () => Result.or(
    *   () => getNumber(1),
    *   () => getNumber(2),
    *   () => getNumber(3),
@@ -1116,7 +1067,7 @@ interface ResultStatic {
    * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.orElse(
+   * const result = await Result.or(
    *   err<number>(new Error("1")),
    *   () => err<number>(new Error("2")),
    *   Promise.resolve(err<number>(new Error("3"))),
@@ -1126,7 +1077,12 @@ interface ResultStatic {
    * assertEquals(result, "4.00");
    * ```
    */
-  orElse: typeof orElse;
+  or: typeof or;
+
+  /**
+   * @deprecated use `or` method
+   */
+  orElse: typeof or;
 
   /**
    * ```ts
@@ -1587,7 +1543,7 @@ export function isErr<T, E>({ ok }: Result<T, E>) {
   return !ok;
 }
 
-async function andThen<
+async function and<
   R extends Fn[number] extends (() => OrPromise<infer R>) | OrPromise<infer R>
     ? (R extends ResultInstance<unknown, unknown> ? ResultInstance<T, E>
       : (R extends Result<unknown, unknown> ? Result<T, E> : unknown))
@@ -1642,7 +1598,7 @@ async function andThen<
   return ok(values) as never;
 }
 
-async function orElse<
+async function or<
   R extends Fn[number] extends (() => infer R) | infer R
     ? (Awaited<R> extends ResultInstance<infer _, infer _>
       ? ResultInstance<T, E>
