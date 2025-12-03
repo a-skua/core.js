@@ -1,11 +1,19 @@
-import { Option, some } from "@askua/core/option";
+import { none, Option, some } from "@askua/core/option";
 
-Deno.bench("Option => Some(1)", () => {
+Deno.bench("Option({ some: true, value })", () => {
   Option({ some: true, value: 1 });
 });
 
-Deno.bench("Option => None", () => {
+Deno.bench("Option({ some: false })", () => {
   Option({ some: false });
+});
+
+Deno.bench("some(1)", () => {
+  some(1);
+});
+
+Deno.bench("none()", () => {
+  none();
 });
 
 Deno.bench("(Option).toResult: Some(1)", () => {
@@ -40,12 +48,12 @@ Deno.bench("(Option).orElse: None", () => {
   Option.none<number>().orElse(() => Option.some(0));
 });
 
-Deno.bench("(Option).or: Some(1)", () => {
-  Option.some(1).or(Option.some(0));
+Deno.bench("some(1).or(() => some(0))", () => {
+  some(1).or(() => some(0));
 });
 
-Deno.bench("(Option).or: None", () => {
-  Option.none<number>().or(Option.some(0));
+Deno.bench("none().or(() => some(0))", () => {
+  none().or(() => some(0));
 });
 
 Deno.bench("(Option).map: Some(1)", () => {
@@ -56,8 +64,16 @@ Deno.bench("(Option).map: None", () => {
   Option.none<number>().map((n) => n + 1);
 });
 
-Deno.bench("(Option).unwrap: Some(1)", () => {
-  Option.some(1).unwrap();
+Deno.bench("some(1).unwrap()", () => {
+  some(1).unwrap();
+});
+
+Deno.bench("some(1).unwrap(() => 0)", () => {
+  some(1).unwrap(() => 0);
+});
+
+Deno.bench("none().unwrap(() => 0)", () => {
+  none().unwrap(() => 0);
 });
 
 Deno.bench("(Option).unwrapOr: Some(1)", () => {
@@ -185,16 +201,16 @@ Deno.bench("Option.orElse(...[len=1000])", async (t) => {
   t.end();
 });
 
-Deno.bench("Option.lazy().eval()", async () => {
-  await Option.lazy(() => Option.none<number>())
-    .or(Option.none<number>())
-    .or(Promise.resolve(Option.none<number>()))
-    .orElse(() => Option.none<number>())
-    .orElse(() => Promise.resolve(Option.some(1)))
-    .and(Option.some(2))
-    .and(Promise.resolve(Option.some(3)))
-    .andThen((n) => Option.some(n + 1))
-    .andThen((n) => Promise.resolve(Option.some(n + 1)))
+Deno.bench("Option.lazy()...eval()", async () => {
+  await Option.lazy(() => none<number>())
+    .or(() => none<number>())
+    .or(() => Promise.resolve(none<number>()))
+    .orElse(() => none<number>())
+    .orElse(() => Promise.resolve(some(1)))
+    .and(some(2))
+    .and(Promise.resolve(some(3)))
+    .andThen((n) => some(n + 1))
+    .andThen((n) => Promise.resolve(some(n + 1)))
     .map((n) => n + 1)
     .map((n) => Promise.resolve(n + 1))
     .eval();

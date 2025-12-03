@@ -154,7 +154,7 @@ Deno.test("ResultInstance", async (t) => {
   });
 
   await t.step("(ResultInstance).or", async (t) => {
-    const value = Result.ok(-1);
+    const orElse = () => Result.ok(-1);
     const tests: [
       ResultInstance<number, string>,
       ResultInstance<number, string | Error>,
@@ -164,8 +164,8 @@ Deno.test("ResultInstance", async (t) => {
     ];
 
     for (const [result, expected] of tests) {
-      await t.step(`${result}.or(${value}) => ${expected}`, () => {
-        assertEquals(result.or(value), expected);
+      await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
+        assertEquals(result.or(orElse), expected);
       });
     }
   });
@@ -580,8 +580,8 @@ Deno.test("Lazy", async (t) => {
 
   await t.step("(Lazy).or", async (t) => {
     const lazy = Result.lazy(Result.err("error"))
-      .or(Promise.resolve(Result.err("error!")))
-      .or(Result.err("error!!"));
+      .or(() => Promise.resolve(Result.err("error!")))
+      .or(() => Result.err("error!!"));
 
     const expected = Result.err("error!!");
     await t.step(`${lazy}.eval() => ${expected}`, async () => {
@@ -654,11 +654,11 @@ Deno.test("Lazy", async (t) => {
       [
         Result.lazy(Result.ok(1))
           .map((n) => n + 1)
-          .andThen((n) => Result.ok(n + 1))
-          .and(Result.err("error"))
-          .orElse((e) => Result.err(e))
-          .or(Result.ok(1)),
-        "Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>Result.ok(n + 1)).and(Err(error)).orElse((e)=>Result.err(e)).or(Ok(1))>",
+          .andThen((n) => ok(n + 1))
+          .and(err("error"))
+          .orElse((e) => err(e))
+          .or(() => ok(1)),
+        "Lazy<Ok(1).map((n)=>n + 1).andThen((n)=>ok(n + 1)).and(Err(error)).orElse((e)=>err(e)).or(()=>ok(1))>",
       ],
     ] as const;
     for (const [lazy, expected] of tests) {

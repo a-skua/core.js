@@ -293,7 +293,7 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * import { Result, ok } from "@askua/core/result";
  *
  * const result = await Result.lazy(ok(1))
- *   .or(ok(2))
+ *   .or(() => ok(2))
  *   .map((n) => n.toFixed(2))
  *   .eval();
  *
@@ -396,12 +396,12 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  * import { ok, err } from "@askua/core/result";
  *
  * assertEquals(
- *   ok(1).or(ok(2)),
+ *   ok(1).or(() => ok(2)),
  *   ok(1),
  * );
  *
  * assertEquals(
- *   err("error").or(ok(2)),
+ *   err("error").or(() => ok(2)),
  *   ok(2),
  * );
  * ```
@@ -556,7 +556,7 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  */
 export const Result: ResultToInstance & ResultStatic = Object.assign(
   toInstance,
-  { ok, err, andThen, orElse, lazy, fromOption, fromNullable, try: tryResult },
+  { ok, err, andThen, orElse, lazy, fromOption, fromNullable, try: tryCatch },
 );
 
 /**
@@ -622,7 +622,7 @@ interface ResultContext<T, E>
     Iterable<T>,
     ToOption<T>,
     c.And<T>,
-    c.Or<E>,
+    c.Or<T>,
     c.Map<T>,
     c.Filter<T>,
     c.Unwrap<T> {
@@ -691,13 +691,13 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .andThen((n) => ok(n.toFixed(2)))
-   *   .or(ok(0));
+   *   .or(() => ok(0));
    *
    * console.log(`Result: ${fn()}`);
    * ```
    */
   or<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
-    result: R,
+    orElse: (error: E) => R,
   ): R extends ResultInstance<infer _, infer _> ? ResultInstance<T2, E2>
     : Result<T2, E2>;
 
@@ -709,7 +709,7 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .map((n) => n.toFixed(2))
-   *   .or(ok("0.00"));
+   *   .or(() => ok("0.00"));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -724,7 +724,7 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
    *   .map((n) => n.toFixed(2))
-   *   .or(ok("0.00"));
+   *   .or(() => ok("0.00"));
    *
    * console.log(`Result: ${fn()}`);
    * ```
@@ -747,7 +747,7 @@ interface ResultContext<T, E>
    * const fn = () => ok(Math.random())
    *   .andThen((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
    *   .andThen((n) => ok(n.toFixed(2)))
-   *   .or(ok("0.00"))
+   *   .or(() => ok("0.00"))
    *   .unwrap();
    *
    * console.log(`Result: ${fn()}`);
@@ -837,7 +837,7 @@ type ResultLazyEval<
  * @typeParam Eval - eval Result
  */
 interface ResultLazy<T, E, Eval extends Result<T, E>>
-  extends c.And<T>, c.Or<E>, c.Map<T>, c.Filter<T> {
+  extends c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
    * console.log("[Example] (Lazy).andThen");
@@ -851,6 +851,8 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
    *
    * console.debug(`Result: ${await fn()}`);
    * ```
+   *
+   * @deprecated use `and` method
    */
   andThen<
     R extends Result<T2, E2>,
@@ -897,6 +899,8 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
    *
    * console.debug(`Result: ${await fn()}`);
    * ```
+   *
+   * @deprecated use `or` method
    */
   orElse<
     R extends Result<T2, E2>,
@@ -914,7 +918,7 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
    * const fn = () => Result.lazy(getNumber())
    *   .andThen((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
    *   .andThen((n) => ok(n.toFixed(2)))
-   *   .or(Promise.resolve(ok("0.50")))
+   *   .or(() => Promise.resolve(ok("0.50")))
    *   .eval();
    *
    * console.debug(`Result: ${await fn()}`);
@@ -925,7 +929,7 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
     T2 = OrT<R, T>,
     E2 = OrE<R>,
     Z extends Result<T2, E2> = ResultLazyEval<T2, E2, R, Eval>,
-  >(result: OrPromise<R>): ResultLazy<T2, E2, Z>;
+  >(orElse: (error: E) => OrPromise<R>): ResultLazy<T2, E2, Z>;
 
   /**
    * ```ts
@@ -1006,8 +1010,8 @@ interface ResultLazy<T, E, Eval extends Result<T, E>>
    * );
    *
    * assertEquals(
-   *   Result.lazy(() => ok(1)).map((n) => n * 100).or(ok(0)).toString(),
-   *   "Lazy<()=>ok(1).map((n)=>n * 100).or(Ok(0))>",
+   *   Result.lazy(() => ok(1)).map((n) => n * 100).or(() => ok(0)).toString(),
+   *   "Lazy<()=>ok(1).map((n)=>n * 100).or(()=>ok(0))>",
    * );
    * ```
    */
@@ -1200,7 +1204,7 @@ interface ResultStatic {
    * assertEquals(b, err(new Error("is error")));
    * ```
    */
-  try: typeof tryResult;
+  try: typeof tryCatch;
 }
 
 /**
@@ -1246,11 +1250,11 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
     return result as never;
   }
 
-  orElse<U>(): U {
+  orElse() {
     return this as never;
   }
 
-  or<U>(): U {
+  or() {
     return this as never;
   }
 
@@ -1324,12 +1328,12 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     return this;
   }
 
-  orElse<U, V>(fn: (error: E) => U): V {
-    return fn(this.error) as never;
+  orElse<U>(orElse: (error: E) => U) {
+    return orElse(this.error) as never;
   }
 
-  or<U, V>(result: U): V {
-    return result as never;
+  or<U>(orElse: (error: E) => U) {
+    return orElse(this.error) as never;
   }
 
   unwrap<U>(orElse: (error: E) => U): T | U;
@@ -1367,7 +1371,7 @@ type Op<T, U, E, D> =
   | { andThen: (value: T) => OrPromise<Result<U, D>> }
   | { and: OrPromise<Result<U, D>> }
   | { orElse: (error: E) => OrPromise<Result<U, D>> }
-  | { or: OrPromise<Result<U, D>> }
+  | { or: (error: E) => OrPromise<Result<U, D>> }
   | { map: (value: T) => OrPromise<U> }
   | { filter: (value: T) => OrPromise<boolean>; err?: (value: T) => E };
 
@@ -1392,12 +1396,12 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<T, E, Eval> {
     return this as never;
   }
 
-  orElse<U, V>(orElse: U): V {
+  orElse<U>(orElse: U) {
     this.op.push({ orElse } as typeof this.op[number]);
     return this as never;
   }
 
-  or<U, V>(or: U): V {
+  or<U>(or: U) {
     this.op.push({ or } as typeof this.op[number]);
     return this as never;
   }
@@ -1436,7 +1440,8 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<T, E, Eval> {
       }
 
       if ("or" in op && !result.ok) {
-        result = op.or instanceof Promise ? await op.or : op.or;
+        const p = op.or(result.error);
+        result = p instanceof Promise ? await p : p;
         continue;
       }
 
@@ -1736,11 +1741,11 @@ function fromNullable<T>(
   return ok(v);
 }
 
-function tryResult<T, E = unknown>(
+function tryCatch<T, E = unknown>(
   fn: () => T,
 ): T extends Promise<infer U> ? Promise<ResultInstance<U, E>>
   : ResultInstance<T, E>;
-function tryResult<T, E = unknown>(
+function tryCatch<T, E = unknown>(
   fn: () => T | Promise<T>,
 ): ResultInstance<T, E> | Promise<ResultInstance<T, E>> {
   try {

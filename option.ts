@@ -283,7 +283,7 @@ export type SerializedOption<T> = [T] | 0;
  * import { Option, some } from "@askua/core/option";
  *
  * const a = await Option.lazy(Promise.resolve(some(1)))
- *   .or(some(2))
+ *   .or(() => some(2))
  *   .map((n) => n + 1)
  *   .eval();
  * const b = some(2);
@@ -376,12 +376,12 @@ export type SerializedOption<T> = [T] | 0;
  * import { some, none } from "@askua/core/option";
  *
  * assertEquals(
- *   some(1).or(some(2)),
+ *   some(1).or(() => some(2)),
  *   some(1),
  * );
  *
  * assertEquals(
- *   none().or(some(2)),
+ *   none().or(() => some(2)),
  *   some(2),
  * );
  * ```
@@ -581,7 +581,7 @@ interface OptionContext<T>
     Iterable<T>,
     ToResult<T>,
     c.And<T>,
-    c.Or<never>,
+    c.Or<T>,
     c.Map<T>,
     c.Filter<T>,
     c.Unwrap<T> {
@@ -642,13 +642,13 @@ interface OptionContext<T>
    * const fn = () => some(Math.random())
    *   .andThen((n) => n >= 0.5 ? some(n) : none())
    *   .andThen((n) => some(n.toFixed(2)))
-   *   .or(some("0.00"));
+   *   .or(() => some("0.00"));
    *
    * console.log(`Option: ${fn()}`);
    * ```
    */
   or<O extends Option<T2>, T2 = OrT<O, T>>(
-    option: O,
+    orElse: () => O,
   ): O extends OptionInstance<infer _> ? OptionInstance<T2> : Option<T2>;
 
   /**
@@ -684,7 +684,7 @@ interface OptionContext<T>
    * const fn = () => some(Math.random())
    *   .andThen((n) => n >= 0.5 ? some(n) : none())
    *   .andThen((n) => some(n.toFixed(2)))
-   *   .or(some("0.00"))
+   *   .or(() => some("0.00"))
    *   .unwrap();
    *
    * console.log(`Option: ${fn()}`);
@@ -775,7 +775,7 @@ type OptionLazyEval<T, O extends Option<T>, Eval extends Option<unknown>> =
  * @typeParam Eval - eval Option
  */
 interface OptionLazy<T, Eval extends Option<T>>
-  extends c.And<T>, c.Or<never>, c.Map<T>, c.Filter<T> {
+  extends c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
    * console.log("[Example] (Lazy).andThen");
@@ -789,6 +789,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    *
    * console.log(`Option: ${await fn()}`);
    * ```
+   *
+   * @deprecated use `and` method
    */
   andThen<
     O extends Option<T2>,
@@ -830,6 +832,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    *
    * console.log(`Option: ${await fn()}`);
    * ```
+   *
+   * @deprecated use `or` method
    */
   orElse<
     O extends Option<T2>,
@@ -846,7 +850,7 @@ interface OptionLazy<T, Eval extends Option<T>>
    * const fn = () => Option.lazy(getNumber())
    *   .andThen((n) => n >= 0.5 ? some(n) : none<number>())
    *   .andThen((n) => Promise.resolve(some(n.toFixed(2))))
-   *   .or(Promise.resolve(some("0.50")))
+   *   .or(() => Promise.resolve(some("0.50")))
    *   .eval();
    *
    * console.log(`Option: ${await fn()}`);
@@ -856,7 +860,7 @@ interface OptionLazy<T, Eval extends Option<T>>
     O extends Option<T2>,
     T2 = OrT<O, T>,
     Z extends Option<T2> = OptionLazyEval<T2, O, Eval>,
-  >(option: OrPromise<O>): OptionLazy<T2, Z>;
+  >(orElse: () => OrPromise<O>): OptionLazy<T2, Z>;
 
   /**
    * ```ts
@@ -916,8 +920,8 @@ interface OptionLazy<T, Eval extends Option<T>>
    * );
    *
    * assertEquals(
-   *   none<number>().lazy().map((n) => n * 100).or(some(0)).toString(),
-   *   "Lazy<None.map((n)=>n * 100).or(Some(0))>",
+   *   none<number>().lazy().map((n) => n * 100).or(() => some(0)).toString(),
+   *   "Lazy<None.map((n)=>n * 100).or(()=>some(0))>",
    * );
    * ```
    */
@@ -1129,11 +1133,11 @@ class _Some<T> implements Some<T>, OptionContext<T> {
     return option as never;
   }
 
-  orElse<U>(): U {
+  orElse() {
     return this as never;
   }
 
-  or<U>(): U {
+  or() {
     return this as never;
   }
 
@@ -1196,12 +1200,12 @@ class _None<T> implements None, OptionContext<T> {
     return this as never;
   }
 
-  orElse<U, V>(fn: () => U): V {
+  orElse<U>(fn: () => U) {
     return fn() as never;
   }
 
-  or<U, V>(option: U): V {
-    return option as never;
+  or<U>(orElse: () => U) {
+    return orElse() as never;
   }
 
   map<U>(): U {
@@ -1246,12 +1250,12 @@ class _None<T> implements None, OptionContext<T> {
  * Lazy Operation
  */
 type Op<T, U> =
-  | { andThen: (value: T) => Promise<Option<U>> }
-  | { and: Promise<Option<U>> }
-  | { orElse: () => Promise<Option<U>> }
-  | { or: Promise<Option<U>> }
-  | { map: (value: T) => Promise<U> }
-  | { filter: (value: T) => Promise<boolean> };
+  | { andThen: (value: T) => OrPromise<Option<U>> }
+  | { and: OrPromise<Option<U>> }
+  | { orElse: () => OrPromise<Option<U>> }
+  | { or: () => OrPromise<Option<U>> }
+  | { map: (value: T) => OrPromise<U> }
+  | { filter: (value: T) => OrPromise<boolean> };
 
 /**
  * impl Lazy<T, Eval>
@@ -1317,7 +1321,8 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazy<T, Eval> {
       }
 
       if ("or" in op && !option.some) {
-        option = op.or instanceof Promise ? await op.or : op.or;
+        const p = op.or();
+        option = p instanceof Promise ? await p : p;
         continue;
       }
 

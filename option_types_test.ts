@@ -387,45 +387,45 @@ const optionNumber: OptionInstance<number> = Option.some(Math.random()).andThen(
 }
 
 {
-  const option = optionNumber.or({ some: true, value: "2" });
+  const option = optionNumber.or(() => ({ some: true, value: "2" }));
   test<Option<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or({ some: false });
+  const option = optionNumber.or(() => ({ some: false }));
   test<Option<number>>(option);
 }
 
 {
-  const option = optionNumber.or(Option.some("2"));
+  const option = optionNumber.or(() => some("2"));
   test<OptionInstance<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or(Option.none());
+  const option = optionNumber.or(() => none());
   test<OptionInstance<number>>(option);
 }
 
 {
-  const option = optionNumber.or<Option<string>>({
+  const option = optionNumber.or<Option<string>>(() => ({
     some: true,
     value: "2",
-  });
+  }));
   test<Option<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or<Option<string>>({ some: false });
+  const option = optionNumber.or<Option<string>>(() => ({ some: false }));
   test<Option<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or<Option<string>>(Option.some("2"));
+  const option = optionNumber.or<Option<string>>(() => some("2"));
   test<Option<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or<Option<string>>(Option.none());
+  const option = optionNumber.or<Option<string>>(() => none());
   test<Option<number | string>>(option);
 }
 
@@ -538,14 +538,14 @@ try {
 {
   const option = await optionNumber
     .lazy()
-    .or({ some: true, value: "2" as const })
-    .or({ some: false })
-    .or(Promise.resolve({ some: true, value: "3" as const }))
-    .or(Promise.resolve({ some: false }))
-    .or(Option.some("4" as const))
-    .or(Option.none())
-    .or(Promise.resolve(Option.some("5" as const)))
-    .or(Promise.resolve(Option.none()))
+    .or(() => ({ some: true, value: "2" as const }))
+    .or(() => ({ some: false }))
+    .or(() => Promise.resolve({ some: true, value: "3" as const }))
+    .or(() => Promise.resolve({ some: false }))
+    .or(() => some("4" as const))
+    .or(() => none())
+    .or(() => Promise.resolve(some("5" as const)))
+    .or(() => Promise.resolve(none()))
     .eval();
   test<Option<number | "2" | "3" | "4" | "5">>(option);
 }
@@ -657,7 +657,7 @@ try {
 
 {
   const option = await Option.lazy<Option<string>>(Option.none())
-    .or(Option.some(1))
+    .or(() => some(1))
     .eval();
   test<Option<string | number>>(option);
 }
