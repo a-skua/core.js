@@ -19,7 +19,7 @@
  * import { ok, err } from "@askua/core";
  *
  * const n = ok(Math.random())
- *   .filter((n) => n >= 0.5, () => new Error("n is less than 0.5"))
+ *   .filter((n) => n >= 0.5, (n) => new Error(`n ${n.toFixed(2)} is less than 0.5`))
  *   .map((n) => n.toFixed(2));
  *
  * console.log(n.unwrapOrElse((e) => e.message));

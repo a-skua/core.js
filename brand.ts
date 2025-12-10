@@ -14,7 +14,7 @@
  * @module
  */
 
-import type { _Brand } from "./internal/brand.ts";
+import type { _brand } from "./internal/brand.ts";
 
 /**
  * type Brand
@@ -28,7 +28,7 @@ import type { _Brand } from "./internal/brand.ts";
  */
 export type Brand<Type, ID extends string | symbol> =
   & Type
-  & { [_Brand]: { [Key in ID]: never } };
+  & { [_brand]: { [Key in ID]: never } };
 
 /**
  * value as Brand
