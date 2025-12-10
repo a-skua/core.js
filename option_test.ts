@@ -219,9 +219,9 @@ Deno.test("OptionInstance", async (t) => {
   });
 
   await t.step("(OptionInstance).unwrap", async (t) => {
-    const tests = [
-      [Option.some(1), () => 0, 1],
-      [Option.none<number>(), () => 0, 0],
+    const tests: [OptionInstance<number>, () => number, number][] = [
+      [some(1), () => 0, 1],
+      [none(), () => 0, 0],
     ] as const;
 
     for (const [option, orElse, expected] of tests) {
@@ -232,9 +232,9 @@ Deno.test("OptionInstance", async (t) => {
   });
 
   await t.step("(OptionInstance).unwrap", async (t) => {
-    const tests = [
-      [Option.some(1), () => 2, 1],
-      [Option.none<number>(), () => 2, 2],
+    const tests: [OptionInstance<number>, () => number, number][] = [
+      [some(1), () => 2, 1],
+      [none(), () => 2, 2],
     ] as const;
 
     for (const [option, orElse, expected] of tests) {

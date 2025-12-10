@@ -554,7 +554,7 @@ try {
 }
 
 {
-  const option = await Option.andThen(
+  const option = await Option.and(
     optionNumber,
     Promise.resolve(optionNumber),
     () => optionNumber,
@@ -564,7 +564,7 @@ try {
 }
 
 {
-  const option = await Option.andThen(
+  const option = await Option.and(
     { some: false },
     Promise.resolve({ some: false as const }),
     () => ({ some: false as const }),
@@ -654,7 +654,7 @@ try {
 }
 
 {
-  const option = await Option.lazy<OptionInstance<[number]>>(Option.and(
+  const option = await Option.lazy(Option.and(
     optionNumber,
   )).eval();
   test<OptionInstance<[number]>>(option);
