@@ -13,6 +13,7 @@ import {
   ok,
   Result,
   type ResultInstance,
+  type ResultLazy,
 } from "./result.ts";
 import { none, some } from "./option.ts";
 
@@ -181,20 +182,25 @@ Deno.test("ResultInstance", async (t) => {
 
   await t.step("(ResultInstance).filter", async (t) => {
     const tests: [
-      ResultInstance<number, string | Error>,
+      ResultInstance<number, number | string | Error>,
       (n: number) => boolean,
-      ((n?: number) => string | Error) | undefined,
-      Result<number, string | Error>,
+      ((n?: number) => Error) | undefined,
+      Result<number, number | string | Error>,
     ][] = [
       [ok(1), (n) => n > 0, , ok(1)],
       [ok(1), (n) => n > 0, () => new Error("Result Error"), ok(1)],
-      [ok(0), (n) => n > 0, , err(new Error('Filtered out: "0"'))],
-      [ok(0), (n) => n > 0, () => "Result Error", err("Result Error")],
+      [ok(0), (n) => n > 0, , err(0)],
       [
         ok(0),
         (n) => n > 0,
-        (n) => `Result Error: ${n}`,
-        err("Result Error: 0"),
+        () => new Error("Result Error"),
+        err(new Error("Result Error")),
+      ],
+      [
+        ok(0),
+        (n) => n > 0,
+        (n) => new Error(`Result Error: ${n}`),
+        err(new Error("Result Error: 0")),
       ],
       [err("error"), (n) => n > 0, , err("error")],
       [
@@ -499,22 +505,22 @@ Deno.test("err", async (t) => {
 Deno.test("Lazy", async (t) => {
   await t.step("(Lazy).and", async (t) => {
     {
-      const lazy = Result.lazy(Result.ok(1))
-        .and((n) => Promise.resolve(Result.ok(n + 1)))
-        .and((n) => Result.ok(n + 1));
+      const lazy = Result.lazy(ok(1))
+        .and((n) => Promise.resolve(ok(n + 1)))
+        .and((n) => ok(n + 1));
 
-      const expected = Result.ok(3) as ResultInstance<number>;
+      const expected = ok(3);
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
         assertEquals(await lazy.eval(), expected);
       });
     }
 
     {
-      const lazy = Result.lazy(Result.ok(1))
+      const lazy = Result.lazy(ok(1))
         .and(() => Promise.resolve(ok(2)))
         .and(() => ok(3));
 
-      const expected = Result.ok(3) as ResultInstance<number>;
+      const expected = Result.ok(3);
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
         assertEquals(await lazy.eval(), expected);
       });
@@ -557,10 +563,13 @@ Deno.test("Lazy", async (t) => {
   });
 
   await t.step("(Lazy).filter", async (t) => {
-    const tests = [
+    const tests: [
+      ResultLazy<ResultInstance<number, number | string>>,
+      ResultInstance<number, number | string>,
+    ][] = [
       [ok(1).lazy().filter((n) => n > 0), ok(1)],
       [ok(1).lazy().filter((n) => n > 0, () => "ERR!"), ok(1)],
-      [ok(0).lazy().filter((n) => n > 0), err(new Error("Filtered out"))],
+      [ok(0).lazy().filter((n) => n > 0), err(0)],
       [ok(0).lazy().filter((n) => n > 0, () => "ERR!"), err("ERR!")],
       [ok(0).lazy().filter((n) => n > 0, (n) => `Err(${n})!`), err("Err(0)!")],
       [err(-1).lazy().filter((n) => n > 0), err(-1)],
