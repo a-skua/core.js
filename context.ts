@@ -1,7 +1,11 @@
 /**
  * ## Context Type
  */
-export type Context<_> = unknown;
+export type Context<_> = object;
+
+export interface LazyContext<T> extends Context<T> {
+  eval(): Promise<Context<T>>;
+}
 
 /**
  * ## Context And
@@ -98,4 +102,25 @@ export interface Filter<T> {
 export interface Unwrap<T> {
   unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
+}
+
+/**
+ * ## Context Lazy
+ *
+ * ### Example
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * const a = await some(1)
+ *   .lazy()
+ *   .map((n) => Promise.resolve(n + 1))
+ *   .eval();
+ *
+ *  assertEquals(a, some(2));
+ *  ```
+ */
+export interface Lazy<T> {
+  lazy(): LazyContext<T>;
 }
