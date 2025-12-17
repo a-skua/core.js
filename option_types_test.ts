@@ -70,15 +70,15 @@ const optionNumber: OptionInstance<number> = some(Math.random()).and(
 }
 
 {
-  const some = Option.some(1);
-  test<Some<number>>(some);
-  test<OptionInstance<number>>(some);
+  const option = some(1);
+  test<Some<number>>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
-  const none = Option.none();
-  test<None>(none);
-  test<OptionInstance<number>>(none);
+  const option = none();
+  test<None>(option);
+  test<OptionInstance<number>>(option);
 }
 
 {
@@ -345,12 +345,12 @@ const optionNumber: OptionInstance<number> = some(Math.random()).and(
 }
 
 {
-  const option = optionNumber.or(() => Option.some("2"));
+  const option = optionNumber.or(() => some("2"));
   test<OptionInstance<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or(() => Option.none());
+  const option = optionNumber.or(() => none());
   test<OptionInstance<number>>(option);
 }
 
@@ -368,12 +368,12 @@ const optionNumber: OptionInstance<number> = some(Math.random()).and(
 }
 
 {
-  const option = optionNumber.or<Option<string>>(() => Option.some("2"));
+  const option = optionNumber.or<Option<string>>(() => some("2"));
   test<Option<number | string>>(option);
 }
 
 {
-  const option = optionNumber.or<Option<string>>(() => Option.none());
+  const option = optionNumber.or<Option<string>>(() => none());
   test<Option<number | string>>(option);
 }
 
@@ -606,28 +606,28 @@ try {
 
 {
   const option = await Option.or<OptionInstance<number | string>>(
-    Option.some(1),
-    Option.none(),
-    Promise.resolve(Option.some("2")),
-    Promise.resolve(Option.none()),
-    () => Option.some(3),
-    () => Option.none(),
-    () => Promise.resolve(Option.some("4")),
-    () => Promise.resolve(Option.none()),
+    some(1),
+    none(),
+    Promise.resolve(some("2")),
+    Promise.resolve(none()),
+    () => some(3),
+    () => none(),
+    () => Promise.resolve(some("4")),
+    () => Promise.resolve(none()),
   );
   test<OptionInstance<number | string>>(option);
 }
 
 {
   const option = await Option.or<OptionInstance<number | string>>(
-    Option.some(1),
-    Option.none(),
-    Promise.resolve(Option.some("2")),
-    Promise.resolve(Option.none()),
-    () => Option.some(3),
-    () => Option.none(),
-    () => Promise.resolve(Option.some("4")),
-    () => Promise.resolve(Option.none()),
+    some(1),
+    none(),
+    Promise.resolve(some("2")),
+    Promise.resolve(none()),
+    () => some(3),
+    () => none(),
+    () => Promise.resolve(some("4")),
+    () => Promise.resolve(none()),
   );
   test<OptionInstance<number | string>>(option);
 }
@@ -647,7 +647,7 @@ try {
 }
 
 {
-  const option = await Option.lazy<Option<string>>(Option.none())
+  const option = await Option.lazy<Option<string>>(none())
     .or(() => some(1))
     .eval();
   test<Option<string | number>>(option);
@@ -839,22 +839,25 @@ try {
 }
 
 {
-  const option = await none().lazy()
+  const option: OptionInstance<number> = none();
+  const a = await option.lazy()
     .filter((n) => n > 0).map((n) => n + 1).eval();
-  test<OptionInstance<number>>(option);
+  test<OptionInstance<number>>(a);
 }
 
 {
-  const option = await none().lazy()
+  const option: OptionInstance<number> = none();
+  const a = await option.lazy()
     .filter((n) => n > 0).eval();
-  test<OptionInstance<never>>(option);
+  test<OptionInstance<number>>(a);
 }
 
 {
-  const option = await none().lazy()
+  const option: OptionInstance<number> = none();
+  const a = await option.lazy()
     .filter((n) => n > 0)
     .and((value) => ({ some: true, value }))
     .map((n) => n + 1)
     .eval();
-  test<Option<number>>(option);
+  test<Option<number>>(a);
 }

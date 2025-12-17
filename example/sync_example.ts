@@ -10,7 +10,7 @@ async function test(name: string, fn: () => Promise<unknown>) {
 
 const getNumber = () =>
   some(Math.random())
-    .and((n) => n >= 0.1 ? some<number>(n) : none<number>());
+    .and((n) => n >= 0.1 ? some<number>(n) : none());
 
 test("Option.and(...Promise[])", () =>
   Option

@@ -298,7 +298,8 @@ export interface OptionContext<T>
    * const a = some(1).and((n) => some(n + 1));
    * assertEquals(a, some(2));
    *
-   * const b = none().and((n) => some(n + 1));
+   * const n: OptionInstance<number> = none();
+   * const b = n.and((n) => some(n + 1));
    * assertEquals(b, none());
    * ```
    *
@@ -321,7 +322,8 @@ export interface OptionContext<T>
    * const a = some(1).or(() => some(2));
    * assertEquals(a, some(1));
    *
-   * const b = none().or(() => some(2));
+   * const n: OptionInstance<number> = none();
+   * const b = n.or(() => some(2));
    * assertEquals(b, some(2));
    * ```
    *
@@ -344,7 +346,8 @@ export interface OptionContext<T>
    * const a = some(1).map((n) => n + 1);
    * assertEquals(a, some(2));
    *
-   * const b = none().map((n) => n + 1);
+   * const n: OptionInstance<number> = none();
+   * const b = n.map((n) => n + 1);
    * assertEquals(b, none());
    * ```
    *
@@ -362,7 +365,8 @@ export interface OptionContext<T>
    * const b = some(0).filter((n) => n > 0);
    * assertEquals(b, none());
    *
-   * const c = none().filter((n) => n > 0);
+   * const n: OptionInstance<number> = none();
+   * const c = n.filter((n) => n > 0);
    * assertEquals(c, none());
    * ```
    *
@@ -403,14 +407,21 @@ export interface OptionContext<T>
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
-   * const option = await some(1)
+   * const a = await some(1)
    *   .lazy()
    *   .map((n) => Promise.resolve(n + 1))
    *   .eval();
-   * assertEquals(option, some(2));
+   * assertEquals(a, some(2));
+   *
+   * const b = await some(Promise.resolve(1))
+   *   .lazy()
+   *   .map((n) => n + 1)
+   *   .eval();
+   * assertEquals(b, some(2));
    * ```
    */
-  lazy(): OptionLazyContext<OptionInstance<T>>;
+  lazy(): T extends Promise<infer U> ? OptionLazyContext<OptionInstance<U>, U>
+    : OptionLazyContext<OptionInstance<T>, T>;
 
   /**
    * ```ts
@@ -450,19 +461,20 @@ export interface OptionLazyContext<
    *   .eval();
    * assertEquals(a, some(2));
    *
-   * const b = await none().lazy()
+   * const n: OptionInstance<number> = none();
+   * const b = await n.lazy()
    *   .and((n) => Promise.resolve(some(n + 1)))
    *   .eval();
    * assertEquals(b, none());
    * ```
    *
-   * @typeParam Next Option type returned from andThen function
+   * @typeParam O Option type returned from andThen function
    * @typeParam T2 value type of returned Option
    */
   and<
-    Next extends Option<T2>,
-    T2 = AndT<Next>,
-  >(andThen: (value: T) => OrPromise<Next>): InferOptionLazy<Next, T2>;
+    O extends Option<T2>,
+    T2 = AndT<O>,
+  >(andThen: (value: T) => OrPromise<O>): InferOptionLazy<O, T2>;
 
   /**
    * @deprecated use `and` method
@@ -478,19 +490,20 @@ export interface OptionLazyContext<
    *   .eval();
    * assertEquals(a, some(1));
    *
-   * const b = await none().lazy()
+   * const n: OptionInstance<number> = none();
+   * const b = await n.lazy()
    *   .or(() => Promise.resolve(some(2)))
    *   .eval();
    * assertEquals(b, some(2));
    * ```
    *
-   * @typeParam Next Option type returned from orElse function
+   * @typeParam O Option type returned from orElse function
    * @typeParam T2 value type of returned Option
    */
   or<
-    Next extends Option<T2>,
-    T2 = OrT<Next, T>,
-  >(orElse: () => OrPromise<Next>): InferOptionLazy<Next, T2>;
+    O extends Option<T2>,
+    T2 = OrT<O, T>,
+  >(orElse: () => OrPromise<O>): InferOptionLazy<O, T2>;
 
   /**
    * @deprecated use `or` method
@@ -506,7 +519,8 @@ export interface OptionLazyContext<
    *   .eval();
    * assertEquals(a, some(2));
    *
-   * const b = await none().lazy()
+   * const n: OptionInstance<number> = none();
+   * const b = await n.lazy()
    *   .map((n) => Promise.resolve(n + 1))
    *   .eval();
    * assertEquals(b, none());
@@ -532,7 +546,8 @@ export interface OptionLazyContext<
    *   .eval();
    * assertEquals(b, none());
    *
-   * const c = await none().lazy()
+   * const n: OptionInstance<number> = none();
+   * const c = await n.lazy()
    *   .filter((n) => Promise.resolve(n > 0))
    *   .eval();
    * assertEquals(c, none());
@@ -566,7 +581,8 @@ export interface OptionLazyContext<
    *   "Lazy<Some(1)>",
    * );
    *
-   * const b = none<number>().lazy().map((n) => n * 100).or(() => some(0));
+   * const n: OptionInstance<number> = none();
+   * const b = n.lazy().map((n) => n * 100).or(() => some(0));
    * assertEquals(
    *   b.toString(),
    *   "Lazy<None.map((n)=>n * 100).or(()=>some(0))>",
@@ -757,7 +773,7 @@ class _Some<T> implements SomeInstance<T> {
   }
 
   lazy() {
-    return new _Lazy(this as never);
+    return new _Lazy(this) as never;
   }
 
   toString(): string {
@@ -824,7 +840,7 @@ class _None<T = never> implements None, OptionContext<T> {
   }
 
   lazy() {
-    return new _Lazy(this as never);
+    return new _Lazy(this) as never;
   }
 
   toString(): string {
@@ -894,6 +910,10 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
   async eval(): Promise<Eval> {
     const p = typeof this.first === "function" ? this.first() : this.first;
     let option: Option<T> = p instanceof Promise ? await p : p;
+    if (option.some && option.value instanceof Promise) {
+      option = some(await option.value);
+    }
+
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
 
@@ -1011,13 +1031,11 @@ export function isSome<T>({ some }: Option<T>) {
  * import type { OptionInstance } from "@askua/core/option";
  * import { none } from "@askua/core/option";
  *
- * const a: OptionInstance<number> = none<number>();
+ * const a: OptionInstance<number> = none();
  * assertEquals(a.map((n) => n + 1), none());
  * ```
- *
- * @typeParam T value type
  */
-export function none<T = never>(): InferNone<OptionInstance<T>> {
+export function none(): InferNone<OptionInstance<never>> {
   return new _None();
 }
 

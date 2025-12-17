@@ -11,7 +11,7 @@ async function test(name: string, fn: () => Promise<unknown> | unknown) {
 const getNumber = () =>
   some(Math.random())
     .map((n) => n * 100)
-    .and((n) => n >= 99.9 ? some(n) : none<number>());
+    .and((n) => n >= 99.9 ? some(n) : none());
 
 const retryGetNumber = (retry = 0): { n: string; retry: number } =>
   getNumber()

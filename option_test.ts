@@ -1,3 +1,4 @@
+import type { OrPromise } from "./types.ts";
 import {
   assert,
   assertEquals,
@@ -243,6 +244,25 @@ Deno.test("OptionInstance", async (t) => {
       });
     }
   });
+
+  await t.step("(OptionInstance).lazy", async (t) => {
+    const tests: [
+      OptionInstance<OrPromise<number>>,
+      (n: number) => number,
+      OptionInstance<number>,
+    ][] = [
+      [some(1), (n) => n + 1, some(2)],
+      [some(Promise.resolve(1)), (n) => n + 1, some(2)],
+      [none(), (n) => n + 1, none()],
+    ] as const;
+
+    for (const [option, fn, expected] of tests) {
+      await t.step(`${option}.lazy() => ${expected}`, async () => {
+        const actual = await option.lazy().map(fn).eval();
+        assertEquals(actual, expected);
+      });
+    }
+  });
 });
 
 Deno.test("Option.some", async (t) => {
@@ -345,15 +365,14 @@ Deno.test("Option.or", async (t) => {
 });
 
 Deno.test("Option.lazy", async (t) => {
-  const fn = (n: number) => n.toFixed(2);
   const tests = [
-    [Option.some(1), Option.some("1.00")],
-    [() => Option.some(2), Option.some("2.00")],
-    [Promise.resolve(Option.some(3)), Option.some("3.00")],
-    [() => Promise.resolve(Option.some(4)), Option.some("4.00")],
+    [some(1), (n: number) => n.toFixed(2), some("1.00")],
+    [() => some(2), (n: number) => n.toFixed(2), some("2.00")],
+    [Promise.resolve(some(3)), (n: number) => n.toFixed(2), some("3.00")],
+    [() => Promise.resolve(some(4)), (n: number) => n.toFixed(2), some("4.00")],
   ] as const;
 
-  for (const [input, expected] of tests) {
+  for (const [input, fn, expected] of tests) {
     await t.step(
       `Option.lazy(${input}).map(${fn}).eval() => ${expected}`,
       async () => {
@@ -428,10 +447,10 @@ Deno.test("none", async (t) => {
 Deno.test("Lazy", async (t) => {
   await t.step("(Lazy).and", async (t) => {
     {
-      const lazy = Option.some(1)
+      const lazy = some(1)
         .lazy()
-        .and((n) => Promise.resolve(Option.some(n + 1)))
-        .and((n) => Option.some(n + 1));
+        .and((n) => Promise.resolve(some(n + 1)))
+        .and((n) => some(n + 1));
 
       const expected = Option.some(3);
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
@@ -440,12 +459,12 @@ Deno.test("Lazy", async (t) => {
     }
 
     {
-      const lazy = Option.some(1)
+      const lazy = some(1)
         .lazy()
         .and(() => Promise.resolve(some(2)))
         .and(() => some(3));
 
-      const expected = Option.some(3);
+      const expected = some(3);
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
         assertEquals(await lazy.eval(), expected);
       });
@@ -453,7 +472,8 @@ Deno.test("Lazy", async (t) => {
   });
 
   await t.step("(Lazy).or", async (t) => {
-    const lazy = Option.none<number>()
+    const option: OptionInstance<number> = none();
+    const lazy = option
       .lazy()
       .or(() => Promise.resolve(Option.none()))
       .or(() => Option.some(3));
@@ -465,7 +485,8 @@ Deno.test("Lazy", async (t) => {
   });
 
   await t.step("(Lazy).or", async (t) => {
-    const lazy = Option.none<number>()
+    const option: OptionInstance<number> = none();
+    const lazy = option
       .lazy()
       .or(() => Promise.resolve(none()))
       .or(() => some(3));
@@ -494,8 +515,13 @@ Deno.test("Lazy", async (t) => {
       [some(1).lazy().filter((n) => Promise.resolve(n > 0)), some(1)],
       [some(0).lazy().filter((n) => n > 0), none()],
       [some(0).lazy().filter((n) => Promise.resolve(n > 0)), none()],
-      [none().lazy().filter((n) => n > 0), none()],
-      [none().lazy().filter((n) => Promise.resolve(n > 0)), none()],
+      [(none() as OptionInstance<number>).lazy().filter((n) => n > 0), none()],
+      [
+        (none() as OptionInstance<number>).lazy().filter((n) =>
+          Promise.resolve(n > 0)
+        ),
+        none(),
+      ],
     ] as const;
 
     for (const [lazy, expected] of tests) {
@@ -508,43 +534,43 @@ Deno.test("Lazy", async (t) => {
   await t.step("(Lazy).toString", async (t) => {
     const tests = [
       [
-        Option.lazy(Option.some(1)),
+        Option.lazy(some(1)),
         "Lazy<Some(1)>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .map((n) => n + 1),
         "Lazy<Some(1).map((n)=>n + 1)>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .filter((n) => n > 0)
           .map((n) => n + 1),
         "Lazy<Some(1).filter((n)=>n > 0).map((n)=>n + 1)>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .map((n) => n + 1)
           .and((n) => some(n + 1)),
         "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1))>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .map((n) => n + 1)
           .and((n) => some(n + 1))
           .and(() => none()),
         "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none())>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .map((n) => n + 1)
           .and((n) => some(n + 1))
           .and(() => none())
-          .or(() => Option.none()),
-        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none()).or(()=>Option.none())>",
+          .or(() => none()),
+        "Lazy<Some(1).map((n)=>n + 1).and((n)=>some(n + 1)).and(()=>none()).or(()=>none())>",
       ],
       [
-        Option.lazy(Option.some(1))
+        Option.lazy(some(1))
           .map((n) => n + 1)
           .and((n) => some(n + 1))
           .and(() => none())

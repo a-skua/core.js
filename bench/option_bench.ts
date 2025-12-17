@@ -1,4 +1,4 @@
-import { none, Option, some } from "@askua/core/option";
+import { none, Option, type OptionInstance, some } from "@askua/core/option";
 
 Deno.bench("Option({ some: true, value })", () => {
   Option({ some: true, value: 1 });
@@ -89,7 +89,7 @@ Deno.bench("some(1).lazy().map((n) => n + 1).eval()", async () => {
 });
 
 Deno.bench("none().lazy().map((n) => n + 1).eval()", async () => {
-  await none().lazy().map((n) => n + 1).eval();
+  await (none() as OptionInstance<number>).lazy().map((n) => n + 1).eval();
 });
 
 Deno.bench("Option.and(...)", async () => {
@@ -111,10 +111,10 @@ Deno.bench("Option.or(...)", async () => {
 });
 
 Deno.bench("Option.lazy()...eval()", async () => {
-  await Option.lazy(() => none<number>())
-    .or(() => none<number>())
-    .or(() => Promise.resolve(none<number>()))
-    .or(() => none<number>())
+  await Option.lazy(() => none())
+    .or(() => none())
+    .or(() => Promise.resolve(none()))
+    .or(() => none())
     .or(() => Promise.resolve(some(1)))
     .and(() => some(2))
     .and(() => Promise.resolve(some(3)))

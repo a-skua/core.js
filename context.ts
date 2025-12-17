@@ -14,12 +14,13 @@ export interface LazyContext<T> extends Context<T> {
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
+ * import { some, none, type OptionInstance } from "@askua/core/option";
  *
  * const a = some(1).and((n) => some(n + 1));
  * assertEquals(a, some(2));
  *
- * const b = none().and((n) => some(n + 1));
+ * const n: OptionInstance<number> = none();
+ * const b = n.and((n) => some(n + 1));
  * assertEquals(b, none());
  * ```
  */
@@ -34,9 +35,10 @@ export interface And<T> {
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
+ * import { some, none, type OptionInstance } from "@askua/core/option";
  *
- * const option = none<number>().or(() => some(0));
+ * const n: OptionInstance<number> = none();
+ * const option = n.or(() => some(0));
  * assertEquals(option, some(0));
  * ```
  */
@@ -51,12 +53,13 @@ export interface Or<T> {
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
+ * import { some, none, type OptionInstance } from "@askua/core/option";
  *
  * const a = some(1).map((v) => v + 1);
  * assertEquals(a, some(2));
  *
- * const b = none().map((v) => v + 1);
+ * const n: OptionInstance<number> = none();
+ * const b = n.map((v) => v + 1);
  * assertEquals(b, none());
  * ```
  */
@@ -90,12 +93,13 @@ export interface Filter<T> {
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
+ * import { some, none, type OptionInstance } from "@askua/core/option";
  *
  * const a = some(1).unwrap();
  * assertEquals(a, 1);
  *
- * const b = none().unwrap(() => 0);
+ * const n: OptionInstance<number> = none();
+ * const b = n.unwrap(() => 0);
  * assertEquals(b, 0);
  * ```
  */
