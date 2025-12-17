@@ -98,6 +98,8 @@ import type { OrFunction, OrPromise } from "./types.ts";
  * const a: Some<number> = { some: true, value: 1 };
  * const b: Some<number> = some(1);
  * ```
+ *
+ * @typeParam T value type
  */
 export interface Some<T> {
   readonly some: true;
@@ -109,10 +111,14 @@ export interface Some<T> {
  * const a: Some<number> = { some: true, value: 1 };
  * const b: SomeInstance<number> = some(1);
  * ```
+ *
+ * @typeParam T value type
  */
 export type SomeInstance<T> = OptionContext<T> & Some<T>;
 
 /**
+ * Infer Some<T> type from Option<T> type
+ *
  * ```ts
  * const a: InferSome<Option<number>> = { some: true, value: 1 };
  * const b: Some<number> = a;
@@ -120,6 +126,8 @@ export type SomeInstance<T> = OptionContext<T> & Some<T>;
  * const c: InferSome<OptionInstance<number>> = some(1);
  * const d: SomeInstance<number> = c;
  * ```
+ *
+ * @typeParam O Option type
  */
 export type InferSome<O extends Option<unknown>> = O extends
   OptionContext<infer T> ? SomeInstance<T>
@@ -144,6 +152,8 @@ export interface None {
 export type NoneInstance = OptionContext<never> & None;
 
 /**
+ * Infer None type from Option<T> type
+ *
  * ```ts
  * const a: InferNone<Option<unknown>> = { some: false };
  * const b: None = a;
@@ -151,6 +161,8 @@ export type NoneInstance = OptionContext<never> & None;
  * const c: InferNone<OptionInstance<unknown>> = none();
  * const d: NoneInstance = c;
  * ```
+ *
+ * @typeParam O Option type
  */
 export type InferNone<O extends Option<unknown>> = O extends
   OptionContext<unknown> ? NoneInstance
@@ -163,10 +175,14 @@ export type InferNone<O extends Option<unknown>> = O extends
  * const a: Option<number> = { some: true, value: 1 };
  * const b: Option<number> = { some: false };
  * ```
+ *
+ * @typeParam T value type
  */
 export type Option<T> = Some<T> | None;
 
 /**
+ * Infer Option<T> type from Option<U> type
+ *
  * ```ts
  * const a: InferOption<Option<string>, number> = { some: true, value: 1 };
  * const b: Option<number> = a;
@@ -174,6 +190,9 @@ export type Option<T> = Some<T> | None;
  * const c: InferOption<OptionInstance<string>, number> = some(1);
  * const d: OptionInstance<number> = c;
  * ```
+ *
+ * @typeParam O Option type
+ * @typeParam T value type
  */
 export type InferOption<O extends Option<unknown>, T> = O extends
   OptionInstance<unknown> ? OptionInstance<T> : Option<T>;
@@ -186,6 +205,8 @@ export type InferOption<O extends Option<unknown>, T> = O extends
  * JSON.stringify([1]);     // '[1]'
  * JSON.stringify(0);       // '0'
  * ```
+ *
+ * @typeParam T value type
  */
 export type SerializedOption<T> = [T] | 0;
 
@@ -219,6 +240,8 @@ export const Option: OptionToInstance & OptionStatic = Object.assign(
 
 /**
  * Option Instance
+ *
+ * @typeParam T value type
  */
 export type OptionInstance<T> = Option<T> & OptionContext<T>;
 
@@ -234,6 +257,8 @@ export type OptionInstance<T> = Option<T> & OptionContext<T>;
  * const b: OptionInstance<number> = Option({ some: false });
  * assertEquals(b, none());
  * ```
+ *
+ * @typeParam T value type
  */
 export type OptionToInstance = {
   <T>(option: Some<T>): SomeInstance<T>;
@@ -252,6 +277,8 @@ type OrT<O extends Option<unknown>, T> = NextT<O, T>;
 
 /**
  * Option Context Methods
+ *
+ * @typeParam T value type
  */
 export interface OptionContext<T>
   extends
@@ -274,6 +301,9 @@ export interface OptionContext<T>
    * const b = none().and((n) => some(n + 1));
    * assertEquals(b, none());
    * ```
+   *
+   * @typeParam O Option type returned from andThen function
+   * @typeParam T2 value type of returned Option
    */
   and<O extends Option<T2>, T2 = AndT<O>>(
     andThen: (value: T) => O,
@@ -294,6 +324,9 @@ export interface OptionContext<T>
    * const b = none().or(() => some(2));
    * assertEquals(b, some(2));
    * ```
+   *
+   * @typeParam O Option type returned from orElse function
+   * @typeParam T2 value type of returned Option
    */
   or<O extends Option<T2>, T2 = OrT<O, T>>(
     orElse: () => O,
@@ -314,6 +347,8 @@ export interface OptionContext<T>
    * const b = none().map((n) => n + 1);
    * assertEquals(b, none());
    * ```
+   *
+   * @typeParam T2 mapped value type
    */
   map<T2>(fn: (value: T) => T2): OptionInstance<T2>;
 
@@ -330,6 +365,8 @@ export interface OptionContext<T>
    * const c = none().filter((n) => n > 0);
    * assertEquals(c, none());
    * ```
+   *
+   * @typeParam IsSome boolean result of filter function
    */
   filter<IsSome extends boolean>(fn: (value: T) => IsSome): OptionInstance<T>;
 
@@ -346,6 +383,8 @@ export interface OptionContext<T>
    * const c = none();
    * assertThrows(() => c.unwrap(), Error);
    * ```
+   *
+   * @typeParam U value type of orElse function
    */
   unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
@@ -371,7 +410,7 @@ export interface OptionContext<T>
    * assertEquals(option, some(2));
    * ```
    */
-  lazy(): OptionLazy<OptionInstance<T>>;
+  lazy(): OptionLazyContext<OptionInstance<T>>;
 
   /**
    * ```ts
@@ -387,16 +426,21 @@ export interface OptionContext<T>
   toString(): string;
 }
 
-type InferOptionLazy<Eval extends Option<unknown>, T> = OptionLazy<
+type InferOptionLazy<Eval extends Option<unknown>, T> = OptionLazyContext<
   InferOption<Eval, T>,
   T
 >;
 
 /**
  * Lazy Operation
+ *
+ * @typeParam Eval evaluated Option type
+ * @typeParam T value type
  */
-export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
-  extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
+export interface OptionLazyContext<
+  Eval extends Option<T>,
+  T = NextT<Eval, never>,
+> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -411,6 +455,9 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
    *   .eval();
    * assertEquals(b, none());
    * ```
+   *
+   * @typeParam Next Option type returned from andThen function
+   * @typeParam T2 value type of returned Option
    */
   and<
     Next extends Option<T2>,
@@ -420,7 +467,7 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
   /**
    * @deprecated use `and` method
    */
-  andThen: OptionLazy<Eval, T>["and"];
+  andThen: OptionLazyContext<Eval, T>["and"];
 
   /**
    * ```ts
@@ -436,6 +483,9 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
    *   .eval();
    * assertEquals(b, some(2));
    * ```
+   *
+   * @typeParam Next Option type returned from orElse function
+   * @typeParam T2 value type of returned Option
    */
   or<
     Next extends Option<T2>,
@@ -445,7 +495,7 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
   /**
    * @deprecated use `or` method
    */
-  orElse: OptionLazy<Eval, T>["or"];
+  orElse: OptionLazyContext<Eval, T>["or"];
 
   /**
    * ```ts
@@ -461,6 +511,8 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
    *   .eval();
    * assertEquals(b, none());
    * ```
+   *
+   * @typeParam T2 mapped value type
    */
   map<
     T2,
@@ -485,6 +537,8 @@ export interface OptionLazy<Eval extends Option<T>, T = NextT<Eval, never>>
    *   .eval();
    * assertEquals(c, none());
    * ```
+   *
+   * @typeParam IsSome boolean result of filter function
    */
   filter<IsSome extends boolean>(
     fn: (value: T) => OrPromise<IsSome>,
@@ -800,7 +854,7 @@ type Op<T, U> =
 /**
  * impl Lazy<T, Eval>
  */
-class _Lazy<T, Eval extends Option<T>> implements OptionLazy<Eval, T> {
+class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
   readonly op: Op<T, never>[] = [];
 
   constructor(
@@ -1060,7 +1114,7 @@ function lazy<
   Eval extends Option<T> = Fn extends OrFunction<OrPromise<infer O>> ? O
     : never,
   T = NextT<Eval, never>,
->(option: Fn): OptionLazy<Eval, T> {
+>(option: Fn): OptionLazyContext<Eval, T> {
   return new _Lazy(option);
 }
 
