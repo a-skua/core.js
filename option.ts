@@ -198,7 +198,8 @@ export type InferOption<O extends Option<unknown>, T> = O extends
   OptionInstance<unknown> ? OptionInstance<T> : Option<T>;
 
 /**
- * Motivation:
+ * WIP
+ *
  * ```ts
  * JSON.stringify(some(1)); // '{"value":1,"some":true}'
  * JSON.stringify(none());  // '{"some":false}'
