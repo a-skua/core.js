@@ -3,8 +3,6 @@
  *
  * ```ts
  * import { assert } from "@std/assert";
- * import type { Result } from "@askua/core/result";
- * import { ok, err, isOk, isErr } from "@askua/core/result";
  *
  * const a: Result<number> = { ok: true, value: 1 };
  * assert(isOk(a));
@@ -23,7 +21,6 @@
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { Result, ok, err } from "@askua/core/result";
  *
  * const value = Result({ ok: true, value: 1 })
  *   .map((n) => n + 1)
@@ -40,7 +37,6 @@
  *
  * ```ts
  * import { assert } from "@std/assert";
- * import type { Result } from "@askua/core/result";
  *
  * const json: string = '{"ok":true,"value":1}';
  *
@@ -53,9 +49,6 @@
  * ## Using with method
  *
  * ```ts
- * import type { ResultInstance } from "@askua/core/result";
- * import { ok, err } from "@askua/core/result";
- *
  * const result: ResultInstance<number> = ok(Math.random());
  *
  * const value = result
@@ -69,8 +62,6 @@
  * ## Using Iterable
  *
  * ```ts
- * import { Result } from "@askua/core/result";
- *
  * const getNumber = () => ok(Math.random())
  *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
  *   .or((e) => {
@@ -90,8 +81,6 @@
  * ## Using Lazy type
  *
  * ```ts
- * import { ok, err } from "@askua/core/result";
- *
  * const getNumber = () => Promise.resolve(ok(Math.random()));
  *
  * const result = await Result.lazy(getNumber())
@@ -565,47 +554,31 @@ type OrT<R extends Result<unknown, unknown>, T> = NextT<R, T>;
 type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
 
 /**
- * Result Context
+ * Result Context Methods
  *
  * @typeParam T - value type
  * @typeParam E - error type
  */
-interface ResultContext<T, E>
+export interface ResultContext<T, E>
   extends
     Iterable<T>,
     ToOption<T>,
+    c.Context<T>,
     c.And<T>,
     c.Or<T>,
     c.Map<T>,
     c.Filter<T>,
-    c.Unwrap<T> {
+    c.Unwrap<T>,
+    c.Lazy<T> {
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).andThen");
+   * import { assertEquals } from "@std/assert";
    *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)));
+   * const a = ok(1).and((n) => ok(n + 1));
+   * assertEquals(a, ok(2));
    *
-   * console.log(`Result: ${fn()}`);
-   * ```
-   * @deprecated
-   */
-  andThen<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
-    fn: (value: T) => R,
-  ): InferResult<R, T2, E2>;
-
-  /**
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).and");
-   *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and(() => ok("TOO LARGE"));
-   *
-   * console.log(`Result: ${fn()}`);
+   * const b = err("error").and((n) => ok(n + 1));
+   * assertEquals(b, err("error"));
    * ```
    */
   and<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
@@ -613,37 +586,19 @@ interface ResultContext<T, E>
   ): InferResult<R, T2, E2>;
 
   /**
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).orElse");
-   *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .or((e) => {
-   *     console.error(`Error: ${e}`);
-   *     return ok(0);
-   *   })
-   *
-   * console.log(`Result: ${fn()}`);
-   * ```
-   * @deprecated
+   * @deprecated use`and` method
    */
-  orElse<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
-    fn: (error: E) => R,
-  ): InferResult<R, T2, E2>;
+  andThen: ResultContext<T, E>["and"];
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).or");
+   * import { assertEquals } from "@std/assert";
    *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .or(() => ok(0));
+   * const a = ok(1).or(() => ok(2));
+   * assertEquals(a, ok(1));
    *
-   * console.log(`Result: ${fn()}`);
+   * const b = err("error").or(() => ok(2));
+   * assertEquals(b, ok(2));
    * ```
    */
   or<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
@@ -651,31 +606,41 @@ interface ResultContext<T, E>
   ): InferResult<R, T2, E2>;
 
   /**
+   * @deprecated use `or` method
+   */
+  orElse: ResultContext<T, E>["or"];
+
+  /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).map");
+   * import { assertEquals } from "@std/assert";
    *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .map((n) => n.toFixed(2))
-   *   .or(() => ok("0.00"));
+   * const a = ok(1).map((n) => n + 1);
+   * assertEquals(a, ok(2));
    *
-   * console.log(`Result: ${fn()}`);
+   * const b = err("error").map((n) => n + 1);
+   * assertEquals(b, err("error"));
    * ```
    */
   map<T2>(fn: (value: T) => T2): ResultInstance<T2, E>;
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).filter");
+   * import { assertEquals } from "@std/assert";
    *
-   * const fn = () => ok(Math.random())
-   *   .filter((n) => n >= 0.5, () => new Error("less than 0.5"))
-   *   .map((n) => n.toFixed(2))
-   *   .or(() => ok("0.00"));
+   * const a = ok(1).filter((n) => n > 0);
+   * assertEquals(a, ok(1));
    *
-   * console.log(`Result: ${fn()}`);
+   * const b = ok(1).filter((n) => n > 0, () => "error");
+   * assertEquals(b, ok(1));
+   *
+   * const c = ok(0).filter((n) => n > 0);
+   * assertEquals(c, err(0));
+   *
+   * const d = ok(0).filter((n) => n > 0, () => "error");
+   * assertEquals(d, err("error"));
+   *
+   * const e = err("error").filter((n) => n > 0);
+   * assertEquals(e, err("error"));
    * ```
    */
   filter<IsOk extends boolean>(
@@ -683,70 +648,63 @@ interface ResultContext<T, E>
   ): ResultInstance<T, T | E>;
   filter<E2, IsOk extends boolean = boolean>(
     isOk: (value: T) => IsOk,
-    err: (value: T) => E2,
+    onErr: (value: T) => E2,
   ): ResultInstance<T, E | E2>;
   filter<E2, IsOk extends boolean = boolean>(
     isOk: (value: T) => IsOk,
-    err?: (value: T) => E2,
+    onErr?: (value: T) => E2,
   ): ResultInstance<T, T | E | E2>;
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).unwrap");
+   * import { assertEquals, assertThrows } from "@std/assert";
    *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .or(() => ok("0.00"))
-   *   .unwrap();
+   * const a = ok(1);
+   * assertEquals(a.unwrap(), 1);
    *
-   * console.log(`Result: ${fn()}`);
+   * const b = err("error");
+   * assertEquals(b.unwrap(() => 0), 0);
+   *
+   * const c = err("error");
+   * assertThrows(() => c.unwrap());
    * ```
    */
   unwrap<U>(orElse: (error: E) => U): T | U;
   unwrap(): T;
 
   /**
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).unwrapOr");
-   *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .unwrap(() => "0.00");
-   *
-   * console.log(`Result: ${fn()}`);
-   * ```
-   *
-   * @deprecated use `unwrap(() => U)`
+   * @deprecated use `unwrap` method
    */
   unwrapOr<T2>(value: T2): T | T2;
 
   /**
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Result).unwrapOrElse");
-   *
-   * const fn = () => ok(Math.random())
-   *   .and((n) => n >= 0.5 ? ok(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .unwrap((e) => {
-   *     console.error(`Error: ${e}`);
-   *     return "0.00";
-   *   });
-   *
-   * console.log(`Result: ${fn()}`);
-   * ```
-   *
-   * @deprecated use `unwrap(() => U)`
+   * @deprecated use `unwrap` method
    */
   unwrapOrElse<T2>(fn: (error: E) => T2): T | T2;
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
+   * import { assertEquals } from "@std/assert";
+   *
+   * const a = await ok(1)
+   *   .lazy()
+   *   .map((n) => Promise.resolve(n + 1))
+   *   .eval();
+   * assertEquals(a, ok(2));
+   *
+   * const b = await ok(Promise.resolve(1))
+   *   .lazy()
+   *   .map((n) => Promise.resolve(n + 1))
+   *   .eval();
+   * assertEquals(b, ok(2));
+   * ```
+   */
+  lazy(): T extends Promise<infer U>
+    ? ResultLazyContext<ResultInstance<U, E>, U, E>
+    : ResultLazyContext<ResultInstance<T, E>, T, E>;
+
+  /**
+   * ```ts
    * import { assertEquals } from "@std/assert";
    *
    * const a = ok("is ok");
@@ -757,24 +715,13 @@ interface ResultContext<T, E>
    * ```
    */
   toString(): string;
-
-  /**
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * import { assertEquals } from "@std/assert";
-   *
-   * const result = await ok(1).lazy().and(() => (ok(2))).eval();
-   * assertEquals(result, ok(2));
-   * ```
-   */
-  lazy(): ResultLazy<ResultInstance<T, E>, T, E>;
 }
 
 type InferResultLazy<
   Eval extends Result<unknown, unknown>,
   T,
   E,
-> = ResultLazy<InferResult<Eval, T, E>, T, E>;
+> = ResultLazyContext<InferResult<Eval, T, E>, T, E>;
 
 /**
  * Result Lazy eval
@@ -783,118 +730,135 @@ type InferResultLazy<
  * @typeParam E - error type
  * @typeParam Eval - eval Result
  */
-export interface ResultLazy<
+export interface ResultLazyContext<
   Eval extends Result<T, E>,
   T = NextT<Eval, never>,
   E = NextE<Eval, never>,
-> extends c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
+> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
   /**
    * ```ts
-   * console.log("[Example] (Lazy).andThen");
+   * import { assertEquals } from "@std/assert";
    *
-   * const getNumber = () => Promise.resolve(ok(Math.random()));
-   *
-   * const fn = () => Result.lazy(getNumber())
-   *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => Promise.resolve(ok(n.toFixed(2))))
+   * const a = await ok(1).lazy()
+   *   .and((n) => Promise.resolve(ok(n + 1)))
    *   .eval();
+   * assertEquals(a, ok(2));
    *
-   * console.debug(`Result: ${await fn()}`);
+   * const e: ResultInstance<number, string> = err("error");
+   * const b = await e.lazy()
+   *   .and((n) => Promise.resolve(ok(n + 1)))
+   *   .eval();
+   * assertEquals(b, err("error"));
    * ```
    *
-   * @deprecated use `and` method
-   */
-  andThen<
-    Next extends Result<T2, E2>,
-    T2 = AndT<Next>,
-    E2 = AndE<Next, E>,
-  >(andThen: (value: T) => OrPromise<Next>): InferResultLazy<Next, T2, E2>;
-
-  /**
-   * ```ts
-   * console.log("[Example] (Lazy).and");
-   *
-   * const getNumber = () => Promise.resolve(ok(Math.random()));
-   *
-   * const fn = () => Result.lazy(getNumber())
-   *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
-   *   .and(() => Promise.resolve(ok("TOO LARGE")))
-   *   .eval();
-   *
-   * console.debug(`Result: ${await fn()}`);
-   * ```
+   * @typeParam R Result type of andThen return
+   * @typeParam T2 value type of Eval
+   * @typeParam E2 error type of Eval
    */
   and<
-    Next extends Result<T2, E2>,
-    T2 = AndT<Next>,
-    E2 = AndE<Next, E>,
-  >(andThen: (value: T) => OrPromise<Next>): InferResultLazy<Next, T2, E2>;
+    R extends Result<T2, E2>,
+    T2 = AndT<R>,
+    E2 = AndE<R, E>,
+  >(andThen: (value: T) => OrPromise<R>): InferResultLazy<R, T2, E2>;
 
   /**
-   * ```ts
-   * console.log("[Example] (Lazy).orElse");
-   *
-   * const getNumber = () => Promise.resolve(ok(Math.random()));
-   *
-   * const fn = () => Result.lazy(getNumber())
-   *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .or((e) => {
-   *     console.error(`Error: ${e}`);
-   *     return Promise.resolve(ok("0.50"));
-   *   })
-   *   .eval();
-   *
-   * console.debug(`Result: ${await fn()}`);
-   * ```
-   *
-   * @deprecated use `or` method
+   * @deprecated use `and` method
    */
-  orElse<
-    Next extends Result<T2, E2>,
-    T2 = OrT<Next, T>,
-    E2 = OrE<Next>,
-  >(orElse: (error: E) => OrPromise<Next>): InferResultLazy<Next, T2, E2>;
+  andThen: ResultLazyContext<Eval, T, E>["and"];
 
   /**
    * ```ts
-   * console.log("[Example] (Lazy).or");
+   * import { assertEquals } from "@std/assert";
    *
-   * const getNumber = () => Promise.resolve(ok(Math.random()));
-   *
-   * const fn = () => Result.lazy(getNumber())
-   *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
-   *   .and((n) => ok(n.toFixed(2)))
-   *   .or(() => Promise.resolve(ok("0.50")))
+   * const a = await ok(1).lazy()
+   *   .or(() => Promise.resolve(ok(2)))
    *   .eval();
+   * assertEquals(a, ok(1));
    *
-   * console.debug(`Result: ${await fn()}`);
+   * const e: ResultInstance<number, string> = err("error");
+   * const b = await e.lazy()
+   *   .or(() => Promise.resolve(ok(2)))
+   *   .eval();
+   * assertEquals(b, ok(2));
    * ```
+   *
+   * @typeParam R Result type of orElse return
+   * @typeParam T2 value type of Eval
+   * @typeParam E2 error type of Eval
    */
   or<
-    Next extends Result<T2, E2>,
-    T2 = OrT<Next, T>,
-    E2 = OrE<Next>,
-  >(orElse: (error: E) => OrPromise<Next>): InferResultLazy<Next, T2, E2>;
+    R extends Result<T2, E2>,
+    T2 = OrT<R, T>,
+    E2 = OrE<R>,
+  >(orElse: (error: E) => OrPromise<R>): InferResultLazy<R, T2, E2>;
+
+  /**
+   * @deprecated use `or` method
+   */
+  orElse: ResultLazyContext<Eval, T, E>["or"];
 
   /**
    * ```ts
-   * console.log("[Example] (Lazy).map");
+   * import { assertEquals } from "@std/assert";
    *
-   * const getNumber = () => Promise.resolve(ok(Math.random()));
-   *
-   * const fn = () => Result.lazy(getNumber())
-   *   .and((n) => n >= 0.5 ? ok<number>(n) : err<number>(new Error("less than 0.5")))
-   *   .map((n) => Promise.resolve(n.toFixed(2)))
+   * const result = await ok(1).lazy()
+   *   .map((n) => Promise.resolve(n + 1))
    *   .eval();
+   * assertEquals(result, ok(2));
    *
-   * console.debug(`Result: ${await fn()}`);
+   * const e: ResultInstance<number, string> = err("error");
+   * const resultErr = await e.lazy()
+   *   .map((n) => Promise.resolve(n + 1))
+   *   .eval();
+   * assertEquals(resultErr, err("error"));
    * ```
+   *
+   * @typeParam T2 value type of Eval
    */
   map<
     T2,
   >(fn: (value: T) => OrPromise<T2>): InferResultLazy<Eval, T2, E>;
 
+  /**
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const a = await ok(1).lazy()
+   *  .filter((n) => Promise.resolve(n > 0))
+   *  .eval();
+   * assertEquals(a, ok(1));
+   *
+   * const b = await ok(1).lazy()
+   *  .filter((n) => Promise.resolve(n > 0), () => "error")
+   *  .eval();
+   * assertEquals(b, ok(1));
+   *
+   * const c = await ok(0).lazy()
+   *   .filter((n) => Promise.resolve(n > 0))
+   *   .eval();
+   * assertEquals(c, err(0));
+   *
+   * const d = await ok(0).lazy()
+   *   .filter((n) => Promise.resolve(n > 0), () => "error")
+   *   .eval();
+   * assertEquals(d, err("error"));
+   *
+   * const e: ResultInstance<number, string> = err("error");
+   *
+   * const f = await e.lazy()
+   *   .filter((n) => Promise.resolve(n > 0))
+   *   .eval();
+   * assertEquals(f, err("error"));
+   *
+   * const g = await e.lazy()
+   *   .filter((n) => Promise.resolve(n > 0), () => "another error")
+   *   .eval();
+   * assertEquals(g, err("error"));
+   *  ```
+   *
+   *  @typeParam E2 error type of Eval
+   *  @typeParam IsOk boolean result of isOk
+   */
   filter<IsOk extends boolean>(
     isOk: (value: T) => OrPromise<IsOk>,
   ): InferResultLazy<Eval, T, T | E>;
@@ -915,12 +879,12 @@ export interface ResultLazy<
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] (Lazy).eval");
+   * import { assertEquals } from "@std/assert";
    *
-   * const result: Result<number> = await Result.lazy(ok(1)).eval();
-   *
-   * console.debug(`Result: ${result}`);
+   * const result = await ok(1).lazy()
+   *   .map((n) => Promise.resolve(n + 1))
+   *   .eval();
+   * assertEquals(result, ok(2));
    * ```
    */
   eval(): Promise<Eval>;
@@ -929,13 +893,15 @@ export interface ResultLazy<
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
+   * const a = Result.lazy(ok(1));
    * assertEquals(
-   *   Result.lazy(ok(1)).toString(),
+   *   a.toString(),
    *   "Lazy<Ok(1)>",
    * );
    *
+   * const b = Result.lazy(() => ok(1)).map((n) => n * 100).or(() => ok(0));
    * assertEquals(
-   *   Result.lazy(() => ok(1)).map((n) => n * 100).or(() => ok(0)).toString(),
+   *   b.toString(),
    *   "Lazy<()=>ok(1).map((n)=>n * 100).or(()=>ok(0))>",
    * );
    * ```
@@ -1235,7 +1201,8 @@ type Op<T, E> =
 /**
  * impl Lazy<T, E, Eval>
  */
-class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<Eval, T, E> {
+class _Lazy<T, E, Eval extends Result<T, E>>
+  implements ResultLazyContext<Eval, T, E> {
   readonly op: Op<T, E>[] = [];
 
   constructor(
@@ -1276,6 +1243,10 @@ class _Lazy<T, E, Eval extends Result<T, E>> implements ResultLazy<Eval, T, E> {
   async eval(): Promise<Eval> {
     const p = typeof this.first === "function" ? this.first() : this.first;
     let result: Result<T, E> = p instanceof Promise ? await p : p;
+    if (result.ok && result.value instanceof Promise) {
+      result = ok(await result.value);
+    }
+
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
 
@@ -1540,7 +1511,7 @@ function lazy<
     : never,
   T = NextT<Eval, never>,
   E = NextE<Eval, never>,
->(result: Fn): ResultLazy<Eval, T, E> {
+>(result: Fn): ResultLazyContext<Eval, T, E> {
   return new _Lazy(result);
 }
 

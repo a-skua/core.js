@@ -13,7 +13,7 @@ import {
   ok,
   Result,
   type ResultInstance,
-  type ResultLazy,
+  type ResultLazyContext,
 } from "./result.ts";
 import { none, some } from "./option.ts";
 
@@ -564,7 +564,7 @@ Deno.test("Lazy", async (t) => {
 
   await t.step("(Lazy).filter", async (t) => {
     const tests: [
-      ResultLazy<ResultInstance<number, number | string>>,
+      ResultLazyContext<ResultInstance<number, number | string>>,
       ResultInstance<number, number | string>,
     ][] = [
       [ok(1).lazy().filter((n) => n > 0), ok(1)],
@@ -572,8 +572,17 @@ Deno.test("Lazy", async (t) => {
       [ok(0).lazy().filter((n) => n > 0), err(0)],
       [ok(0).lazy().filter((n) => n > 0, () => "ERR!"), err("ERR!")],
       [ok(0).lazy().filter((n) => n > 0, (n) => `Err(${n})!`), err("Err(0)!")],
-      [err(-1).lazy().filter((n) => n > 0), err(-1)],
-      [err(-1).lazy().filter((n) => n > 0, () => "ERR!"), err(-1)],
+      [
+        (err(-1) as ResultInstance<number, number>).lazy().filter((n) => n > 0),
+        err(-1),
+      ],
+      [
+        (err(-1) as ResultInstance<number, number>).lazy().filter(
+          (n) => n > 0,
+          () => "ERR!",
+        ),
+        err(-1),
+      ],
     ] as const;
 
     for (const [lazy, expected] of tests) {
