@@ -946,76 +946,44 @@ export interface ResultLazy<
 /**
  * Static Methods
  */
-interface ResultStatic {
+export interface ResultStatic {
   /**
    * ```ts
-   * import { ok } from "@askua/core/result";
-   * import { assertEquals, assertObjectMatch } from "@std/assert";
+   * import { assertEquals } from "@std/assert";
    *
-   * const result = ok("is ok");
-   *
-   * assertEquals(result.toString(), "Ok(is ok)");
-   * assertObjectMatch(result, { ok: true, value: "is ok" });
-   * assertEquals(Array.from(result), ["is ok"]);
-   *
-   * for (const value of result) {
-   *   assertEquals(value, "is ok");
-   * }
+   * assertEquals(Result.ok(1), ok(1));
    * ```
    */
   ok: typeof ok;
 
   /**
    * ```ts
-   * import { err } from "@askua/core/result";
-   * import { assert, assertEquals, assertObjectMatch, assertThrows } from "@std/assert";
+   * import { assertEquals } from "@std/assert";
    *
-   * const result = err("is error");
-   *
-   * assertEquals(result.toString(), "Err(is error)");
-   * assertObjectMatch(result, { ok: false, error: "is error" });
-   * assertThrows(() => Array.from(result));
-   *
-   * assertThrows(() => {
-   *   for (const _ of result) {
-   *     assert(false);
-   *   }
-   * });
+   * assertEquals(Result.err("is error"), err("is error"));
    * ```
    */
   err: typeof err;
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   *
-   * console.log("[Example] Result.and");
-   *
-   * const getNumber = (count: number) => ok(Math.random())
-   *   .and((n) => n >= 0.2 ? ok(n) : err<number>(new Error(`${count}: less than 0.2`)))
-   *   .map((n) => n.toFixed(2));
-   *
-   * const fn = () => Result.and(
-   *   () => getNumber(1),
-   *   () => getNumber(2),
-   *   () => getNumber(3),
-   * );
-   *
-   * console.log(`Result: ${await fn()}`);
-   * ```
-   *
-   * ```ts
-   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.and(
+   * const a = await Result.and(
    *   ok(1),
    *   () => ok(2),
    *   Promise.resolve(ok(3)),
    *   () => Promise.resolve(ok(4)),
-   * ).then((r) => r.unwrap().join(", "));
+   * );
+   * assertEquals(a, ok([1, 2, 3, 4]));
    *
-   * assertEquals(result, "1, 2, 3, 4");
+   * const b = await Result.and(
+   *   ok(1),
+   *   () => ok(2),
+   *   Promise.resolve(ok(3)),
+   *   () => Promise.resolve(err("is error")),
+   * );
+   * assertEquals(b, err("is error"));
    * ```
    */
   and: typeof and;
@@ -1027,33 +995,23 @@ interface ResultStatic {
 
   /**
    * ```ts
-   * console.log("[Example] Result.or");
-   *
-   * const getNumber = (count: number) => ok(Math.random())
-   *   .and((n) => n >= 0.8 ? ok(n) : err<number>(new Error(`${count}: less than 0.8`)))
-   *   .map((n) => n.toFixed(2));
-   *
-   * const fn = () => Result.or(
-   *   () => getNumber(1),
-   *   () => getNumber(2),
-   *   () => getNumber(3),
-   * );
-   *
-   * console.log(`Result: ${await fn()}`);
-   * ```
-   *
-   * ```ts
-   * import { Result } from "@askua/core/result";
    * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.or(
-   *   err<number>(new Error("1")),
-   *   () => err<number>(new Error("2")),
-   *   Promise.resolve(err<number>(new Error("3"))),
-   *   () => Promise.resolve(ok<number>(4)),
-   * ).then((r) => r.map((n) => n.toFixed(2)).unwrap());
+   * const a = await Result.or(
+   *   ok(1),
+   *   () => ok(2),
+   *   Promise.resolve(ok(3)),
+   *   () => Promise.resolve(ok(4)),
+   * );
+   * assertEquals(a, ok(1));
    *
-   * assertEquals(result, "4.00");
+   * const b = await Result.or(
+   *   err("is error"),
+   *   () => err("is error"),
+   *   Promise.resolve(err("is error")),
+   *   () => Promise.resolve(ok(4)),
+   * );
+   * assertEquals(b, ok(4));
    * ```
    */
   or: typeof or;
@@ -1065,26 +1023,13 @@ interface ResultStatic {
 
   /**
    * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] Result.lazy");
+   * import { assertEquals } from "@std/assert";
    *
-   * const result = await Result.lazy(ok(1))
-   *   .and(() => ok(2))
+   * const result = await Result.lazy(Promise.resolve(ok(1)))
+   *   .map((n) => n + 1)
+   *   .map((n) => n * 2)
    *   .eval();
-   *
-   * console.log(`Result: ${result}`);
-   * ```
-   *
-   * ```ts
-   * import { Result } from "@askua/core/result";
-   * console.log("[Example] Result.lazy");
-   *
-   * const result = await Result.lazy(() => ok(1))
-   *   .and(() => ok(2))
-   *   .map((n) => n.toFixed(2))
-   *   .eval();
-   *
-   * console.log(`Result: ${result}`);
+   * assertEquals(result, ok(4));
    * ```
    */
   lazy: typeof lazy;
@@ -1094,32 +1039,19 @@ interface ResultStatic {
    * import { assertEquals } from "@std/assert";
    * import { some, none } from "@askua/core/option";
    *
-   * const a: Ok<number> = Result.fromOption(some(1));
+   * const a = Result.fromOption(some(1));
    * assertEquals(a, ok(1));
    *
-   * const b: Err<Error> = Result.fromOption(none());
+   * const b = Result.fromOption(none());
    * assertEquals(b, err(new Error("Option is None")));
    *
-   * const c: Err<string> = Result.fromOption(none(), () => "ERR!");
+   * const c = Result.fromOption(none(), () => "ERR!");
    * assertEquals(c, err("ERR!"));
    * ```
    */
   fromOption: typeof fromOption;
 
   /**
-   * ```ts
-   * import { assertEquals } from "@std/assert";
-   *
-   * const a: Ok<number> = Result.fromNullable(1);
-   * assertEquals(a, ok(1));
-   *
-   * const b: Err<Error> = Result.fromNullable(null);
-   * assertEquals(b, err(new Error("Nullable")));
-   *
-   * const c: Err<Error> = Result.fromNullable(undefined);
-   * assertEquals(c, err(new Error("Nullable")));
-   * ```
-   *
    * @deprecated use `Option.fromNullable` and `Result.fromOption`
    */
   fromNullable: typeof fromNullable;
@@ -1143,23 +1075,10 @@ interface ResultStatic {
 }
 
 /**
- * Result ToOption
- *
  * @deprecated use Option.fromResult()
  */
 interface ToOption<T> {
   /**
-   * ```ts
-   * import { assertEquals } from "@std/assert";
-   * import { Option } from "@askua/core/option";
-   *
-   * const some = ok("is ok").toOption();
-   * assertEquals(some, Option.some("is ok"));
-   *
-   * const none = err("is error").toOption();
-   * assertEquals(none, Option.none());
-   * ```
-   *
    * @deprecated use Option.fromResult()
    */
   toOption(): OptionInstance<T>;
