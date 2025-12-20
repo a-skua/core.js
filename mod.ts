@@ -10,7 +10,7 @@
  *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
  *
- * console.log(n.unwrapOr("n is less than 0.5"));
+ * console.log(n.unwrap(() => "n is less than 0.5"));
  * ```
  *
  * ## type Result
@@ -22,7 +22,7 @@
  *   .filter((n) => n >= 0.5, (n) => new Error(`n ${n.toFixed(2)} is less than 0.5`))
  *   .map((n) => n.toFixed(2));
  *
- * console.log(n.unwrapOrElse((e) => e.message));
+ * console.log(n.unwrap((e) => e.message));
  * ```
  *
  * ## type Brand

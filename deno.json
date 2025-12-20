@@ -29,7 +29,7 @@
     },
     "docs": "deno doc --output=docs --html mod.ts brand.ts option.ts result.ts",
     "docs:serve": {
-      "command": "deno run --allow-net --allow-read=./docs jsr:@std/http/file-server ./docs",
+      "command": "deno run -NR=./docs jsr:@std/http/file-server ./docs",
       "dependencies": ["docs"]
     },
     "bench": "deno bench | sed s:$(dirname $(pwd))::",
