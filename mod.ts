@@ -39,6 +39,7 @@
  * @module
  */
 
-export { err, ok, Result } from "./result.ts";
-export { none, Option, some } from "./option.ts";
-export { Brand } from "./brand.ts";
+export * from "./result.ts";
+export * from "./option.ts";
+export * from "./brand.ts";
+export * from "./types.ts";

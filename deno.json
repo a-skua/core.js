@@ -1,12 +1,13 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "1.4.0-rc7",
+  "version": "1.4.0-rc8",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
     "./option": "./option.ts",
-    "./brand": "./brand.ts"
+    "./brand": "./brand.ts",
+    "./utility": "./types.ts"
   },
   "publish": {
     "exclude": [
