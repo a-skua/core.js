@@ -100,12 +100,9 @@ import type { None, Option, OptionInstance, Some } from "./option.ts";
 import type { OrFunction, OrPromise } from "./types.ts";
 
 /**
- * Result element Ok
- *
  * ```ts
- * import type { Ok } from "@askua/core/result";
- *
- * const result: Ok<number> = { ok: true, value: 1 };
+ * const a: Ok<number> = { ok: true, value: 1 };
+ * const b: Ok<number> = ok(1);
  * ```
  *
  * @typeParam T value type
@@ -116,12 +113,34 @@ export interface Ok<T> {
 }
 
 /**
- * Result element Err
+ * ```ts
+ * const a: Ok<number> = { ok: true, value: 1 };
+ * const b: OkInstance<number> = ok(1);
+ * ```
+ *
+ * @typeParam T value type
+ */
+export type OkInstance<T> = Ok<T> & ResultContext<T, never>;
+
+/**
+ * Infer Ok type from Result or ResultInstance
  *
  * ```ts
- * import type { Err } from "@askua/core/result";
+ * const a: InferOk<Result<number>> = { ok: true, value: 1 };
+ * const b: Ok<number> = a;
  *
- * const result: Err<string> = { ok: false, error: "is error" };
+ * const c: InferOk<ResultInstance<number>> = ok(1);
+ * const d: OkInstance<number> = c;
+ * ```
+ */
+export type InferOk<R extends Result<unknown, unknown>> = R extends
+  ResultContext<infer T, infer _> ? OkInstance<T>
+  : Ok<R extends Ok<infer T> ? T : never>;
+
+/**
+ * ```ts
+ * const a: Err<string> = { ok: false, error: "is error" };
+ * const b: Err<string> = err("is error");
  * ```
  *
  * @typeParam E error type
@@ -131,32 +150,25 @@ export interface Err<E> {
   readonly error: E;
 }
 
-type OkInstance<T> = Ok<T> & ResultContext<T, never>;
-
 /**
- * Infer Ok type from Result or ResultInstance
- *
  * ```ts
- * import type { Result, InferOk } from "@askua/core/result";
- *
- * type A = Result<number>;
- * type B = InferOk<A>; // = Ok<number>
+ * const a: Err<string> = { ok: false, error: "is error" };
+ * const b: ErrInstance<string> = err("is error");
  * ```
+ *
+ * @typeParam E error type
  */
-export type InferOk<R extends Result<unknown, unknown>> = R extends
-  ResultContext<infer T, infer _> ? OkInstance<T>
-  : Ok<R extends Ok<infer T> ? T : never>;
-
-type ErrInstance<E> = Err<E> & ResultContext<never, E>;
+export type ErrInstance<E> = Err<E> & ResultContext<never, E>;
 
 /**
  * Infer Err type from Result or ResultInstance
  *
  * ```ts
- * import type { Result, InferErr } from "@askua/core/result";
+ * const a: InferErr<Result<number, string>> = { ok: false, error: "is error" };
+ * const b: Err<string> = a;
  *
- * type A = Result<number, string>;
- * type B = InferErr<A>; // = Err<string>
+ * const c: InferErr<ResultInstance<number, string>> = err("is error");
+ * const d: ErrInstance<string> = c;
  * ```
  */
 export type InferErr<R extends Result<unknown, unknown>> = R extends
@@ -164,13 +176,14 @@ export type InferErr<R extends Result<unknown, unknown>> = R extends
   : Err<R extends Err<infer E> ? E : never>;
 
 /**
- * Result
+ * Result is Object base type, Ok<T> and Err<E>.
  *
  * ```ts
- * import type { Result } from "@askua/core/result";
- *
  * const a: Result<number> = { ok: true, value: 1 };
  * const b: Result<number> = { ok: false, error: new Error("error") };
+ *
+ * const c: Result<number> = ok(1);
+ * const d: Result<number> = err(new Error("error"));
  * ```
  *
  * @typeParam T value type
@@ -179,7 +192,26 @@ export type InferErr<R extends Result<unknown, unknown>> = R extends
 export type Result<T, E = Error> = Ok<T> | Err<E>;
 
 /**
- * Motivation:
+ * Infer Result type from ResultInstance or Result
+ *
+ * ```ts
+ * const a: InferResult<Result<unknown, unknown>, number, string> = { ok: true, value: 1 };
+ * const b: Result<number, string> = a;
+ *
+ * const c: InferResult<ResultInstance<unknown, unknown>, number, string> = ok(1);
+ * const d: ResultInstance<number, string> = c;
+ * ```
+ *
+ * @typeParam R Result type
+ * @typeParam T value type
+ * @typeParam E error type
+ */
+export type InferResult<R extends Result<unknown, unknown>, T, E> = R extends
+  ResultInstance<unknown, unknown> ? ResultInstance<T, E> : Result<T, E>;
+
+/**
+ * WIP
+ *
  * ```ts
  * JSON.stringify(ok(1));           // '{"value":1,"ok":true}'
  * JSON.stringify(err("is error")); // '{"error":"is error","ok":false}'
@@ -194,293 +226,13 @@ export type SerializedResult<T, E> = [1, T] | [0, E];
  *
  * ```ts
  * import { assertEquals } from "@std/assert";
- * import { Result, ok, err } from "@askua/core/result";
  *
- * assertEquals(
- *   ok(1),
- *   Result({ ok: true, value: 1 }),
- * );
+ * const a = Result({ ok: true, value: 1 });
+ * assertEquals(a, ok(1));
  *
- * assertEquals(
- *   err(new Error("error")),
- *   Result({ ok: false, error: new Error("error") }),
- * );
- *
- * assertEquals(
- *   JSON.stringify(ok(1)),
- *   '{"value":1,"ok":true}',
- * );
- *
- * assertEquals(
- *   JSON.stringify(err("is error")),
- *   '{"error":"is error","ok":false}',
- * );
+ * const b = Result({ ok: false, error: "error" });
+ * assertEquals(b, err("error"));
  * ```
- *
- * ## Static Methods
- *
- * ### ok
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok } from "@askua/core/result";
- *
- * assertEquals(
- *   Result.ok("is ok"),
- *   ok("is ok"),
- * );
- * ```
- *
- * ### err
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, err } from "@askua/core/result";
- *
- * assertEquals(
- *   Result.err("is error"),
- *   err("is error"),
- * );
- * ```
- *
- * ### and
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import type { ResultInstance } from "@askua/core/result";
- * import { Result, ok } from "@askua/core/result";
- *
- * const a: ResultInstance<[number, number, number, number]> = await Result.and(
- *   ok(1),
- *   () => ok(2),
- *   Promise.resolve(ok(3)),
- *   () => Promise.resolve(ok(4)),
- * );
- * const b: ResultInstance<[number, number, number, number]> = ok([1, 2, 3, 4]);
- *
- * assertEquals(a, b);
- * ```
- *
- * ### or
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import type { ResultInstance } from "@askua/core/result";
- * import { Result, ok } from "@askua/core/result";
- *
- * const a = await Result.or(
- *   err("error"),
- *   () => err("error"),
- *   Promise.resolve(err("error")),
- *   () => Promise.resolve(ok(4)),
- * );
- * const b: ResultInstance<number, string> = ok(4);
- *
- * assertEquals(a, b);
- * ```
- *
- * ### lazy
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok } from "@askua/core/result";
- *
- * const result = await Result.lazy(ok(1))
- *   .or(() => ok(2))
- *   .map((n) => n.toFixed(2))
- *   .eval();
- *
- * assertEquals(result, ok("1.00"));
- * ```
- *
- * ### fromNullable
- *
- * DEPRECATED: use `Option.fromNullable` and `Result.fromOption`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok } from "@askua/core/result";
- *
- * const a = Result.fromNullable(1);
- * const b = ok(1);
- *
- * assertEquals(a, b);
- * ```
- *
- * ### fromOption
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok } from "@askua/core/result";
- * import { some } from "@askua/core/option";
- *
- * const a = Result.fromOption(some(1));
- * const b = ok(1);
- *
- * assertEquals(a, b);
- * ```
- *
- * ### try
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { Result, ok, err } from "@askua/core/result";
- *
- * {
- *   const a = Result.try(() => {
- *     throw new Error("error");
- *   });
- *   const b = err(new Error("error"));
- *
- *   assertEquals(a, b);
- * }
- *
- * {
- *   const a = Result.try(() => 1);
- *   const b = ok(1);
- *
- *   assertEquals(a, b);
- * }
- * ```
- *
- * ## Instance Methods
- *
- * ### and
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).and((n) => ok(n + 1)),
- *   ok(2),
- * );
- *
- * assertEquals(
- *   ok(1).and(() => ok(2)),
- *   ok(2),
- * );
- *
- * assertEquals(
- *   err("error").and((n) => ok(n + 1)),
- *   err("error"),
- * );
- * ```
- *
- * ### or
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).or(() => ok(2)),
- *   ok(1),
- * );
- *
- * assertEquals(
- *   err("error").or(() => ok(2)),
- *   ok(2),
- * );
- * ```
- *
- * ### map
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).map((n) => n + 1),
- *   ok(2),
- * );
- *
- * assertEquals(
- *   err("error").map((n) => n + 1),
- *   err("error"),
- * );
- * ```
- *
- * ### filter
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).filter((n) => n > 0),
- *   ok(1),
- * );
- *
- * assertEquals(
- *   err("error").filter((n) => n > 0),
- *   err("error"),
- * );
- * ```
- *
- * ### unwrap
- *
- * ```ts
- * import { assertEquals, assertThrows } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok(1).unwrap(),
- *   1,
- * );
- *
- * assertEquals(
- *   err("error").unwrap(() => 1),
- *   1,
- * );
- *
- * assertThrows(() => err(new Error("error")).unwrap());
- * ```
- *
- * ### lazy
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * const a = await ok(1)
- *   .lazy()
- *   .map((n) => Promise.resolve(n + 1))
- *   .eval();
- * const b = ok(2);
- *
- * assertEquals(a, b);
- * ```
- *
- * ### [Symbol.iterator]
- *
- * ```ts
- * import { assertEquals, assertThrows } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   [...ok(1)],
- *   [1],
- * );
- *
- * assertThrows(() => [...err("error")]);
- * ```
- *
- * ### toString
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { ok, err } from "@askua/core/result";
- *
- * assertEquals(
- *   ok("is ok").toString(),
- *   "Ok(is ok)",
- * );
- *
- * assertEquals(
- *   err("is error").toString(),
- *   "Err(is error)",
- * );
- *   ```
  */
 export const Result: ResultToInstance & ResultStatic = Object.assign(
   toInstance,
@@ -498,23 +250,8 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
   },
 );
 
-type InferResult<R extends Result<unknown, unknown>, T, E> = R extends
-  ResultInstance<unknown, unknown> ? ResultInstance<T, E> : Result<T, E>;
-
 /**
  * Result Instance
- *
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import type { ResultInstance } from "@askua/core/result";
- * import { ok, err } from "@askua/core/result";
- *
- * const a: ResultInstance<number> = ok(1);
- * const b: ResultInstance<number> = err(new Error("error"));
- *
- * assertEquals(a.map((n) => n + 1), ok(2));
- * assertEquals(b.map((n) => n + 1), err(new Error("error")));
- * ```
  *
  * @typeParam T value type
  * @typeParam E error type
@@ -525,11 +262,16 @@ export type ResultInstance<T, E = Error> = Result<T, E> & ResultContext<T, E>;
  * Result ToInstance
  *
  * ```ts
- * const a: Result<number> = Result({ ok: true, value: 1 });
- * const b: Result<number> = Result({ ok: false, error: new Error("error") });
+ * import { assertEquals } from "@std/assert";
+ *
+ * const a: ResultInstance<number> = Result({ ok: true, value: 1 });
+ * assertEquals(a, ok(1));
+ *
+ * const b: ResultInstance<number, string> = Result({ ok: false, error: "error" });
+ * assertEquals(b, err("error"));
  * ```
  */
-type ResultToInstance = {
+export type ResultToInstance = {
   <T, E = never>(ok: Ok<T>): InferOk<ResultInstance<T, E>>;
   <T = never, E = never>(err: Err<E>): InferErr<ResultInstance<T, E>>;
   <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
@@ -580,6 +322,9 @@ export interface ResultContext<T, E>
    * const b = err("error").and((n) => ok(n + 1));
    * assertEquals(b, err("error"));
    * ```
+   *
+   * @typeParam R Result type of andThen return
+   * @typeParam T2 value type of R
    */
   and<R extends Result<T2, E2>, T2 = AndT<R>, E2 = AndE<R, E>>(
     andThen: (value: T) => R,
@@ -600,6 +345,9 @@ export interface ResultContext<T, E>
    * const b = err("error").or(() => ok(2));
    * assertEquals(b, ok(2));
    * ```
+   *
+   * @typeParam R Result type of orElse return
+   * @typeParam T2 value type of R
    */
   or<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
     orElse: (error: E) => R,
@@ -620,6 +368,8 @@ export interface ResultContext<T, E>
    * const b = err("error").map((n) => n + 1);
    * assertEquals(b, err("error"));
    * ```
+   *
+   * @typeParam T2 value type of mapped Result
    */
   map<T2>(fn: (value: T) => T2): ResultInstance<T2, E>;
 
@@ -642,6 +392,9 @@ export interface ResultContext<T, E>
    * const e = err("error").filter((n) => n > 0);
    * assertEquals(e, err("error"));
    * ```
+   *
+   * @typeParam E2 error type of filtered Result
+   * @typeParam IsOk boolean result of isOk
    */
   filter<IsOk extends boolean>(
     isOk: (value: T) => IsOk,
@@ -668,6 +421,8 @@ export interface ResultContext<T, E>
    * const c = err("error");
    * assertThrows(() => c.unwrap());
    * ```
+   *
+   * @typeParam U return type of orElse
    */
   unwrap<U>(orElse: (error: E) => U): T | U;
   unwrap(): T;
