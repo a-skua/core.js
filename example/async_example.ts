@@ -13,7 +13,7 @@ const getNumber = (): Promise<ResultInstance<number>> =>
     setTimeout(() => {
       resolve(
         Result.ok(Math.random())
-          .andThen((n) =>
+          .and((n) =>
             n >= 0.1
               ? Result.ok<number>(n)
               : Result.err<number>(new Error("Number is less than 0.1"))
@@ -22,30 +22,30 @@ const getNumber = (): Promise<ResultInstance<number>> =>
     }, 200);
   });
 
-test("Result.andThen(...Promise[])", () =>
+test("Result.and(...Promise[])", () =>
   Result
-    .lazy(Result.andThen(getNumber(), getNumber(), getNumber()))
+    .lazy(Result.and(getNumber(), getNumber(), getNumber()))
     .map((n) => n.reduce((v, n) => v + n) * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Result.andThen(...() => Promise[])", () =>
+test("Result.and(...() => Promise[])", () =>
   Result
-    .lazy(Result.andThen(getNumber, getNumber, getNumber))
+    .lazy(Result.and(getNumber, getNumber, getNumber))
     .map((n) => n.reduce((v, n) => v + n) * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Result.orElse(...Promise[])", () =>
+test("Result.or(...Promise[])", () =>
   Result
-    .lazy(Result.orElse(getNumber(), getNumber(), getNumber()))
+    .lazy(Result.or(getNumber(), getNumber(), getNumber()))
     .map((n) => n * 100)
     .map((n) => n.toFixed(2))
     .eval());
 
-test("Result.orElse(...() => Promise[])", () =>
+test("Result.or(...() => Promise[])", () =>
   Result
-    .lazy(Result.orElse(getNumber, getNumber, getNumber))
+    .lazy(Result.or(getNumber, getNumber, getNumber))
     .map((n) => n * 100)
     .map((n) => n.toFixed(2))
     .eval());

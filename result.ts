@@ -95,8 +95,7 @@
  */
 
 import type * as c from "./context.ts";
-import { none, some } from "./option.ts";
-import type { None, Option, OptionInstance, Some } from "./option.ts";
+import type { None, Option, Some } from "./option.ts";
 import type { OrFunction, OrPromise } from "./types.ts";
 
 /**
@@ -241,8 +240,6 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
     err,
     and,
     or,
-    andThen: and,
-    orElse: or,
     lazy,
     fromOption,
     fromNullable,
@@ -304,7 +301,6 @@ type OrE<R extends Result<unknown, unknown>> = NextE<R, never>;
 export interface ResultContext<T, E>
   extends
     Iterable<T>,
-    ToOption<T>,
     c.Context<T>,
     c.And<T>,
     c.Or<T>,
@@ -331,11 +327,6 @@ export interface ResultContext<T, E>
   ): InferResult<R, T2, E2>;
 
   /**
-   * @deprecated use`and` method
-   */
-  andThen: ResultContext<T, E>["and"];
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -352,11 +343,6 @@ export interface ResultContext<T, E>
   or<R extends Result<T2, E2>, T2 = OrT<R, T>, E2 = OrE<R>>(
     orElse: (error: E) => R,
   ): InferResult<R, T2, E2>;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: ResultContext<T, E>["or"];
 
   /**
    * ```ts
@@ -426,16 +412,6 @@ export interface ResultContext<T, E>
    */
   unwrap<U>(orElse: (error: E) => U): T | U;
   unwrap(): T;
-
-  /**
-   * @deprecated use `unwrap` method
-   */
-  unwrapOr<T2>(value: T2): T | T2;
-
-  /**
-   * @deprecated use `unwrap` method
-   */
-  unwrapOrElse<T2>(fn: (error: E) => T2): T | T2;
 
   /**
    * ```ts
@@ -517,11 +493,6 @@ export interface ResultLazyContext<
   >(andThen: (value: T) => OrPromise<R>): InferResultLazy<R, T2, E2>;
 
   /**
-   * @deprecated use `and` method
-   */
-  andThen: ResultLazyContext<Eval, T, E>["and"];
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -546,11 +517,6 @@ export interface ResultLazyContext<
     T2 = OrT<R, T>,
     E2 = OrE<R>,
   >(orElse: (error: E) => OrPromise<R>): InferResultLazy<R, T2, E2>;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: ResultLazyContext<Eval, T, E>["or"];
 
   /**
    * ```ts
@@ -710,11 +676,6 @@ export interface ResultStatic {
   and: typeof and;
 
   /**
-   * @deprecated use `and` method
-   */
-  andThen: typeof and;
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -736,11 +697,6 @@ export interface ResultStatic {
    * ```
    */
   or: typeof or;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: typeof or;
 
   /**
    * ```ts
@@ -773,11 +729,6 @@ export interface ResultStatic {
   fromOption: typeof fromOption;
 
   /**
-   * @deprecated use `Option.fromNullable` and `Result.fromOption`
-   */
-  fromNullable: typeof fromNullable;
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -796,16 +747,6 @@ export interface ResultStatic {
 }
 
 /**
- * @deprecated use Option.fromResult()
- */
-interface ToOption<T> {
-  /**
-   * @deprecated use Option.fromResult()
-   */
-  toOption(): OptionInstance<T>;
-}
-
-/**
  * impl Ok<T, E>
  */
 class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
@@ -813,20 +754,8 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
   constructor(readonly value: T) {
   }
 
-  toOption<O>(): O {
-    return some(this.value) as O;
-  }
-
-  andThen<U>(fn: (value: T) => U) {
-    return fn(this.value) as never;
-  }
-
   and<U>(andThen: (value: T) => U) {
     return andThen(this.value) as never;
-  }
-
-  orElse() {
-    return this as never;
   }
 
   or() {
@@ -846,14 +775,6 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
   }
 
   unwrap(): T {
-    return this.value;
-  }
-
-  unwrapOr(): T {
-    return this.value;
-  }
-
-  unwrapOrElse(): T {
     return this.value;
   }
 
@@ -883,14 +804,6 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
   readonly ok = false;
   constructor(readonly error: E) {}
 
-  toOption<O>(): O {
-    return none() as O;
-  }
-
-  andThen() {
-    return this as never;
-  }
-
   and() {
     return this as never;
   }
@@ -901,10 +814,6 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
 
   filter() {
     return this as never;
-  }
-
-  orElse<U>(orElse: (error: E) => U) {
-    return orElse(this.error) as never;
   }
 
   or<U>(orElse: (error: E) => U) {
@@ -921,14 +830,6 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
     throw new Error(`${this.error}`);
   }
 
-  unwrapOr<U>(value: U): U {
-    return value;
-  }
-
-  unwrapOrElse<U>(fn: (error: E) => U): U {
-    return fn(this.error);
-  }
-
   lazy() {
     return new _Lazy(this) as never;
   }
@@ -943,9 +844,7 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
 }
 
 type Op<T, E> =
-  | { andThen: <U = never, D = never>(value: T) => OrPromise<Result<U, D>> }
   | { and: <U = never, D = never>(value: T) => OrPromise<Result<U, D>> }
-  | { orElse: <U = never, D = never>(error: E) => OrPromise<Result<U, D>> }
   | { or: <U = never, D = never>(error: E) => OrPromise<Result<U, D>> }
   | { map: <U = never>(value: T) => OrPromise<U> }
   | {
@@ -965,18 +864,8 @@ class _Lazy<T, E, Eval extends Result<T, E>>
   ) {
   }
 
-  andThen<U, V>(andThen: U): V {
-    this.op.push({ andThen } as typeof this.op[number]);
-    return this as never;
-  }
-
   and<U, V>(and: U): V {
     this.op.push({ and } as typeof this.op[number]);
-    return this as never;
-  }
-
-  orElse<U>(orElse: U) {
-    this.op.push({ orElse } as typeof this.op[number]);
     return this as never;
   }
 
@@ -1005,20 +894,8 @@ class _Lazy<T, E, Eval extends Result<T, E>>
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
 
-      if ("andThen" in op && result.ok) {
-        const p = op.andThen(result.value);
-        result = p instanceof Promise ? await p : p;
-        continue;
-      }
-
       if ("and" in op && result.ok) {
         const p = op.and(result.value);
-        result = p instanceof Promise ? await p : p;
-        continue;
-      }
-
-      if ("orElse" in op && !result.ok) {
-        const p = op.orElse(result.error);
         result = p instanceof Promise ? await p : p;
         continue;
       }

@@ -26,7 +26,7 @@ const getNumber = () =>
     .map((n) => PassedNumber(n));
 
 const option = await Option
-  .lazy(Option.andThen(
+  .lazy(Option.and(
     getNumber,
     getNumber,
     getNumber,
@@ -40,10 +40,10 @@ const option = await Option
 console.log(option.unwrap()); // { sum: "0.00" }
 
 const result = await Result
-  .lazy(Result.orElse(
-    () => getNumber().toResult(),
-    () => getNumber().toResult(),
-    () => getNumber().toResult(),
+  .lazy(Result.or(
+    () => Result.fromOption(getNumber()),
+    () => Result.fromOption(getNumber()),
+    () => Result.fromOption(getNumber()),
   ))
   .or((err) => {
     console.error(`${err}`); // Error: None

@@ -89,8 +89,7 @@
  */
 
 import type * as c from "./context.ts";
-import type { Err, Ok, Result, ResultInstance } from "./result.ts";
-import { err, ok } from "./result.ts";
+import type { Err, Ok, Result } from "./result.ts";
 import type { OrFunction, OrPromise } from "./types.ts";
 
 /**
@@ -231,8 +230,6 @@ export const Option: OptionToInstance & OptionStatic = Object.assign(
     none,
     and,
     or,
-    andThen: and,
-    orElse: or,
     lazy,
     fromResult,
     fromNullable,
@@ -284,7 +281,6 @@ type OrT<O extends Option<unknown>, T> = NextT<O, T>;
 export interface OptionContext<T>
   extends
     Iterable<T>,
-    ToResult<T>,
     c.Context<T>,
     c.And<T>,
     c.Or<T>,
@@ -312,11 +308,6 @@ export interface OptionContext<T>
   ): InferOption<O, T2>;
 
   /**
-   * @deprecated use `and` method
-   */
-  andThen: OptionContext<T>["and"];
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -334,11 +325,6 @@ export interface OptionContext<T>
   or<O extends Option<T2>, T2 = OrT<O, T>>(
     orElse: () => O,
   ): InferOption<O, T2>;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: OptionContext<T>["or"];
 
   /**
    * ```ts
@@ -393,16 +379,6 @@ export interface OptionContext<T>
    */
   unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
-
-  /**
-   * @deprecated use `unwrap` method
-   */
-  unwrapOr<T2>(value: T2): T | T2;
-
-  /**
-   * @deprecated use `unwrap` method
-   */
-  unwrapOrElse<T2>(fn: () => T2): T | T2;
 
   /**
    * ```ts
@@ -478,11 +454,6 @@ export interface OptionLazyContext<
   >(andThen: (value: T) => OrPromise<O>): InferOptionLazy<O, T2>;
 
   /**
-   * @deprecated use `and` method
-   */
-  andThen: OptionLazyContext<Eval, T>["and"];
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -505,11 +476,6 @@ export interface OptionLazyContext<
     O extends Option<T2>,
     T2 = OrT<O, T>,
   >(orElse: () => OrPromise<O>): InferOptionLazy<O, T2>;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: OptionLazyContext<Eval, T>["or"];
 
   /**
    * ```ts
@@ -639,11 +605,6 @@ export type OptionStatic = {
   and: typeof and;
 
   /**
-   * @deprecated use `and` method
-   */
-  andThen: typeof and;
-
-  /**
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -665,11 +626,6 @@ export type OptionStatic = {
    * ```
    */
   or: typeof or;
-
-  /**
-   * @deprecated use `or` method
-   */
-  orElse: typeof or;
 
   /**
    * ```ts
@@ -716,36 +672,14 @@ export type OptionStatic = {
 };
 
 /**
- * @deprecated use Result.fromOption()
- */
-interface ToResult<T> {
-  /**
-   * @deprecated use Result.fromOption()
-   */
-  toResult<E = Error>(error?: E): ResultInstance<T, E>;
-}
-
-/**
  * impl Some<T>
  */
 class _Some<T> implements SomeInstance<T> {
   readonly some = true;
   constructor(readonly value: T) {}
 
-  toResult<R>(): R {
-    return ok(this.value) as R;
-  }
-
-  andThen<U>(fn: (value: T) => U) {
-    return fn(this.value) as never;
-  }
-
   and<U>(andThen: (value: T) => U) {
     return andThen(this.value) as never;
-  }
-
-  orElse() {
-    return this as never;
   }
 
   or() {
@@ -762,14 +696,6 @@ class _Some<T> implements SomeInstance<T> {
   }
 
   unwrap(): T {
-    return this.value;
-  }
-
-  unwrapOr(): T {
-    return this.value;
-  }
-
-  unwrapOrElse(): T {
     return this.value;
   }
 
@@ -799,20 +725,8 @@ class _None<T = never> implements None, OptionContext<T> {
   readonly some = false;
   constructor() {}
 
-  toResult<E, R>(error: E = new Error("None") as E): R {
-    return err(error) as R;
-  }
-
-  andThen() {
-    return this as never;
-  }
-
   and() {
     return this as never;
-  }
-
-  orElse<U>(fn: () => U) {
-    return fn() as never;
   }
 
   or<U>(orElse: () => U) {
@@ -830,14 +744,6 @@ class _None<T = never> implements None, OptionContext<T> {
   unwrap<U>(orElse?: () => U) {
     if (orElse) return orElse() as never;
     throw new Error("None");
-  }
-
-  unwrapOr<U>(value: U) {
-    return value;
-  }
-
-  unwrapOrElse<U>(fn: () => U) {
-    return fn();
   }
 
   lazy() {
@@ -861,9 +767,7 @@ class _None<T = never> implements None, OptionContext<T> {
  * Lazy Operation
  */
 type Op<T, U> =
-  | { andThen: (value: T) => OrPromise<Option<U>> }
   | { and: (value: T) => OrPromise<Option<U>> }
-  | { orElse: () => OrPromise<Option<U>> }
   | { or: () => OrPromise<Option<U>> }
   | { map: (value: T) => OrPromise<U> }
   | { filter: (value: T) => OrPromise<boolean> };
@@ -878,18 +782,8 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
     private readonly first: (() => Promise<Eval> | Eval) | Promise<Eval> | Eval,
   ) {}
 
-  andThen<U, Op>(andThen: Op): U {
-    this.op.push({ andThen } as typeof this.op[number]);
-    return this as never;
-  }
-
   and<U, Op>(and: Op): U {
     this.op.push({ and } as typeof this.op[number]);
-    return this as never;
-  }
-
-  orElse<U, Op>(orElse: Op): U {
-    this.op.push({ orElse } as typeof this.op[number]);
     return this as never;
   }
 
@@ -918,20 +812,8 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
     for (let i = 0; i < this.op.length; i++) {
       const op = this.op[i];
 
-      if ("andThen" in op && option.some) {
-        const p = op.andThen(option.value);
-        option = p instanceof Promise ? await p : p;
-        continue;
-      }
-
       if ("and" in op && option.some) {
         const p = op.and(option.value);
-        option = p instanceof Promise ? await p : p;
-        continue;
-      }
-
-      if ("orElse" in op && !option.some) {
-        const p = op.orElse();
         option = p instanceof Promise ? await p : p;
         continue;
       }
