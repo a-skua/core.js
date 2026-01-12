@@ -663,12 +663,11 @@ export type OptionStatic = {
    * const c = () => Option.fromResult(err(new Error("Error")));
    * assertThrows(c);
    * ```
+   *
+   * @throws {Error} when result is Err and no orElse function provided
    */
   fromResult<T>(result: Ok<T>): SomeInstance<T>;
   fromResult<O extends Option<T>, T, E>(result: Err<E>, orElse: (e: E) => O): O;
-  /**
-   * @throws {Error} when result is Err and no orElse function provided
-   */
   fromResult<E>(result: Err<E>): void;
   fromResult<O extends Option<T>, T, E>(
     result: Result<T, E>,
