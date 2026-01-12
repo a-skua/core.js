@@ -555,31 +555,19 @@ try {
 }
 
 {
-  const result = Result.fromOption(some(1));
-  test<Ok<number>>(result);
+  const result = Result.fromOption(some(1 as const));
+  test<Ok<1>>(result);
 }
 
 {
   const result = Result.fromOption(none());
-  test<Err<Error>>(result);
-}
-
-{
-  const result = Result.fromOption(none(), () => "ERR!");
-  // const result = Result.fromOption<number>(none(), "ERR!");
-  test<Err<string>>(result);
+  test<Err<null>>(result);
 }
 
 {
   const option = some(1) as Option<number>;
   const result = Result.fromOption(option);
-  test<ResultInstance<number>>(result);
-}
-
-{
-  const option = some(1) as Option<number>;
-  const result = Result.fromOption(option, () => "ERR!");
-  test<ResultInstance<number, string>>(result);
+  test<ResultInstance<number, null>>(result);
 }
 
 {

@@ -422,7 +422,7 @@ Deno.test("Result.lazy", async (t) => {
 Deno.test("Result.fromOption", async (t) => {
   const tests = [
     [some(1), ok(1)],
-    [none(), err(new Error("Option is None"))],
+    [none(), err(null)],
   ] as const;
 
   for (const [input, expected] of tests) {
@@ -431,12 +431,6 @@ Deno.test("Result.fromOption", async (t) => {
       () => assertEquals(Result.fromOption(input), expected),
     );
   }
-
-  await t.step("with custom error", () => {
-    const actual = Result.fromOption(none(), () => "Custom error");
-    const expected = err("Custom error");
-    assertEquals(actual, expected);
-  });
 });
 
 Deno.test("Result.try", async (t) => {

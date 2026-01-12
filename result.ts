@@ -635,6 +635,7 @@ export interface ResultLazyContext<
  */
 export interface ResultStatic {
   /**
+   * @example `Result.ok`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -644,6 +645,7 @@ export interface ResultStatic {
   ok: typeof ok;
 
   /**
+   * @example `Result.err`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -653,6 +655,7 @@ export interface ResultStatic {
   err: typeof err;
 
   /**
+   * @example `Result.and`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -676,6 +679,7 @@ export interface ResultStatic {
   and: typeof and;
 
   /**
+   * @example `Result.or`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -699,12 +703,13 @@ export interface ResultStatic {
   or: typeof or;
 
   /**
+   * @example `Result.lazy`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
    * const result = await Result.lazy(Promise.resolve(ok(1)))
    *   .map((n) => n + 1)
-   *   .map((n) => n * 2)
+   *   .map((n) => Promise.resolve(n * 2))
    *   .eval();
    * assertEquals(result, ok(4));
    * ```
@@ -712,6 +717,7 @@ export interface ResultStatic {
   lazy: typeof lazy;
 
   /**
+   * @example `Result.fromOption`
    * ```ts
    * import { assertEquals } from "@std/assert";
    * import { some, none } from "@askua/core/option";
@@ -720,15 +726,13 @@ export interface ResultStatic {
    * assertEquals(a, ok(1));
    *
    * const b = Result.fromOption(none());
-   * assertEquals(b, err(new Error("Option is None")));
-   *
-   * const c = Result.fromOption(none(), () => "ERR!");
-   * assertEquals(c, err("ERR!"));
+   * assertEquals(b, err(null));
    * ```
    */
   fromOption: typeof fromOption;
 
   /**
+   * @example `Result.try`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -1147,20 +1151,12 @@ function lazy<
   return new _Lazy(result);
 }
 
-function fromOption<T>(o: Some<T>): InferOk<ResultInstance<T, Error>>;
-function fromOption<T>(o: None): InferErr<ResultInstance<T, Error>>;
-function fromOption<T, E = Error>(
-  o: None,
-  e: () => E,
-): InferErr<ResultInstance<T, E>>;
-function fromOption<T>(o: Option<T>): ResultInstance<T, Error>;
-function fromOption<T, E = Error>(
-  o: Option<T>,
-  e: () => E,
-): ResultInstance<T, E>;
-function fromOption<T, E>(o: Option<T>, e?: () => E): ResultInstance<T, E> {
-  if (o.some) return ok(o.value);
-  return e ? err(e()) : err(new Error("Option is None") as E);
+function fromOption<T>(o: Some<T>): InferOk<ResultInstance<T, null>>;
+function fromOption<T>(o: None): InferErr<ResultInstance<T, null>>;
+function fromOption<T>(o: Option<T>): ResultInstance<T, null>;
+function fromOption<T>(o: Option<T>): ResultInstance<T, null>;
+function fromOption<T>(o: Option<T>): ResultInstance<T, null> {
+  return o.some ? ok(o.value) : err(null);
 }
 
 function fromNullable<T>(v: NonNullable<T>): InferOk<ResultInstance<T>>;
@@ -1198,7 +1194,9 @@ function fromNullable<T>(
 
 function tryCatch<T, E = unknown>(
   fn: () => T,
-): T extends Promise<infer U> ? Promise<ResultInstance<U, E>>
+): T extends Promise<infer U> ? Promise<
+    ResultInstance<U, E>
+  >
   : ResultInstance<T, E>;
 function tryCatch<T, E = unknown>(
   fn: () => T | Promise<T>,
