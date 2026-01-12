@@ -11,6 +11,7 @@ import {
   type OptionInstance,
   type Some,
   some,
+  type SomeInstance,
 } from "./option.ts";
 import { err, ok, type Result } from "./result.ts";
 
@@ -742,8 +743,13 @@ try {
 }
 
 {
-  const option = Option.fromResult(err("ERR!"));
-  test<None>(option);
+  const option = Option.fromResult(err("ERR!"), () => some(1));
+  test<SomeInstance<number>>(option);
+}
+
+{
+  const option = () => Option.fromResult(err("ERR!"));
+  test<() => void>(option);
 }
 
 {

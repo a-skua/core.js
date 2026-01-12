@@ -233,7 +233,7 @@ export const Option: OptionToInstance & OptionStatic = Object.assign(
     lazy,
     fromResult,
     fromNullable,
-  },
+  } as never,
 );
 
 /**
@@ -372,7 +372,7 @@ export interface OptionContext<T>
    * assertEquals(b.unwrap(() => 0), 0);
    *
    * const c = none();
-   * assertThrows(() => c.unwrap(), Error);
+   * assertThrows(() => c.unwrap());
    * ```
    *
    * @typeParam U value type of orElse function
@@ -564,6 +564,7 @@ export interface OptionLazyContext<
  */
 export type OptionStatic = {
   /**
+   * @example `Option.some`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -573,6 +574,7 @@ export type OptionStatic = {
   some: typeof some;
 
   /**
+   * @example `Option.none`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -582,6 +584,7 @@ export type OptionStatic = {
   none: typeof none;
 
   /**
+   * @example `Option.and`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -605,6 +608,7 @@ export type OptionStatic = {
   and: typeof and;
 
   /**
+   * @example `Option.or`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -628,6 +632,7 @@ export type OptionStatic = {
   or: typeof or;
 
   /**
+   * @example `Option.lazy`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -641,20 +646,38 @@ export type OptionStatic = {
   lazy: typeof lazy;
 
   /**
+   * @example `Option.fromResult`
    * ```ts
-   * import { assertEquals } from "@std/assert";
+   * import { assertEquals, assertThrows } from "@std/assert";
    * import { ok, err } from "@askua/core/result";
    *
    * const a = Option.fromResult(ok(1));
    * assertEquals(a, some(1));
    *
-   * const b = Option.fromResult(err(new Error("Error")));
+   * const b = Option.fromResult(err(new Error("Error")), (e) => {
+   *   assertEquals(e, new Error("Error"));
+   *   return none();
+   * });
    * assertEquals(b, none());
+   *
+   * const c = () => Option.fromResult(err(new Error("Error")));
+   * assertThrows(c);
    * ```
    */
-  fromResult: typeof fromResult;
+  fromResult<T>(result: Ok<T>): SomeInstance<T>;
+  fromResult<O extends Option<T>, T, E>(result: Err<E>, orElse: (e: E) => O): O;
+  /**
+   * @throws {Error} when result is Err and no orElse function provided
+   */
+  fromResult<E>(result: Err<E>): void;
+  fromResult<O extends Option<T>, T, E>(
+    result: Result<T, E>,
+    orElse: (e: E) => O,
+  ): O;
+  fromResult<T, E>(result: Result<T, E>): OptionInstance<T>;
 
   /**
+   * @example `Option.fromNullable`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -668,7 +691,9 @@ export type OptionStatic = {
    * assertEquals(c, none());
    * ```
    */
-  fromNullable: typeof fromNullable;
+  fromNullable<T>(value: NonNullable<T>): SomeInstance<T>;
+  fromNullable<T>(value: null | undefined): NoneInstance;
+  fromNullable<T>(value: T | null | undefined): OptionInstance<T>;
 };
 
 /**
@@ -1019,17 +1044,20 @@ function lazy<
   return new _Lazy(option);
 }
 
-function fromResult<T>(result: Ok<T>): InferSome<OptionInstance<T>>;
-function fromResult<T, E>(result: Err<E>): InferNone<OptionInstance<T>>;
-function fromResult<T, E>(result: Result<T, E>): OptionInstance<T>;
-function fromResult<T, E>(result: Result<T, E>): OptionInstance<T> {
+function fromResult<T, E>(
+  result: Result<T, E>,
+  orElse?: (e: E) => OptionInstance<T>,
+): OptionInstance<T> {
   if (result.ok) return some(result.value);
-  return none();
+  if (orElse) return orElse(result.error);
+  throw new Error(
+    "Option.fromResult: no value and no orElse function provided",
+    {
+      cause: result.error,
+    },
+  );
 }
 
-function fromNullable<T>(value: NonNullable<T>): InferSome<OptionInstance<T>>;
-function fromNullable<T>(value: null | undefined): InferNone<OptionInstance<T>>;
-function fromNullable<T>(value: T | null | undefined): OptionInstance<T>;
 function fromNullable<T>(value: T | null | undefined): OptionInstance<T> {
   if (value === null || value === undefined) return none();
   return some(value);

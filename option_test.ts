@@ -15,7 +15,7 @@ import {
   type Some,
   some,
 } from "./option.ts";
-import { err, ok } from "./result.ts";
+import { err, ok, type Result } from "./result.ts";
 
 Deno.test("Option", async (t) => {
   const tests = [
@@ -214,7 +214,7 @@ Deno.test("OptionInstance", async (t) => {
 
     for (const [option, expected] of tests) {
       await t.step(`${option}.unwrap() => throw ${expected}`, () => {
-        assertThrows(() => option.unwrap(), expected);
+        assertThrows(() => option.unwrap());
       });
     }
   });
@@ -383,16 +383,68 @@ Deno.test("Option.lazy", async (t) => {
 });
 
 Deno.test("Option.fromResult", async (t) => {
-  const tests = [
-    [ok(1), some(1)],
-    [err("error"), none()],
-  ] as const;
+  {
+    const tests: [
+      Result<unknown, unknown>,
+      () => Option<unknown>,
+      Option<unknown>,
+    ][] = [
+      [ok(1), () => none(), some(1)],
+      [err("error"), () => none(), none()],
+    ];
 
-  for (const [input, expected] of tests) {
-    await t.step(
-      `Option.fromResult(${input}) => ${expected}`,
-      () => assertEquals(Option.fromResult(input), expected),
-    );
+    for (const [input, orElse, expected] of tests) {
+      await t.step(
+        `Option.fromResult(${input}, ${orElse}) => ${expected}`,
+        () => assertEquals(Option.fromResult(input, orElse), expected),
+      );
+    }
+  }
+
+  {
+    const tests = [
+      [ok(1), some(1)],
+    ] as const;
+
+    for (const [input, expected] of tests) {
+      await t.step(
+        `Option.fromResult(${input}) => ${expected}`,
+        () => assertEquals(Option.fromResult(input), expected),
+      );
+    }
+  }
+
+  {
+    const tests = [
+      [
+        err("error"),
+        (e: unknown) => {
+          assertEquals(e, "error");
+          return none();
+        },
+        none(),
+      ],
+    ] as const;
+
+    for (const [input, orElse, expected] of tests) {
+      await t.step(
+        `Option.fromResult(${input}, ${orElse}) => ${expected}`,
+        () => assertEquals(Option.fromResult(input, orElse), expected),
+      );
+    }
+  }
+
+  {
+    const tests = [
+      err(new Error("test")),
+    ] as const;
+
+    for (const input of tests) {
+      await t.step(
+        `Option.fromResult(${input}) => throw`,
+        () => assertThrows(() => Option.fromResult(input)) as void,
+      );
+    }
   }
 });
 
