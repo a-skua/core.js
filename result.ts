@@ -241,9 +241,9 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
     and,
     or,
     lazy,
-    fromOption: fromOption as never,
-    try: tryCatch as never,
-  },
+    fromOption,
+    try: tryCatch,
+  } as never,
 );
 
 /**
@@ -728,9 +728,8 @@ export interface ResultStatic {
    * assertEquals(b, err(null));
    * ```
    */
-  fromOption<T>(o: Some<T>): InferOk<ResultInstance<T, null>>;
-  fromOption<T>(o: None): InferErr<ResultInstance<T, null>>;
-  fromOption<T>(o: Option<T>): ResultInstance<T, null>;
+  fromOption<T>(o: Some<T>): OkInstance<T>;
+  fromOption<T>(o: None): ErrInstance<null>;
   fromOption<T>(o: Option<T>): ResultInstance<T, null>;
 
   /**
