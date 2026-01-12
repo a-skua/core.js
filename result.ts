@@ -241,9 +241,8 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
     and,
     or,
     lazy,
-    fromOption,
-    fromNullable,
-    try: tryCatch,
+    fromOption: fromOption as never,
+    try: tryCatch as never,
   },
 );
 
@@ -729,7 +728,10 @@ export interface ResultStatic {
    * assertEquals(b, err(null));
    * ```
    */
-  fromOption: typeof fromOption;
+  fromOption<T>(o: Some<T>): InferOk<ResultInstance<T, null>>;
+  fromOption<T>(o: None): InferErr<ResultInstance<T, null>>;
+  fromOption<T>(o: Option<T>): ResultInstance<T, null>;
+  fromOption<T>(o: Option<T>): ResultInstance<T, null>;
 
   /**
    * @example `Result.try`
@@ -747,7 +749,10 @@ export interface ResultStatic {
    * assertEquals(b, err(new Error("is error")));
    * ```
    */
-  try: typeof tryCatch;
+  try<T, E = unknown>(
+    fn: () => T,
+  ): T extends Promise<infer U> ? Promise<ResultInstance<U, E>>
+    : ResultInstance<T, E>;
 }
 
 /**
@@ -1151,53 +1156,10 @@ function lazy<
   return new _Lazy(result);
 }
 
-function fromOption<T>(o: Some<T>): InferOk<ResultInstance<T, null>>;
-function fromOption<T>(o: None): InferErr<ResultInstance<T, null>>;
-function fromOption<T>(o: Option<T>): ResultInstance<T, null>;
-function fromOption<T>(o: Option<T>): ResultInstance<T, null>;
 function fromOption<T>(o: Option<T>): ResultInstance<T, null> {
   return o.some ? ok(o.value) : err(null);
 }
 
-function fromNullable<T>(v: NonNullable<T>): InferOk<ResultInstance<T>>;
-function fromNullable<T, E>(
-  v: NonNullable<T>,
-  e: () => E,
-): InferOk<ResultInstance<T, E>>;
-function fromNullable<T, E>(
-  v: null | undefined,
-): InferErr<ResultInstance<T, Error>>;
-function fromNullable<T, E>(
-  v: null | undefined,
-  e: () => E,
-): InferErr<ResultInstance<T, E>>;
-function fromNullable<T, E>(
-  v: T | null | undefined,
-): ResultInstance<T, Error>;
-function fromNullable<T, E>(
-  v: T | null | undefined,
-  e: () => E,
-): ResultInstance<T, E>;
-function fromNullable<T, E>(
-  v: T | null | undefined,
-  e?: () => E,
-): ResultInstance<T, E | Error>;
-function fromNullable<T>(
-  v: T | null | undefined,
-  e?: () => Error,
-): ResultInstance<T, Error> {
-  if (v === null || v === undefined) {
-    return err(e ? e() : new Error("Nullable"));
-  }
-  return ok(v);
-}
-
-function tryCatch<T, E = unknown>(
-  fn: () => T,
-): T extends Promise<infer U> ? Promise<
-    ResultInstance<U, E>
-  >
-  : ResultInstance<T, E>;
 function tryCatch<T, E = unknown>(
   fn: () => T | Promise<T>,
 ): ResultInstance<T, E> | Promise<ResultInstance<T, E>> {
