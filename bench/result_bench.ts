@@ -124,7 +124,7 @@ Deno.bench("Result.fromOption(some(0))", () => {
 });
 
 Deno.bench("Result.fromOption(some(0), () => string)", () => {
-  Result.fromOption(some(0), () => "Error!");
+  Result.fromOption(some(0));
 });
 
 Deno.bench("Result.fromOption(none())", () => {
@@ -132,7 +132,7 @@ Deno.bench("Result.fromOption(none())", () => {
 });
 
 Deno.bench("Result.fromOption(none(), () => string)", () => {
-  Result.fromOption(none(), () => "Error!");
+  Result.fromOption(none());
 });
 
 Deno.bench("Result.lazy()...eval()", async () => {
