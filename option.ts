@@ -1048,7 +1048,7 @@ async function and<
 
 function or<T>(
   options: OrFunction<OrPromise<Option<T>>>[],
-  last: OrPromise<Option<T>> = undefined as never,
+  last?: OrPromise<Option<T>>,
 ): OrPromise<Option<T>> {
   for (let i = 0; i < options.length; i++) {
     const fn = options[i];
@@ -1063,7 +1063,7 @@ function or<T>(
     if (last.some) return last;
   }
 
-  return last;
+  return last as never;
 }
 
 function lazy<
