@@ -70,7 +70,7 @@ Option.or(
   foo(),
 );
 
-Option.or<Option<number | string>>(
+Option.or<number | string>(
   some(1),
   none(),
   foo,

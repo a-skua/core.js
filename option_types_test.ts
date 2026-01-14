@@ -15,9 +15,8 @@ import {
 } from "./option.ts";
 import { err, ok, type Result } from "./result.ts";
 
-const optionNumber: OptionInstance<number> = some(Math.random()).and(
-  (n) => n > 0.5 ? some(n) : none(),
-);
+const optionNumber: OptionInstance<number> = some(Math.random())
+  .filter((n) => n > 0.5);
 
 {
   const some = { some: true, value: 1 } as const;
@@ -585,12 +584,21 @@ try {
 }
 
 {
-  const option = await Option.or<Option<number | string>>(
+  const option = await Option.or(
     optionNumber,
     Promise.resolve(optionNumber),
     () => optionNumber,
     () => Promise.resolve(optionNumber),
-    (): Option<string> => some("hello"),
+    () => some("hello"),
+  );
+  test<Option<number | string>>(option);
+}
+
+{
+  const option = Option.or(
+    optionNumber,
+    () => optionNumber,
+    () => some("hello"),
   );
   test<Option<number | string>>(option);
 }
@@ -599,14 +607,22 @@ try {
   const option = await Option.or(
     { some: false },
     Promise.resolve({ some: false }),
-    () => ({ some: false as const }),
-    () => Promise.resolve({ some: false as const }),
+    () => ({ some: false }),
+    () => Promise.resolve({ some: false }),
   );
-  test<Option<never>>(option);
+  test<Option<number>>(option);
 }
 
 {
-  const option = await Option.or<OptionInstance<number | string>>(
+  const option = Option.or(
+    { some: false },
+    () => ({ some: false }),
+  );
+  test<Option<number>>(option);
+}
+
+{
+  const option = await Option.or(
     some(1),
     none(),
     Promise.resolve(some("2")),
@@ -620,15 +636,15 @@ try {
 }
 
 {
-  const option = await Option.or<OptionInstance<number | string>>(
+  const option = Option.or(
     some(1),
     none(),
-    Promise.resolve(some("2")),
-    Promise.resolve(none()),
+    some("2"),
+    none(),
     () => some(3),
     () => none(),
-    () => Promise.resolve(some("4")),
-    () => Promise.resolve(none()),
+    () => some("4"),
+    () => none(),
   );
   test<OptionInstance<number | string>>(option);
 }

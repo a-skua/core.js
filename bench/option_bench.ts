@@ -101,13 +101,64 @@ Deno.bench("Option.and(...)", async () => {
   );
 });
 
-Deno.bench("Option.or(...)", async () => {
+Deno.bench("await Option.or(...)", async () => {
   await Option.or(
-    Option.none(),
-    Promise.resolve(Option.none()),
-    () => Option.none(),
-    () => Promise.resolve(Option.none()),
+    none(),
+    Promise.resolve(none()),
+    () => none(),
+    () => Promise.resolve(none()),
   );
+});
+
+Deno.bench("Option.or(...)", () => {
+  Option.or(
+    none(),
+    none(),
+    () => none(),
+    () => none(),
+  );
+});
+
+Deno.bench("await Option.or(...[len=1000])", async (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 4) {
+        case 1:
+          return none();
+        case 2:
+          return Promise.resolve(none());
+        case 3:
+          return () => none();
+        default:
+          return () => Promise.resolve(none());
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  await Option.or(...args as [Arg, ...Arg[]]);
+  t.end();
+});
+
+Deno.bench("Option.or(...[len=1000])", (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 2) {
+        case 1:
+          return none();
+        default:
+          return () => none();
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  Option.or(...args as [Arg, ...Arg[]]);
+  t.end();
 });
 
 Deno.bench("Option.lazy()...eval()", async () => {
@@ -166,28 +217,5 @@ Deno.bench("Option.and(...[len=1000])", async (t) => {
 
   t.start();
   await Option.and(...args);
-  t.end();
-});
-
-Deno.bench("Option.or(...[len=1000])", async (t) => {
-  const args = Array.from(
-    { length: 1000 },
-    (_, i) => {
-      switch (i % 4) {
-        case 1:
-          return Option.none();
-        case 2:
-          return Promise.resolve(Option.none());
-        case 3:
-          return () => Option.none();
-        default:
-          return () => Promise.resolve(Option.none());
-      }
-    },
-  );
-  type Arg = typeof args[number];
-
-  t.start();
-  await Option.or(...args as [Arg, ...Arg[]]);
   t.end();
 });

@@ -1,4 +1,4 @@
-import type { OrPromise } from "./types.ts";
+import type { OrFunction, OrPromise } from "./types.ts";
 import {
   assert,
   assertEquals,
@@ -328,39 +328,94 @@ Deno.test("Option.and", async (t) => {
 });
 
 Deno.test("Option.or", async (t) => {
-  type Arg =
-    | Promise<Option<unknown>>
-    | Option<unknown>
-    | (() => Promise<Option<unknown>>)
-    | (() => Option<unknown>);
+  {
+    type Arg = OrFunction<OrPromise<Option<unknown>>>;
 
-  const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
-    [[
-      Option.none(),
-      Promise.resolve(Option.some(1)),
-    ], Option.some(1)],
-    [[
-      () => Option.none(),
-      () => Promise.resolve(Option.some("hello")),
-    ], Option.some("hello")],
-    [[
-      Option.none(),
-      Promise.resolve(Option.none()),
-      () => Option.none(),
-      () => Promise.resolve(Option.none()),
-    ], Option.none()],
-    [[
-      Option.none(),
-      Promise.resolve(Option.none()),
-      () => Promise.resolve(Option.some(1)),
-      () => Option.none(),
-    ], Option.some(1)],
-  ];
+    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+      [
+        [
+          none(),
+          Promise.resolve(some(1)),
+        ],
+        some(1),
+      ],
+      [
+        [
+          () => none(),
+          () => Promise.resolve(some("hello")),
+        ],
+        some("hello"),
+      ],
+      [
+        [
+          none(),
+          Promise.resolve(none()),
+          () => none(),
+          () => Promise.resolve(none()),
+        ],
+        none(),
+      ],
+      [
+        [
+          none(),
+          Promise.resolve(none()),
+          () => Promise.resolve(some(1)),
+          () => none(),
+        ],
+        some(1),
+      ],
+    ];
 
-  for (const [args, expected] of tests) {
-    await t.step(`(Option.or(${args}) => ${expected}`, async () => {
-      assertEquals(await Option.or(...args), expected);
-    });
+    for (const [args, expected] of tests) {
+      await t.step(`(await Option.or(${args}) => ${expected}`, async () => {
+        assertEquals(await Option.or(...args), expected);
+      });
+    }
+  }
+
+  {
+    type Arg = OrFunction<Option<unknown>>;
+
+    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+      [
+        [
+          none(),
+          some(1),
+        ],
+        some(1),
+      ],
+      [
+        [
+          () => none(),
+          () => some("hello"),
+        ],
+        some("hello"),
+      ],
+      [
+        [
+          none(),
+          () => none(),
+          none(),
+          () => none(),
+        ],
+        none(),
+      ],
+      [
+        [
+          none(),
+          none(),
+          () => some(1),
+          () => none(),
+        ],
+        some(1),
+      ],
+    ];
+
+    for (const [args, expected] of tests) {
+      await t.step(`(Option.or(${args}) => ${expected}`, () => {
+        assertEquals(Option.or(...args), expected);
+      });
+    }
   }
 });
 
