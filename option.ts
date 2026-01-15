@@ -228,7 +228,7 @@ export const Option: OptionToInstance & OptionStatic = Object.assign(
   {
     some,
     none,
-    and,
+    and: (...options: never[]) => and(options),
     or: (...options: never[]) => or(options),
     lazy,
     fromResult,
@@ -564,6 +564,8 @@ export interface OptionLazyContext<
  */
 export type OptionStatic = {
   /**
+   * `Option.some`
+   *
    * @example `Option.some`
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -574,6 +576,8 @@ export type OptionStatic = {
   some: typeof some;
 
   /**
+   * `Option.none`
+   *
    * @example `Option.none`
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -584,7 +588,9 @@ export type OptionStatic = {
   none: typeof none;
 
   /**
-   * @example `Option.and`
+   * `Option.and`
+   *
+   * @example `await Option.and`
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -604,10 +610,51 @@ export type OptionStatic = {
    * );
    * assertEquals(b, none());
    * ```
+   *
+   * @example `Option.and`
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * const a = Option.and(
+   *   some(1),
+   *   () => some(2),
+   *   some(3),
+   *   () => some(4),
+   * );
+   * assertEquals(a, some([1, 2, 3, 4]));
+   *
+   * const b = Option.and(
+   *   some(1),
+   *   () => some(2),
+   *   some(3),
+   *   () => none(),
+   * );
+   * assertEquals(b, none());
+   * ```
    */
-  and: typeof and;
+  and<
+    T extends {
+      [K in keyof Args]: Args[K] extends OrFunction<infer O>
+        ? (Awaited<O> extends Option<infer T> ? T : never)
+        : never;
+    },
+    Fn extends OrFunction<OrPromise<Option<T[number]>>> = OrFunction<
+      OrPromise<
+        Option<T[number]> | OptionInstance<T[number]>
+      >
+    >,
+    Args extends [Fn, ...Fn[]] = [Fn, ...Fn[]],
+  >(
+    ...args: Args
+  ): Args[number] extends OrFunction<infer O>
+    ? (O extends Promise<infer O>
+      ? Promise<O extends Option<unknown> ? InferOption<O, T> : unknown>
+      : (O extends Option<unknown> ? InferOption<O, T> : unknown))
+    : unknown;
 
   /**
+   * `Option.or`
+   *
    * @example `await Option.or`
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -651,25 +698,24 @@ export type OptionStatic = {
    * ```
    */
   or<
-    T extends O extends Option<infer T> ? T : never,
+    T extends {
+      [K in keyof Args]: Args[K] extends OrFunction<infer O>
+        ? (Awaited<O> extends Option<infer T> ? T : never)
+        : never;
+    }[number],
     Fn extends OrFunction<OrPromise<Option<T>>> = OrFunction<
       OrPromise<Option<T> | OptionInstance<T>>
     >,
     Args extends [Fn, ...Fn[]] = [Fn, ...Fn[]],
-    O extends Option<unknown> = {
-      [K in keyof Args]: Args[K] extends OrFunction<infer O>
-        ? (O extends OrPromise<infer O>
-          ? (O extends Option<infer T> ? InferOption<O, T> : never)
-          : never)
-        : never;
-    }[number],
   >(
-    ...fn: Args
+    ...args: Args
   ): Args[number] extends OrFunction<infer O>
     ? (O extends Promise<infer O> ? Promise<O> : O)
     : unknown;
 
   /**
+   * `Option.lazy`
+   *
    * @example `Option.lazy`
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -684,6 +730,10 @@ export type OptionStatic = {
   lazy: typeof lazy;
 
   /**
+   * `Option.fromResult`
+   *
+   * @throws {Error} when result is Err and no orElse function provided
+   *
    * @example `Option.fromResult`
    * ```ts
    * import { assertEquals, assertThrows } from "@std/assert";
@@ -701,8 +751,6 @@ export type OptionStatic = {
    * const c = () => Option.fromResult(err(new Error("Error")));
    * assertThrows(c);
    * ```
-   *
-   * @throws {Error} when result is Err and no orElse function provided
    */
   fromResult<T>(result: Ok<T>): SomeInstance<T>;
   fromResult<O extends Option<T>, T, E>(result: Err<E>, orElse: (e: E) => O): O;
@@ -714,6 +762,8 @@ export type OptionStatic = {
   fromResult<T, E>(result: Result<T, E>): OptionInstance<T>;
 
   /**
+   * `Option.fromNullable`
+   *
    * @example `Option.fromNullable`
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -1011,39 +1061,33 @@ export function isNone<T>({ some }: Option<T>) {
   return !some;
 }
 
-async function and<
-  O extends Fn[number] extends (() => infer O) | infer O
-    ? (Awaited<O> extends OptionInstance<infer _> ? OptionInstance<T>
-      : (Awaited<O> extends Option<infer _> ? Option<T> : unknown))
-    : never,
-  Fn extends {
-    [K in keyof T]: OrFunction<OrPromise<Option<T[K]>>>;
-  }[number][] = O extends OptionInstance<infer T extends unknown[]> ? {
-      [K in keyof T]: OrFunction<OrPromise<OptionInstance<T[K]>>>;
+function and<T>(
+  options: OrFunction<OrPromise<Option<T>>>[],
+  i: number = 0,
+  values: T[] = new Array(options.length),
+): OrPromise<Option<T[]>> {
+  for (; i < options.length; i++) {
+    const fn = options[i];
+    const option = typeof fn === "function" ? fn() : fn;
+
+    if (option instanceof Promise) {
+      return option.then((option) => {
+        if (!option.some) {
+          return option;
+        }
+
+        values[i] = option.value;
+        return and(options, i + 1, values);
+      });
     }
-    : (O extends Option<infer T extends unknown[]> ? {
-        [K in keyof T]: OrFunction<OrPromise<Option<T[K]>>>;
-      }
-      : never),
-  T extends unknown[] = {
-    [K in keyof Fn]: Fn[K] extends OrFunction<OrPromise<infer O>>
-      ? (O extends Option<unknown> ? AndT<O> : never)
-      : never;
-  },
->(...fn: Fn): Promise<O> {
-  const values: T[number][] = new Array(fn.length);
-  for (let i = 0; i < fn.length; i++) {
-    const f = fn[i];
-    const p: OrPromise<Option<T[number]>> = typeof f === "function" ? f() : f;
-    const option = p instanceof Promise ? await p : p;
-    if (option.some) {
-      values[i] = option.value;
-    } else {
-      return option as O;
+
+    if (!option.some) {
+      return option;
     }
+    values[i] = option.value;
   }
 
-  return some(values) as O;
+  return some(values);
 }
 
 function or<T>(
@@ -1055,9 +1099,11 @@ function or<T>(
     last = typeof fn === "function" ? fn() : fn;
 
     if (last instanceof Promise) {
-      return last.then((last) =>
-        last.some ? last : or(options.slice(i + 1), last)
-      );
+      return last.then((last) => {
+        if (last.some) return last;
+
+        return or(options.slice(i + 1), last);
+      });
     }
 
     if (last.some) return last;

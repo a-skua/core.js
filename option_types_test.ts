@@ -564,21 +564,51 @@ try {
 }
 
 {
-  const option = await Option.and(
-    { some: false },
-    Promise.resolve({ some: false as const }),
-    () => ({ some: false as const }),
-    () => Promise.resolve({ some: false as const }),
+  const option = Option.and(
+    optionNumber,
+    optionNumber,
+    () => optionNumber,
+    () => optionNumber,
   );
-  test<Option<[never, never, never, never]>>(option);
+  test<OptionInstance<[number, number, number, number]>>(option);
 }
 
 {
-  const option = await Option.and<OptionInstance<["1", "2", "3", "4"]>>(
-    some("1"),
-    Promise.resolve(some("2")),
-    () => some("3"),
-    () => Promise.resolve(some("4")),
+  const option = await Option.and(
+    { some: false } as Option<1>,
+    Promise.resolve({ some: false } as Option<2>),
+    () => ({ some: true, value: 3 as const }),
+    () => Promise.resolve({ some: false } as Option<4>),
+  );
+  test<Option<[1, 2, 3, 4]>>(option);
+}
+
+{
+  const option = Option.and(
+    { some: false } as Option<1>,
+    { some: false } as Option<2>,
+    () => ({ some: true, value: 3 as const }),
+    () => ({ some: false } as Option<4>),
+  );
+  test<Option<[1, 2, 3, 4]>>(option);
+}
+
+{
+  const option = await Option.and(
+    some("1" as const),
+    Promise.resolve(some("2" as const)),
+    () => some("3" as const),
+    () => Promise.resolve(some("4" as const)),
+  );
+  test<OptionInstance<["1", "2", "3", "4"]>>(option);
+}
+
+{
+  const option = Option.and(
+    some("1" as const),
+    some("2" as const),
+    () => some("3" as const),
+    () => (some("4" as const)),
   );
   test<OptionInstance<["1", "2", "3", "4"]>>(option);
 }

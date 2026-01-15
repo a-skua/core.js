@@ -295,35 +295,80 @@ Deno.test("Option.none", async (t) => {
 });
 
 Deno.test("Option.and", async (t) => {
-  type Arg =
-    | Promise<Option<unknown>>
-    | Option<unknown>
-    | (() => Promise<Option<unknown>>)
-    | (() => Option<unknown>);
+  {
+    type Arg = OrFunction<OrPromise<Option<unknown>>>;
 
-  const tests: [Arg[], Option<unknown>][] = [
-    [
-      [Option.some(1), Promise.resolve(Option.some("hello"))],
-      Option.some([1, "hello"]),
-    ],
-    [[
-      Option.some(1),
-      Promise.resolve(Option.some(2)),
-      () => Promise.resolve(Option.some(3)),
-      () => Option.some(4),
-    ], Option.some([1, 2, 3, 4])],
-    [[
-      Option.some(1),
-      Promise.resolve(Option.some(2)),
-      () => Promise.resolve(Option.some(3)),
-      () => Option.none(),
-    ], Option.none()],
-  ];
+    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+      [
+        [
+          some(1),
+          Promise.resolve(some("hello")),
+        ],
+        some([1, "hello"]),
+      ],
+      [
+        [
+          some(1),
+          Promise.resolve(some(2)),
+          () => Promise.resolve(some(3)),
+          () => some(4),
+        ],
+        Option.some([1, 2, 3, 4]),
+      ],
+      [
+        [
+          some(1),
+          Promise.resolve(some(2)),
+          () => Promise.resolve(some(3)),
+          () => none(),
+        ],
+        Option.none(),
+      ],
+    ];
 
-  for (const [args, expected] of tests) {
-    await t.step(`Option.and(${args})() => ${expected}`, async () => {
-      assertEquals(await Option.and(...args), expected);
-    });
+    for (const [args, expected] of tests) {
+      await t.step(`await Option.and(${args})() => ${expected}`, async () => {
+        assertEquals(await Option.and(...args), expected);
+      });
+    }
+  }
+
+  {
+    type Arg = OrFunction<Option<unknown>>;
+
+    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+      [
+        [
+          some(1),
+          some("hello"),
+        ],
+        Option.some([1, "hello"]),
+      ],
+      [
+        [
+          some(1),
+          some(2),
+          () => some(3),
+          () => some(4),
+        ],
+        Option.some([1, 2, 3, 4]),
+      ],
+      [
+        [
+          some(1),
+          some(2),
+          () => some(3),
+          () => none(),
+        ],
+        Option.none(),
+      ],
+    ];
+
+    for (const [args, expected] of tests) {
+      await t.step(`Option.and(${args})() => ${expected}`, () => {
+        assertEquals(Option.and(...args), expected);
+      });
+    }
   }
 });
 

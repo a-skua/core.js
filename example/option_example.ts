@@ -88,7 +88,7 @@ Option.and(
   foo(),
 );
 
-Option.and<Option<[string, number]>>(
+Option.and<[string, number]>(
   none(),
   some(1),
 );

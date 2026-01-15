@@ -92,13 +92,64 @@ Deno.bench("none().lazy().map((n) => n + 1).eval()", async () => {
   await (none() as OptionInstance<number>).lazy().map((n) => n + 1).eval();
 });
 
-Deno.bench("Option.and(...)", async () => {
+Deno.bench("await Option.and(...)", async () => {
   await Option.and(
-    Option.some(1),
-    Promise.resolve(Option.some(2)),
-    () => Option.some(3),
-    () => Promise.resolve(Option.some(4)),
+    some(1),
+    Promise.resolve(some(2)),
+    () => some(3),
+    () => Promise.resolve(some(4)),
   );
+});
+
+Deno.bench("Option.and(...)", () => {
+  Option.and(
+    some(1),
+    some(2),
+    () => some(3),
+    () => (some(4)),
+  );
+});
+
+Deno.bench("await Option.and(...[len=1000])", async (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 4) {
+        case 1:
+          return some(i);
+        case 2:
+          return Promise.resolve(some(i));
+        case 3:
+          return () => some(i);
+        default:
+          return () => Promise.resolve(some(i));
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  await Option.and(...args as [Arg, ...Arg[]]);
+  t.end();
+});
+
+Deno.bench("Option.and(...[len=1000])", (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 2) {
+        case 1:
+          return some(i);
+        default:
+          return () => some(i);
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  Option.and(...args as [Arg, ...Arg[]]);
+  t.end();
 });
 
 Deno.bench("await Option.or(...)", async () => {
@@ -196,26 +247,4 @@ Deno.bench("Array.from(Some(1))", () => {
 
 Deno.bench("Array.from(None)", () => {
   Array.from(Option.none());
-});
-
-Deno.bench("Option.and(...[len=1000])", async (t) => {
-  const args = Array.from(
-    { length: 1000 },
-    (_, i) => {
-      switch (i % 4) {
-        case 1:
-          return Option.some(i);
-        case 2:
-          return Promise.resolve(Option.some(i));
-        case 3:
-          return () => Option.some(i);
-        default:
-          return () => Promise.resolve(Option.some(i));
-      }
-    },
-  );
-
-  t.start();
-  await Option.and(...args);
-  t.end();
 });
