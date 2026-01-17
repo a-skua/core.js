@@ -342,40 +342,96 @@ Deno.test("Result.err", async (t) => {
 });
 
 Deno.test("Result.and", async (t) => {
-  type Arg =
-    | Promise<Result<unknown, unknown>>
-    | Result<unknown, unknown>
-    | (() => Promise<Result<unknown, unknown>>)
-    | (() => Result<unknown, unknown>);
+  {
+    type Arg =
+      | Promise<Result<unknown, unknown>>
+      | Result<unknown, unknown>
+      | (() => Promise<Result<unknown, unknown>>)
+      | (() => Result<unknown, unknown>);
 
-  const tests: [
-    Arg[],
-    Result<unknown, unknown>,
-  ][] = [
-    [[
-      Result.ok(1),
-      Promise.resolve(Result.ok(2)),
-      () => Promise.resolve(Result.ok(3)),
-      () => Result.ok(4),
-    ], Result.ok([1, 2, 3, 4])],
-    [[
-      Result.ok(1),
-      Promise.resolve(Result.ok(2)),
-      () => Promise.resolve(Result.err("Error")),
-      () => Result.ok(4),
-    ], Result.err("Error")],
-    [[
-      Result.err("1"),
-      Promise.resolve(Result.err("2")),
-      () => Promise.resolve(Result.err("3")),
-      () => Result.err("4"),
-    ], Result.err("1")],
-  ];
+    const tests: [
+      [Arg, ...Arg[]],
+      Result<unknown, unknown>,
+    ][] = [
+      [
+        [
+          ok(1),
+          Promise.resolve(ok(2)),
+          () => Promise.resolve(ok(3)),
+          () => ok(4),
+        ],
+        ok([1, 2, 3, 4]),
+      ],
+      [
+        [
+          ok(1),
+          Promise.resolve(ok(2)),
+          () => Promise.resolve(err("Error")),
+          () => ok(4),
+        ],
+        err("Error"),
+      ],
+      [
+        [
+          err("1"),
+          Promise.resolve(err("2")),
+          () => Promise.resolve(err("3")),
+          () => err("4"),
+        ],
+        err("1"),
+      ],
+    ];
 
-  for (const [args, expected] of tests) {
-    await t.step(`Result.andThen(${args}) => ${expected}`, async () => {
-      assertEquals(await Result.and(...args), expected);
-    });
+    for (const [args, expected] of tests) {
+      await t.step(`await Result.andThen(${args}) => ${expected}`, async () => {
+        assertEquals(await Result.and(...args), expected);
+      });
+    }
+  }
+
+  {
+    type Arg =
+      | Result<unknown, unknown>
+      | (() => Result<unknown, unknown>);
+
+    const tests: [
+      [Arg, ...Arg[]],
+      Result<unknown, unknown>,
+    ][] = [
+      [
+        [
+          ok(1),
+          ok(2),
+          () => ok(3),
+          () => ok(4),
+        ],
+        ok([1, 2, 3, 4]),
+      ],
+      [
+        [
+          ok(1),
+          ok(2),
+          () => err("Error"),
+          () => ok(4),
+        ],
+        err("Error"),
+      ],
+      [
+        [
+          err("1"),
+          err("2"),
+          () => err("3"),
+          () => err("4"),
+        ],
+        err("1"),
+      ],
+    ];
+
+    for (const [args, expected] of tests) {
+      await t.step(`Result.andThen(${args}) => ${expected}`, () => {
+        assertEquals(Result.and(...args), expected);
+      });
+    }
   }
 });
 

@@ -463,29 +463,47 @@ try {
 }
 
 {
-  const result = await Result.and<Result<[number, number, number, number]>>(
+  const result = await Result.and(
     resultNumber,
     Promise.resolve(resultNumber),
     () => resultNumber,
-    () => Promise.resolve(resultNumber),
+    () => Promise.resolve(resultNumber as Result<number>),
   );
   test<Result<[number, number, number, number]>>(result);
 }
 
 {
-  const result = await Result.and<Result<[number, never], string>>(
-    () => ({ ok: true, value: Math.random() }),
-    () => ({ ok: false, error: "error" }),
+  const result = Result.and(
+    resultNumber,
+    resultNumber as Result<number>,
+    () => resultNumber,
+    () => resultNumber,
   );
-  test<Result<[number, number], string>>(result);
+  test<Result<[number, number, number, number]>>(result);
 }
 
 {
-  const result = await Result.and<ResultInstance<[number, never], string>>(
-    () => Promise.resolve(Result.ok(Math.random())),
-    () => Promise.resolve(Result.err("error")),
+  const result = Result.and(
+    () => ({ ok: true, value: Math.random() }),
+    () => ({ ok: false, error: "error" }),
   );
-  test<ResultInstance<[number, number], string>>(result);
+  test<Result<[number, unknown], string>>(result);
+}
+
+{
+  const result = Result.and(
+    () => ok(Math.random()),
+    () => err("error"),
+  );
+  test<ResultInstance<[number, unknown], string>>(result);
+}
+
+{
+  const result = await Result.and(
+    () => Promise.resolve(ok(Math.random())),
+    () => Promise.resolve(err("error")),
+  );
+  test<ResultInstance<[number, unknown], string>>(result);
 }
 
 {

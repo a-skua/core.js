@@ -96,7 +96,7 @@
 
 import type * as c from "./context.ts";
 import type { None, Option, Some } from "./option.ts";
-import type { OrFunction, OrPromise } from "./types.ts";
+import type { InferReturnType, OrFunction, OrPromise } from "./types.ts";
 
 /**
  * ```ts
@@ -238,7 +238,7 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
   {
     ok,
     err,
-    and,
+    and: (...results: never[]) => and(results),
     or,
     lazy,
     fromOption,
@@ -669,7 +669,31 @@ export interface ResultStatic {
    * assertEquals(b, err("is error"));
    * ```
    */
-  and: typeof and;
+  and<
+    T extends {
+      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+        ? (Awaited<R> extends Result<infer T, unknown> ? T : unknown)
+        : unknown;
+    },
+    E extends {
+      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+        ? (Awaited<R> extends Ok<unknown> ? never
+          : (Awaited<R> extends Result<unknown, infer E> ? E : unknown))
+        : unknown;
+    }[number],
+    Fn extends OrFunction<OrPromise<Result<T[number], E>>>,
+    Args extends [Fn, ...Fn[]],
+  >(
+    ...args: Args
+  ): InferReturnType<Args[number]> extends infer R
+    ? (Extract<R, Promise<unknown>> extends never
+      ? (R extends Result<unknown, unknown> ? InferResult<R, T, E> : unknown)
+      : Promise<
+        (Awaited<R> extends Result<unknown, unknown>
+          ? InferResult<Awaited<R>, T, E>
+          : unknown)
+      >)
+    : unknown;
 
   /**
    * @example `Result.or`
@@ -1047,59 +1071,32 @@ export function isErr<T, E>({ ok }: Result<T, E>) {
   return !ok;
 }
 
-async function and<
-  R extends Fn[number] extends (() => OrPromise<infer R>) | OrPromise<infer R>
-    ? (R extends ResultInstance<unknown, unknown> ? ResultInstance<T, E>
-      : (R extends Result<unknown, unknown> ? Result<T, E> : unknown))
-    : unknown,
-  Fn extends {
-    [K in keyof T]:
-      | OrPromise<Result<T[K], E>>
-      | (() => OrPromise<Result<T[K], E>>);
-  }[number][] = R extends ResultInstance<infer T, infer E>
-    ? (T extends unknown[] ? {
-        [K in keyof T]:
-          | OrPromise<ResultInstance<T[K], E>>
-          | (() => OrPromise<ResultInstance<T[K], E>>);
-      }
-      : never)
-    : (R extends Result<infer T, infer E> ? (T extends unknown[] ? {
-          [K in keyof T]:
-            | OrPromise<Result<T[K], E>>
-            | (() => OrPromise<Result<T[K], E>>);
+function and<T, E>(
+  results: OrFunction<OrPromise<Result<T, E>>>[],
+  i: number = 0,
+  values: T[] = new Array(results.length),
+): OrPromise<Result<T[], E>> {
+  for (; i < results.length; i++) {
+    const fn = results[i];
+    const result = typeof fn === "function" ? fn() : fn;
+
+    if (result instanceof Promise) {
+      return result.then((result) => {
+        if (!result.ok) {
+          return result;
         }
-        : never)
-      : never),
-  T extends unknown[] = ({
-    [K in keyof Fn]: Fn[K] extends
-      OrPromise<infer R> | (() => OrPromise<infer R>)
-      ? (R extends Ok<unknown> ? AndT<R> : never)
-      : never;
-  }),
-  E = ({
-    [K in keyof Fn]: Fn[K] extends
-      OrPromise<infer R> | (() => OrPromise<infer R>)
-      ? (R extends ResultInstance<unknown, infer E> ? AndE<R, E>
-        : (R extends Err<infer E> ? AndE<R, E> : unknown))
-      : unknown;
-  })[number],
->(
-  ...fn: Fn
-): Promise<R> {
-  const values: T[number][] = new Array(fn.length);
-  for (let i = 0; i < fn.length; i++) {
-    const f = fn[i];
-    const p: OrPromise<Result<T[number], E>> = typeof f === "function"
-      ? f()
-      : f;
-    const result = p instanceof Promise ? await p : p;
-    if (result.ok) {
-      values[i] = result.value;
-    } else {
-      return result as R;
+
+        values[i] = result.value;
+        return and(results, i + 1, values);
+      });
     }
+
+    if (!result.ok) {
+      return result;
+    }
+    values[i] = result.value;
   }
-  return ok(values) as never;
+  return ok(values);
 }
 
 async function or<
