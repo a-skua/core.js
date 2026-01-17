@@ -82,14 +82,14 @@ Deno.test("OptionInstance", async (t) => {
     {
       const tests: [
         OptionInstance<number>,
-        (n: number) => Option<unknown> & OptionInstance<unknown>,
+        (n: number) => OptionInstance<number | string>,
         Option<unknown>,
       ][] = [
-        [Option.some(1), (n) => Option.some(n + 1), Option.some(2)],
-        [Option.some(1), () => Option.none(), Option.none()],
-        [Option.none(), (n) => Option.some(n + 1), Option.none()],
-        [Option.some(1), (n) => Option.some(`${n}`), Option.some("1")],
-        [Option.none(), (n) => Option.some(`${n}`), Option.none()],
+        [some(1), (n) => some(n + 1), some(2)],
+        [some(1), () => none(), none()],
+        [none(), (n) => some(n + 1), none()],
+        [some(1), (n) => some(`${n}`), some("1")],
+        [none(), (n) => some(`${n}`), none()],
       ] as const;
 
       for (const [option, fn, expected] of tests) {
@@ -102,7 +102,7 @@ Deno.test("OptionInstance", async (t) => {
     {
       const tests: [
         OptionInstance<number>,
-        () => Option<unknown> & OptionInstance<unknown>,
+        () => OptionInstance<string | number>,
         Option<unknown>,
       ][] = [
         [some(1), () => some(2), some(2)],
@@ -121,25 +121,30 @@ Deno.test("OptionInstance", async (t) => {
   });
 
   await t.step("(OptionInstance).or", async (t) => {
-    const orElse = () => Option.some(0);
-    const tests: [OptionInstance<number>, Option<number>][] = [
-      [Option.some(1), Option.some(1)],
-      [Option.none(), Option.some(0)],
+    const tests: [
+      OptionInstance<number>,
+      () => OptionInstance<number>,
+      Option<number>,
+    ][] = [
+      [none(), () => some(0), some(0)],
     ];
 
-    for (const [option, expected] of tests) {
+    for (const [option, orElse, expected] of tests) {
       await t.step(`${option}.or(${orElse}) => ${expected}`, () => {
         assertEquals(option.or(orElse), expected);
       });
     }
     {
-      const orElse = () => some(0);
-      const tests: [OptionInstance<number>, Option<number>][] = [
-        [some(1), some(1)],
-        [none(), some(0)],
+      const tests: [
+        OptionInstance<number>,
+        () => OptionInstance<number>,
+        Option<number>,
+      ][] = [
+        [some(1), () => some(0), some(1)],
+        [none(), () => some(0), some(0)],
       ];
 
-      for (const [option, expected] of tests) {
+      for (const [option, orElse, expected] of tests) {
         await t.step(`${option}.or(${orElse}) => ${expected}`, () => {
           assertEquals(option.or(orElse), expected);
         });
