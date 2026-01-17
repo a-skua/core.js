@@ -7,7 +7,6 @@
     "./result": "./result.ts",
     "./option": "./option.ts",
     "./brand": "./brand.ts",
-    "./date": "./date.ts",
     "./utility": "./types.ts"
   },
   "publish": {
