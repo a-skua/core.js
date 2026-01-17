@@ -13,9 +13,9 @@ import {
 } from "./result.ts";
 import { none, type Option, some } from "./option.ts";
 
-const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
-  n,
-) => n > 0.5 ? Result.ok(n) : Result.err(new Error("n is too small")));
+const resultNumber: ResultInstance<number> = ok(Math.random())
+  .filter((n) => n > 0.5)
+  .or((n) => err(new Error(`${n} is too small`)));
 
 {
   const result = { ok: true as const, value: 1 };
@@ -82,9 +82,25 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 }
 
 {
+  const andThen = (): Result<number, string> => ({ ok: false, error: "error" });
   const result = resultNumber
-    .and(() => ({ ok: false, error: "error" }));
-  test<Result<never, string | Error>>(result);
+    .and(andThen);
+  test<Result<number, string | Error>>(result);
+}
+
+{
+  const result = resultNumber
+    .and<number, string, Result<number, string>>(() => ({
+      ok: false,
+      error: "error",
+    }));
+  test<Result<number, string | Error>>(result);
+}
+
+{
+  const result = resultNumber
+    .and<number, string>(() => err("error"));
+  test<ResultInstance<number, string | Error>>(result);
 }
 
 {
@@ -101,7 +117,7 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .and<Result<number, string>>((n) => ({
+    .and<number, string, Result<number, string>>((n) => ({
       ok: false,
       error: n.toFixed(2),
     }));
@@ -110,31 +126,33 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .and(() => Result.ok(1));
+    .and<number, string>((n) => err(n.toFixed(2)));
+  test<ResultInstance<number, string | Error>>(result);
+}
+
+{
+  const result = resultNumber.and(() => ok(1));
   test<ResultInstance<number>>(result);
 }
 
 {
-  const result = resultNumber
-    .and(() => Result.err("error"));
+  const result = resultNumber.and(() => err("error"));
   test<ResultInstance<never, string | Error>>(result);
 }
 
 {
-  const result = resultNumber
-    .and((n) => Result.ok(n + 1));
+  const result = resultNumber.and((n) => ok(n + 1));
   test<ResultInstance<number>>(result);
 }
 
 {
-  const result = resultNumber
-    .and((n) => Result.err(n));
+  const result = resultNumber.and((n) => err(n));
   test<ResultInstance<never, number | Error>>(result);
 }
 
 {
   const result = resultNumber
-    .and<Result<number, string>>((n) => Result.err(n.toFixed(2)));
+    .and<number, string>((n) => Result.err(n.toFixed(2)));
   test<Result<number, string | Error>>(result);
 }
 {
@@ -151,14 +169,14 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .and<Result<number, string>>(() => ok(1));
-  test<Result<number, string | Error>>(result);
+    .and<number, string>(() => ok(1));
+  test<ResultInstance<number, string | Error>>(result);
 }
 
 {
   const result = resultNumber
-    .and<Result<number, string>>(() => err("error"));
-  test<Result<number, string | Error>>(result);
+    .and<number, string>(() => err("error"));
+  test<ResultInstance<number, string | Error>>(result);
 }
 
 {
@@ -175,8 +193,17 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .or<Result<string, string>>(() => ({ ok: false, error: "error" }));
+    .or<string, string, Result<string, string>>(() => ({
+      ok: false,
+      error: "error",
+    }));
   test<Result<number | string, string>>(result);
+}
+
+{
+  const result = resultNumber
+    .or<string, string>(() => err("error"));
+  test<ResultInstance<number | string, string>>(result);
 }
 
 {
@@ -193,8 +220,8 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .or<Result<string, string>>(() => Result.err("error"));
-  test<Result<number | string, string>>(result);
+    .or<string, string>(() => err("error"));
+  test<ResultInstance<number | string, string>>(result);
 }
 
 {
@@ -223,8 +250,8 @@ const resultNumber: ResultInstance<number> = Result.ok(Math.random()).and((
 
 {
   const result = resultNumber
-    .or<Result<string, string>>((e) => Result.err(e.message));
-  test<Result<number | string, string>>(result);
+    .or<string, string>((e) => err(e.message));
+  test<ResultInstance<number | string, string>>(result);
 }
 
 {
@@ -571,8 +598,20 @@ try {
 }
 
 {
+  const isOne = (n: number): n is 1 => n === 1;
+  const result = ok(1).filter(isOne);
+  test<ResultInstance<1, number>>(result);
+}
+
+{
   const result = ok(1).filter((n) => n > 0);
   test<ResultInstance<number, number>>(result);
+}
+
+{
+  const isOne = (n: number): n is 1 => n === 1;
+  const result = ok(1).filter(isOne, () => "ERR!");
+  test<ResultInstance<1, string>>(result);
 }
 
 {

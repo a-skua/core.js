@@ -21,10 +21,10 @@ Result(foo());
 
 Result({ ok: false, error: "error" })
   .map((n) => n + 1)
-  .and<ResultInstance<string, number>>(() => err(-1))
+  .and<string, number>(() => err(-1))
   .and(() => ok(1))
-  .and<ResultInstance<string, number>>(() => err(-1))
-  .and<ResultInstance<number, string>>(() => ok(1))
+  .and<string, number>(() => err(-1))
+  .and<number, string>(() => ok(1))
   .and((n) => n > 0 ? ok(n) : err(-1))
   .and(() => ok(0))
   .lazy()
@@ -50,7 +50,7 @@ ok(null)
   .or(() => ok(""))
   .or(() => err(""))
   .or(() => ok(1))
-  .or<ResultInstance<string, number>>(() => err(-1))
+  .or<string, number>(() => err(-1))
   .lazy()
   .eval();
 

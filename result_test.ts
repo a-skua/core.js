@@ -95,9 +95,9 @@ Deno.test("ResultInstance", async (t) => {
         (n: number) => Result<number, string>,
         Result<number, string>,
       ][] = [
-        [Result.ok(1), (n) => Result.ok(n + 1), Result.ok(2)],
-        [Result.ok(1), () => Result.err("error"), Result.err("error")],
-        [Result.err("error"), (n) => Result.ok(n + 1), Result.err("error")],
+        [ok(1), (n) => ok(n + 1), ok(2)],
+        [ok(1), () => err("error"), err("error")],
+        [err("error"), (n) => ok(n + 1), err("error")],
       ];
 
       for (const [result, fn, expected] of tests) {
@@ -127,32 +127,34 @@ Deno.test("ResultInstance", async (t) => {
   });
 
   await t.step("(ResultInstance).or", async (t) => {
-    const orElse = (e: string) => Result.ok(e + "!!");
-    const tests: [
-      ResultInstance<number, string>,
-      ResultInstance<number | string, string>,
-    ][] = [
-      [Result.ok(1), Result.ok(1)],
-      [Result.err("error"), Result.ok("error!!")],
-    ];
+    {
+      const tests: [
+        ResultInstance<number, string>,
+        (e: string) => ResultInstance<string>,
+        ResultInstance<number | string, Error>,
+      ][] = [
+        [ok(1), (e: string) => ok(e + "!!"), ok(1)],
+        [err("error"), (e: string) => ok(e + "!!"), ok("error!!")],
+      ];
 
-    for (const [result, expected] of tests) {
-      await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
-        assertEquals(result.or(orElse), expected);
-      });
+      for (const [result, orElse, expected] of tests) {
+        await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
+          assertEquals(result.or(orElse), expected);
+        });
+      }
     }
 
     {
-      const orElse = () => Result.ok(-1);
       const tests: [
         ResultInstance<number, string>,
+        () => ResultInstance<number>,
         ResultInstance<number, string | Error>,
       ][] = [
-        [ok(1), ok(1)],
-        [err("error"), ok(-1)],
+        [ok(1), () => ok(-1), ok(1)],
+        [err("error"), () => ok(-1), ok(-1)],
       ];
 
-      for (const [result, expected] of tests) {
+      for (const [result, orElse, expected] of tests) {
         await t.step(`${result}.or(${orElse}) => ${expected}`, () => {
           assertEquals(result.or(orElse), expected);
         });
@@ -181,43 +183,57 @@ Deno.test("ResultInstance", async (t) => {
   });
 
   await t.step("(ResultInstance).filter", async (t) => {
-    const tests: [
-      ResultInstance<number, number | string | Error>,
-      (n: number) => boolean,
-      ((n?: number) => Error) | undefined,
-      Result<number, number | string | Error>,
-    ][] = [
-      [ok(1), (n) => n > 0, , ok(1)],
-      [ok(1), (n) => n > 0, () => new Error("Result Error"), ok(1)],
-      [ok(0), (n) => n > 0, , err(0)],
-      [
-        ok(0),
-        (n) => n > 0,
-        () => new Error("Result Error"),
-        err(new Error("Result Error")),
-      ],
-      [
-        ok(0),
-        (n) => n > 0,
-        (n) => new Error(`Result Error: ${n}`),
-        err(new Error("Result Error: 0")),
-      ],
-      [err("error"), (n) => n > 0, , err("error")],
-      [
-        err("error"),
-        (n) => n > 0,
-        () => new Error("Result Error"),
-        err("error"),
-      ],
-    ];
+    {
+      const tests: [
+        ResultInstance<number, number | string | Error>,
+        (n: number) => boolean,
+        Result<number, number | string | Error>,
+      ][] = [
+        [ok(1), (n) => n > 0, ok(1)],
+        [ok(0), (n) => n > 0, err(0)],
+        [err("error"), (n) => n > 0, err("error")],
+      ];
 
-    for (const [result, fn, err, expected] of tests) {
-      await t.step(`${result}.filter(${fn}, ${err}) => ${expected}`, () => {
-        assertEquals(
-          result.filter(fn, err),
-          expected,
-        );
-      });
+      for (const [result, fn, expected] of tests) {
+        await t.step(`${result}.filter(${fn}) => ${expected}`, () => {
+          assertEquals(result.filter(fn), expected);
+        });
+      }
+    }
+
+    {
+      const tests: [
+        ResultInstance<number, number | string | Error>,
+        (n: number) => boolean,
+        (n: number) => Error,
+        Result<number, number | string | Error>,
+      ][] = [
+        [ok(1), (n) => n > 0, () => new Error("Result Error"), ok(1)],
+        [
+          ok(0),
+          (n) => n > 0,
+          () => new Error("Result Error"),
+          err(new Error("Result Error")),
+        ],
+        [
+          ok(0),
+          (n) => n > 0,
+          (n) => new Error(`Result Error: ${n}`),
+          err(new Error("Result Error: 0")),
+        ],
+        [
+          err("error"),
+          (n) => n > 0,
+          () => new Error("Result Error"),
+          err("error"),
+        ],
+      ];
+
+      for (const [result, fn, onErr, expected] of tests) {
+        await t.step(`${result}.filter(${fn}, ${onErr}) => ${expected}`, () => {
+          assertEquals(result.filter(fn, onErr), expected);
+        });
+      }
     }
   });
 
