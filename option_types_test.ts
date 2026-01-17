@@ -692,13 +692,37 @@ try {
     () => Promise.resolve(optionNumber),
     () => some("hello"),
   );
+  test<OptionInstance<number | string>>(option);
+}
+
+{
+  const option = await Option.or(
+    optionNumber,
+    Promise.resolve(optionNumber as Option<number>),
+    () => optionNumber,
+    () => Promise.resolve(optionNumber),
+    () => some("hello"),
+  );
   test<Option<number | string>>(option);
 }
 
 {
   const option = Option.or(
     optionNumber,
+    none(),
     () => optionNumber,
+    () => none(),
+    () => some("hello"),
+  );
+  test<OptionInstance<number | string>>(option);
+}
+
+{
+  const option = Option.or(
+    optionNumber,
+    none(),
+    () => optionNumber as Option<number>,
+    () => none(),
     () => some("hello"),
   );
   test<Option<number | string>>(option);

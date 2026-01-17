@@ -101,7 +101,7 @@ Deno.bench("[...ok(1)]", () => {
   [...ok(1)];
 });
 
-Deno.bench("Result.and(...)", async () => {
+Deno.bench("await Result.and(...)", async () => {
   await Result.and(
     ok(1),
     Promise.resolve(ok(2)),
@@ -110,13 +110,115 @@ Deno.bench("Result.and(...)", async () => {
   );
 });
 
-Deno.bench("Result.or(...)", async () => {
+Deno.bench("Result.and(...)", () => {
+  Result.and(
+    ok(1),
+    ok(2),
+    () => ok(3),
+    () => ok(4),
+  );
+});
+
+Deno.bench("await Result.and(...[len=1000])", async (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 4) {
+        case 1:
+          return ok(i);
+        case 2:
+          return Promise.resolve(ok(i));
+        case 3:
+          return () => ok(i);
+        default:
+          return () => Promise.resolve(ok(i));
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  await Result.and(...args as [Arg, ...Arg[]]);
+  t.end();
+});
+
+Deno.bench("Result.and(...[len=1000])", (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 2) {
+        case 1:
+          return ok(i);
+        default:
+          return () => ok(i);
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  Result.and(...args as [Arg, ...Arg[]]);
+  t.end();
+});
+
+Deno.bench("await Result.or(...)", async () => {
   await Result.or(
     err(1),
     Promise.resolve(err(2)),
     () => err(3),
     () => Promise.resolve(err(4)),
   );
+});
+
+Deno.bench("Result.or(...)", () => {
+  Result.or(
+    err(1),
+    err(2),
+    () => err(3),
+    () => err(4),
+  );
+});
+
+Deno.bench("await Result.or(...[len=1000])", async (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 4) {
+        case 1:
+          return err(i);
+        case 2:
+          return Promise.resolve(err(i));
+        case 3:
+          return () => err(i);
+        default:
+          return () => Promise.resolve(err(i));
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  await Result.or(...args as [Arg, ...Arg[]]);
+  t.end();
+});
+
+Deno.bench("Result.or(...[len=1000])", (t) => {
+  const args = Array.from(
+    { length: 1000 },
+    (_, i) => {
+      switch (i % 2) {
+        case 1:
+          return err(i);
+        default:
+          return () => err(i);
+      }
+    },
+  );
+  type Arg = typeof args[number];
+
+  t.start();
+  Result.or(...args as [Arg, ...Arg[]]);
+  t.end();
 });
 
 Deno.bench("Result.fromOption(some(0))", () => {
@@ -159,49 +261,4 @@ Deno.bench("for (const v of Ok(1))", () => {
 
 Deno.bench("Array.from(Ok(1))", () => {
   Array.from(Result.ok(1));
-});
-
-Deno.bench("Result.and(...[len=1000])", async (t) => {
-  const args = Array.from(
-    { length: 1000 },
-    (_, i) => {
-      switch (i % 4) {
-        case 1:
-          return Result.ok(i);
-        case 2:
-          return Promise.resolve(Result.ok(i));
-        case 3:
-          return () => Result.ok(i);
-        default:
-          return () => Promise.resolve(Result.ok(i));
-      }
-    },
-  );
-
-  t.start();
-  await Result.and(...args);
-  t.end();
-});
-
-Deno.bench("Result.or(...[len=1000])", async (t) => {
-  const args = Array.from(
-    { length: 1000 },
-    (_, i) => {
-      switch (i % 4) {
-        case 1:
-          return Result.err(i);
-        case 2:
-          return Promise.resolve(Result.err(i));
-        case 3:
-          return () => Result.err(i);
-        default:
-          return () => Promise.resolve(Result.err(i));
-      }
-    },
-  );
-  type Arg = typeof args[number];
-
-  t.start();
-  await Result.or(...args as [Arg, ...Arg[]]);
-  t.end();
 });

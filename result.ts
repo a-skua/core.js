@@ -96,7 +96,7 @@
 
 import type * as c from "./context.ts";
 import type { None, Option, Some } from "./option.ts";
-import type { InferReturnType, OrFunction, OrPromise } from "./types.ts";
+import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
 
 /**
  * ```ts
@@ -671,12 +671,12 @@ export interface ResultStatic {
    */
   and<
     T extends {
-      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer R
         ? (Awaited<R> extends Result<infer T, unknown> ? T : unknown)
         : unknown;
     },
     E extends {
-      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer R
         ? (Awaited<R> extends Ok<unknown> ? never
           : (Awaited<R> extends Result<unknown, infer E> ? E : unknown))
         : unknown;
@@ -685,7 +685,7 @@ export interface ResultStatic {
     Args extends [Fn, ...Fn[]],
   >(
     ...args: Args
-  ): InferReturnType<Args[number]> extends infer R
+  ): InferReturnTypeOr<Args[number]> extends infer R
     ? (Extract<R, Promise<unknown>> extends never
       ? (R extends Result<unknown, unknown> ? InferResult<R, T, E> : unknown)
       : Promise<
@@ -719,13 +719,13 @@ export interface ResultStatic {
    */
   or<
     T extends {
-      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer R
         ? (Awaited<R> extends Err<unknown> ? never
           : (Awaited<R> extends Result<infer T, unknown> ? T : unknown))
         : unknown;
     }[number],
     E extends {
-      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer R
         ? (Awaited<R> extends Ok<unknown> ? never
           : (Awaited<R> extends Result<unknown, infer E> ? E : unknown))
         : unknown;
@@ -734,7 +734,7 @@ export interface ResultStatic {
     Args extends [Fn, ...Fn[]],
   >(
     ...args: Args
-  ): InferReturnType<Args[number]> extends infer R
+  ): InferReturnTypeOr<Args[number]> extends infer R
     ? (Extract<R, Promise<unknown>> extends never
       ? (R extends Result<unknown, unknown> ? InferResult<R, T, E> : unknown)
       : Promise<
@@ -1125,22 +1125,22 @@ function and<T, E>(
 }
 
 function or<T, E>(
-    results: OrFunction<OrPromise<Result<T, E>>>[],
-    last?: OrPromise<Result<T, E>>,
+  results: OrFunction<OrPromise<Result<T, E>>>[],
+  last?: OrPromise<Result<T, E>>,
 ): OrPromise<Result<T, E>> {
   for (let i = 0; i < results.length; i++) {
     const fn = results[i];
     last = typeof fn === "function" ? fn() : fn;
 
-      if (last instanceof Promise) {
-          return last.then((last) => {
-              if (last.ok) return last;
+    if (last instanceof Promise) {
+      return last.then((last) => {
+        if (last.ok) return last;
 
-              return or(results.slice(i + 1), last);
-          });
-      }
+        return or(results.slice(i + 1), last);
+      });
+    }
 
-      if (last.ok) return last;
+    if (last.ok) return last;
   }
   return last!;
 }

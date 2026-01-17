@@ -66,7 +66,7 @@ function foo(): Result<number> {
   return ok<number>(1);
 }
 
-Result.or<Result<number | string, number | string>>(
+Result.or(
   ok(1),
   err(-1),
 );
@@ -91,7 +91,7 @@ Result.and(
   foo(),
 );
 
-Result.and<Result<[number, number], Error | number>>(
+Result.and(
   ok(1),
   err(-1),
 );

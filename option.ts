@@ -90,7 +90,7 @@
 
 import type * as c from "./context.ts";
 import type { Err, Ok, Result } from "./result.ts";
-import type { OrFunction, OrPromise } from "./types.ts";
+import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
 
 /**
  * ```ts
@@ -641,22 +641,21 @@ export type OptionStatic = {
    */
   and<
     T extends {
-      [K in keyof Args]: Args[K] extends OrFunction<infer O>
-        ? (Awaited<O> extends Option<infer T> ? T : never)
-        : never;
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer O
+        ? (Awaited<O> extends Option<infer T> ? T : unknown)
+        : unknown;
     },
-    Fn extends OrFunction<OrPromise<Option<T[number]>>> = OrFunction<
-      OrPromise<
-        Option<T[number]> | OptionInstance<T[number]>
-      >
-    >,
-    Args extends [Fn, ...Fn[]] = [Fn, ...Fn[]],
+    Fn extends OrFunction<OrPromise<Option<T[number]>>>,
+    Args extends [Fn, ...Fn[]],
   >(
     ...args: Args
-  ): Args[number] extends OrFunction<infer O>
-    ? (O extends Promise<infer O>
-      ? Promise<O extends Option<unknown> ? InferOption<O, T> : unknown>
-      : (O extends Option<unknown> ? InferOption<O, T> : unknown))
+  ): InferReturnTypeOr<Args[number]> extends infer O
+    ? (Extract<O, Promise<unknown>> extends never
+      ? (O extends Option<unknown> ? InferOption<O, T> : unknown)
+      : Promise<
+        (Awaited<O> extends Option<unknown> ? InferOption<Awaited<O>, T>
+          : unknown)
+      >)
     : unknown;
 
   /**
@@ -706,18 +705,22 @@ export type OptionStatic = {
    */
   or<
     T extends {
-      [K in keyof Args]: Args[K] extends OrFunction<infer O>
-        ? (Awaited<O> extends Option<infer T> ? T : never)
-        : never;
+      [K in keyof Args]: InferReturnTypeOr<Args[K]> extends infer O
+        ? (Awaited<O> extends None ? never
+          : (Awaited<O> extends Option<infer T> ? T : unknown))
+        : unknown;
     }[number],
-    Fn extends OrFunction<OrPromise<Option<T>>> = OrFunction<
-      OrPromise<Option<T> | OptionInstance<T>>
-    >,
-    Args extends [Fn, ...Fn[]] = [Fn, ...Fn[]],
+    Fn extends OrFunction<OrPromise<Option<T>>>,
+    Args extends [Fn, ...Fn[]],
   >(
     ...args: Args
-  ): Args[number] extends OrFunction<infer O>
-    ? (O extends Promise<infer O> ? Promise<O> : O)
+  ): InferReturnTypeOr<Args[number]> extends infer O
+    ? (Extract<O, Promise<unknown>> extends never
+      ? (O extends Option<unknown> ? InferOption<O, T> : unknown)
+      : Promise<
+        (Awaited<O> extends Option<unknown> ? InferOption<Awaited<O>, T>
+          : unknown)
+      >)
     : unknown;
 
   /**
@@ -1116,7 +1119,7 @@ function or<T>(
     if (last.some) return last;
   }
 
-  return last as never;
+  return last!;
 }
 
 function lazy<
