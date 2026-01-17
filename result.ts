@@ -239,7 +239,7 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
     ok,
     err,
     and: (...results: never[]) => and(results),
-    or,
+    or: (...results: never[]) => or(results),
     lazy,
     fromOption,
     try: tryCatch,
@@ -717,7 +717,32 @@ export interface ResultStatic {
    * assertEquals(b, ok(4));
    * ```
    */
-  or: typeof or;
+  or<
+    T extends {
+      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+        ? (Awaited<R> extends Err<unknown> ? never
+          : (Awaited<R> extends Result<infer T, unknown> ? T : unknown))
+        : unknown;
+    }[number],
+    E extends {
+      [K in keyof Args]: InferReturnType<Args[K]> extends infer R
+        ? (Awaited<R> extends Ok<unknown> ? never
+          : (Awaited<R> extends Result<unknown, infer E> ? E : unknown))
+        : unknown;
+    }[number],
+    Fn extends OrFunction<OrPromise<Result<T, E>>>,
+    Args extends [Fn, ...Fn[]],
+  >(
+    ...args: Args
+  ): InferReturnType<Args[number]> extends infer R
+    ? (Extract<R, Promise<unknown>> extends never
+      ? (R extends Result<unknown, unknown> ? InferResult<R, T, E> : unknown)
+      : Promise<
+        (Awaited<R> extends Result<unknown, unknown>
+          ? InferResult<Awaited<R>, T, E>
+          : unknown)
+      >)
+    : unknown;
 
   /**
    * @example `Result.lazy`
@@ -1099,41 +1124,25 @@ function and<T, E>(
   return ok(values);
 }
 
-async function or<
-  R extends Fn[number] extends (() => infer R) | infer R
-    ? (Awaited<R> extends ResultInstance<infer _, infer _>
-      ? ResultInstance<T, E>
-      : Result<T, E>)
-    : never,
-  F extends
-    | OrPromise<Result<T, E>>
-    | (() => OrPromise<Result<T, E>>) =
-      | OrPromise<R>
-      | (() => OrPromise<R>),
-  Fn extends [F, ...F[]] = [F, ...F[]],
-  T extends unknown = ({
-    [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<unknown, unknown> ? OrT<Awaited<R>, never>
-        : never)
-      : never;
-  })[number],
-  E extends unknown = ({
-    [K in keyof Fn]: Fn[K] extends (() => infer R) | infer R
-      ? (Awaited<R> extends Result<unknown, unknown> ? OrE<Awaited<R>> : never)
-      : never;
-  })[number],
->(...fn: Fn): Promise<R> {
-  let last;
-  for (let i = 0; i < fn.length; i++) {
-    const f = fn[i];
-    const p: OrPromise<Result<T, E>> = typeof f === "function" ? f() : f;
-    const result = p instanceof Promise ? await p : p;
-    if (result.ok) {
-      return result as R;
-    }
-    last = result;
+function or<T, E>(
+    results: OrFunction<OrPromise<Result<T, E>>>[],
+    last?: OrPromise<Result<T, E>>,
+): OrPromise<Result<T, E>> {
+  for (let i = 0; i < results.length; i++) {
+    const fn = results[i];
+    last = typeof fn === "function" ? fn() : fn;
+
+      if (last instanceof Promise) {
+          return last.then((last) => {
+              if (last.ok) return last;
+
+              return or(results.slice(i + 1), last);
+          });
+      }
+
+      if (last.ok) return last;
   }
-  return last as R;
+  return last!;
 }
 
 function lazy<

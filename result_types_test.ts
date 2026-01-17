@@ -507,20 +507,71 @@ try {
 }
 
 {
-  const result = await Result.or<
-    ResultInstance<number | "1" | "2" | "3" | "4", Error | "error">
-  >(
+  const result = await Result.and(
+    () => Promise.resolve(ok(Math.random())),
+    () => Promise.resolve(err("error")),
+  );
+  test<ResultInstance<[number, unknown], string>>(result);
+}
+
+{
+  const result = Result.or(
+    resultNumber,
+    resultNumber as Result<number>,
+    () => resultNumber,
+    () => resultNumber,
+    ok("1" as const),
+    ok("2" as const),
+    () => ok("3" as const),
+    () => ok("4" as const),
+    () => err("error"),
+  );
+  test<Result<number | "1" | "2" | "3" | "4", Error | string>>(result);
+}
+
+{
+  const result = await Result.or(
     resultNumber,
     Promise.resolve(resultNumber),
     () => resultNumber,
     () => Promise.resolve(resultNumber),
-    Result.ok("1"),
-    Promise.resolve(Result.ok("2")),
-    () => Result.ok("3"),
-    () => Promise.resolve(Result.ok("4")),
-    () => Result.err("error"),
+    ok("1" as const),
+    Promise.resolve(ok("2" as const)),
+    () => ok("3" as const),
+    () => Promise.resolve(ok("4" as const) as Result<"4">),
+    () => err("error"),
   );
-  test<ResultInstance<number | string, Error | string>>(result);
+  test<Result<number | "1" | "2" | "3" | "4", Error | string>>(result);
+}
+
+{
+  const result = Result.or(
+    resultNumber,
+    resultNumber,
+    () => resultNumber,
+    () => resultNumber,
+    ok("1" as const),
+    ok("2" as const),
+    () => ok("3" as const),
+    () => ok("4" as const),
+    () => err("error"),
+  );
+  test<ResultInstance<number | "1" | "2" | "3" | "4", Error | string>>(result);
+}
+
+{
+  const result = await Result.or(
+    resultNumber,
+    Promise.resolve(resultNumber),
+    () => resultNumber,
+    () => Promise.resolve(resultNumber),
+    ok("1" as const),
+    Promise.resolve(ok("2" as const)),
+    () => ok("3" as const),
+    () => Promise.resolve(ok("4" as const)),
+    () => err("error"),
+  );
+  test<ResultInstance<number | "1" | "2" | "3" | "4", Error | string>>(result);
 }
 
 {

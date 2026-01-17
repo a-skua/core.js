@@ -436,37 +436,90 @@ Deno.test("Result.and", async (t) => {
 });
 
 Deno.test("Result.or", async (t) => {
-  type Arg =
-    | Promise<Result<unknown, unknown>>
-    | Result<unknown, unknown>
-    | (() => Promise<Result<unknown, unknown>>)
-    | (() => Result<unknown, unknown>);
+  {
+    type Arg =
+      | Promise<Result<unknown, unknown>>
+      | Result<unknown, unknown>
+      | (() => Promise<Result<unknown, unknown>>)
+      | (() => Result<unknown, unknown>);
 
-  const tests: [[Arg, ...Arg[]], Result<unknown, unknown>][] = [
-    [[
-      Result.err("Error"),
-      Promise.resolve(Result.ok(1)),
-      () => Result.ok(2),
-      () => Result.ok(3),
-    ], Result.ok(1)],
-    [[
-      () => Result.err("Error"),
-      () => Result.ok(1),
-      Result.ok(2),
-      Promise.resolve(Result.ok(3)),
-    ], Result.ok(1)],
-    [[
-      Result.err("1"),
-      Promise.resolve(Result.err("2")),
-      () => Result.err("3"),
-      () => Promise.resolve(Result.err("4")),
-    ], Result.err("4")],
-  ];
+    const tests: [[Arg, ...Arg[]], Result<unknown, unknown>][] = [
+      [
+        [
+          err("Error"),
+          Promise.resolve(ok(1)),
+          () => ok(2),
+          () => ok(3),
+        ],
+        ok(1),
+      ],
+      [
+        [
+          () => err("Error"),
+          () => ok(1),
+          ok(2),
+          Promise.resolve(ok(3)),
+        ],
+        ok(1),
+      ],
+      [
+        [
+          err("1"),
+          Promise.resolve(err("2")),
+          () => err("3"),
+          () => Promise.resolve(err("4")),
+        ],
+        err("4"),
+      ],
+    ];
 
-  for (const [args, expected] of tests) {
-    await t.step(`Result.orElse(${args}) => ${expected}`, async () => {
-      assertEquals(await Result.or(...args), expected);
-    });
+    for (const [args, expected] of tests) {
+      await t.step(`await Result.orElse(${args}) => ${expected}`, async () => {
+        assertEquals(await Result.or(...args), expected);
+      });
+    }
+  }
+
+  {
+    type Arg =
+      | Result<unknown, unknown>
+      | (() => Result<unknown, unknown>);
+
+    const tests: [[Arg, ...Arg[]], Result<unknown, unknown>][] = [
+      [
+        [
+          err("Error"),
+          ok(1),
+          () => ok(2),
+          () => ok(3),
+        ],
+        ok(1),
+      ],
+      [
+        [
+          () => err("Error"),
+          () => ok(1),
+          ok(2),
+          ok(3),
+        ],
+        ok(1),
+      ],
+      [
+        [
+          err("1"),
+          err("2"),
+          () => err("3"),
+          () => err("4"),
+        ],
+        err("4"),
+      ],
+    ];
+
+    for (const [args, expected] of tests) {
+      await t.step(`Result.orElse(${args}) => ${expected}`, () => {
+        assertEquals(Result.or(...args), expected);
+      });
+    }
   }
 });
 
