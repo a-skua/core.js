@@ -3,7 +3,7 @@
  *
  * @example type {@link Option}
  * ```ts
- * import { some, none } from "@askua/core";
+ * import { some, none } from "@askua/core/option";
  *
  * const n = (count = 1): string => some(Math.random())
  *   .filter((n) => n >= 0.5)
@@ -16,7 +16,7 @@
  *
  * @example type {@link Result}
  * ```ts
- * import { ok, err } from "@askua/core";
+ * import { ok, err } from "@askua/core/result";
  *
  * const n = (count = 1): string => ok(Math.random())
  *   .filter((n) => n >= 0.5, (n) => `Generated number ${n} is less than 0.5 (on attempt #${count})`)
@@ -32,7 +32,7 @@
  *
  * @example type {@link Brand}
  * ```ts
- * import { Brand } from "@askua/core";
+ * import { Brand } from "@askua/core/brand";
  *
  * type Email = Brand<string, "Email">;
  * const Email = Brand<string, "Email">;

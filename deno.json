@@ -42,8 +42,8 @@
       "dependencies": [
         "check:format",
         "check:lint",
-        "check:version",
-        "tests"
+        "tests",
+        "check:version"
       ]
     }
   },
