@@ -72,7 +72,7 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 {
   const result = Result.err("error");
   test<Err<string>>(result);
-  test<ResultInstance<never, string>>(result);
+  test<ResultInstance<unknown, string>>(result);
 }
 
 {
@@ -616,7 +616,7 @@ try {
 
 {
   const result = ok(0) as ResultInstance<number>;
-  const a = result as InferOk<typeof result>;
+  const a = result as InferOk<typeof result, number, Error>;
   test<Ok<number>>(a);
   // test<Err<Error>>(a);
   test<Result<number>>(a);
@@ -625,7 +625,7 @@ try {
 
 {
   const result = ok(0) as Result<number>;
-  const a = result as InferOk<typeof result>;
+  const a = result as InferOk<typeof result, number, Error>;
   test<Ok<number>>(a);
   // test<Err<Error>>(a);
   test<Result<number>>(a);
@@ -634,7 +634,7 @@ try {
 
 {
   const result = err("error") as ResultInstance<number, string>;
-  const a = result as InferErr<typeof result>;
+  const a = result as InferErr<typeof result, number, string>;
   test<Err<string>>(a);
   // test<Ok<number>>(a);
   test<Result<number, string>>(a);
@@ -643,7 +643,7 @@ try {
 
 {
   const result = err("error") as Result<number, string>;
-  const a = result as InferErr<typeof result>;
+  const a = result as InferErr<typeof result, number, string>;
   test<Err<string>>(a);
   // test<Ok<number>>(a);
   test<Result<number, string>>(a);
@@ -778,7 +778,7 @@ try {
 
 {
   const result = ok(1) as ResultInstance<number>;
-  if (isOk(result)) test<ResultInstance<number, string>>(result);
+  if (isOk(result)) test<ResultInstance<number, Error>>(result);
 }
 
 {
@@ -788,7 +788,7 @@ try {
 
 {
   const result = err(1) as ResultInstance<string, number>;
-  if (isErr(result)) test<ResultInstance<number, number>>(result);
+  if (isErr(result)) test<ResultInstance<string, number>>(result);
 }
 
 {

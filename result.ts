@@ -119,7 +119,7 @@ export interface Ok<T> {
  *
  * @typeParam T value type
  */
-export type OkInstance<T> = Ok<T> & ResultContext<T, never>;
+export type OkInstance<T, E> = Ok<T> & ResultContext<T, E>;
 
 /**
  * Infer Ok type from Result or ResultInstance
@@ -132,9 +132,9 @@ export type OkInstance<T> = Ok<T> & ResultContext<T, never>;
  * const d: OkInstance<number> = c;
  * ```
  */
-export type InferOk<R extends Result<unknown, unknown>> = R extends
-  ResultContext<infer T, infer _> ? OkInstance<T>
-  : Ok<R extends Ok<infer T> ? T : never>;
+export type InferOk<R extends Result<T, E>, T, E> = R extends
+  ResultContext<infer T, infer E> ? OkInstance<T, E>
+  : Ok<R extends Ok<infer T> ? T : T>;
 
 /**
  * ```ts
@@ -157,7 +157,7 @@ export interface Err<E> {
  *
  * @typeParam E error type
  */
-export type ErrInstance<E> = Err<E> & ResultContext<never, E>;
+export type ErrInstance<T, E> = Err<E> & ResultContext<T, E>;
 
 /**
  * Infer Err type from Result or ResultInstance
@@ -170,9 +170,9 @@ export type ErrInstance<E> = Err<E> & ResultContext<never, E>;
  * const d: ErrInstance<string> = c;
  * ```
  */
-export type InferErr<R extends Result<unknown, unknown>> = R extends
-  ResultContext<infer _, infer E> ? ErrInstance<E>
-  : Err<R extends Err<infer E> ? E : never>;
+export type InferErr<R extends Result<T, E>, T, E> = R extends
+  ResultContext<infer T, infer E> ? ErrInstance<T, E>
+  : Err<R extends Err<infer E> ? E : E>;
 
 /**
  * Result is Object base type, Ok<T> and Err<E>.
@@ -268,8 +268,8 @@ export type ResultInstance<T, E = Error> = Result<T, E> & ResultContext<T, E>;
  * ```
  */
 export type ResultToInstance = {
-  <T, E = never>(ok: Ok<T>): InferOk<ResultInstance<T, E>>;
-  <T = never, E = never>(err: Err<E>): InferErr<ResultInstance<T, E>>;
+  <T, E = never>(ok: Ok<T>): InferOk<ResultInstance<T, E>, T, E>;
+  <T = never, E = never>(err: Err<E>): InferErr<ResultInstance<T, E>, T, E>;
   <T = never, E = never>(result: Result<T, E>): ResultInstance<T, E>;
   <T, E>(result: { ok: boolean; value: T; error: E }): ResultInstance<T, E>;
 };
@@ -304,6 +304,7 @@ export interface ResultContext<T, E>
     c.Or<T>,
     c.Map<T>,
     c.Filter<T>,
+    c.Tee<T>,
     c.Unwrap<T>,
     c.Lazy<T> {
   /**
@@ -388,6 +389,29 @@ export interface ResultContext<T, E>
   ): ResultInstance<T, E | F>;
 
   /**
+   * @example `tee` method with {@link Ok}
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const a = ok(1).tee((n) => { count += 1; });
+   * assertEquals(a, ok(1));
+   * assertEquals(count, 1);
+   * ```
+   *
+   * @example `tee` method with {@link Err}
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const b = err("error").tee((n) => { count += 1; });
+   * assertEquals(b, err("error"));
+   * assertEquals(count, 0);
+   * ```
+   */
+  tee(callback: (value: T) => void): ResultInstance<T, E>;
+
+  /**
    * ```ts
    * import { assertEquals, assertThrows } from "@std/assert";
    *
@@ -458,7 +482,7 @@ export interface ResultLazyContext<
   Eval extends Result<T, E>,
   T = InferT<Eval>,
   E = InferE<Eval>,
-> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
+> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T>, c.Tee<T> {
   /**
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -590,6 +614,21 @@ export interface ResultLazyContext<
     isOk: (value: T) => OrPromise<IsOk>,
     err?: (value: T) => E2,
   ): InferResultLazy<Eval, T, T | E | E2>;
+
+  /**
+   * @example `tee` method
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const a = await ok(Promise.resolve(1)).lazy()
+   *   .tee((n) => { count += 1; })
+   *   .eval();
+   * assertEquals(a, ok(1));
+   * assertEquals(count, 1);
+   * ```
+   */
+  tee(callback: (value: T) => OrPromise<void>): InferResultLazy<Eval, T, E>;
 
   /**
    * ```ts
@@ -771,8 +810,8 @@ export interface ResultStatic {
    * assertEquals(b, err(null));
    * ```
    */
-  fromOption<T>(o: Some<T>): OkInstance<T>;
-  fromOption<T>(o: None): ErrInstance<null>;
+  fromOption<T>(o: Some<T>): OkInstance<T, null>;
+  fromOption<T>(o: None): ErrInstance<T, null>;
   fromOption<T>(o: Option<T>): ResultInstance<T, null>;
 
   /**
@@ -821,8 +860,13 @@ class _Ok<T, E> implements Ok<T>, ResultContext<T, E> {
     isOk: (v: T) => boolean,
     onErr = (v: T) => v,
   ) {
-    if (isOk(this.value)) return this as never;
-    return err(onErr(this.value));
+    if (isOk(this.value)) return this;
+    return err(onErr(this.value)) as never;
+  }
+
+  tee(callback: (value: T) => void) {
+    callback(this.value);
+    return this as never;
   }
 
   unwrap(): T {
@@ -864,7 +908,11 @@ class _Err<T, E> implements Err<E>, ResultContext<T, E> {
   }
 
   filter() {
-    return this as never;
+    return this;
+  }
+
+  tee() {
+    return this;
   }
 
   or<U>(orElse: (error: E) => U) {
@@ -901,7 +949,8 @@ type Op<T, E> =
   | {
     filter: (value: T) => OrPromise<boolean>;
     onErr: <D = never>(value: T) => D;
-  };
+  }
+  | { tee: (value: T) => OrPromise<void> };
 
 /**
  * impl Lazy<T, E, Eval>
@@ -911,27 +960,32 @@ class _Lazy<T, E, Eval extends Result<T, E>>
   readonly op: Op<T, E>[] = [];
 
   constructor(
-    readonly first: (() => Promise<Eval> | Eval) | Promise<Eval> | Eval,
+    readonly first: OrFunction<OrPromise<Eval>>,
   ) {
   }
 
-  and<U, V>(and: U): V {
+  and(and: unknown) {
     this.op.push({ and } as typeof this.op[number]);
     return this as never;
   }
 
-  or<U>(or: U) {
+  or(or: unknown) {
     this.op.push({ or } as typeof this.op[number]);
     return this as never;
   }
 
-  map<U>(map: U) {
+  map(map: unknown) {
     this.op.push({ map } as typeof this.op[number]);
     return this as never;
   }
 
-  filter<Op, E>(filter: Op, onErr: (v: T) => E = (v) => v as never) {
+  filter(filter: unknown, onErr = (v: T) => v) {
     this.op.push({ filter, onErr } as typeof this.op[number]);
+    return this as never;
+  }
+
+  tee(tee: unknown) {
+    this.op.push({ tee } as typeof this.op[number]);
     return this as never;
   }
 
@@ -970,6 +1024,13 @@ class _Lazy<T, E, Eval extends Result<T, E>>
           const e = op.onErr(result.value);
           result = err(e);
         }
+        continue;
+      }
+
+      if ("tee" in op && result.ok) {
+        const p = op.tee(result.value);
+        if (p instanceof Promise) await p;
+        continue;
       }
     }
     return result as Eval;
@@ -989,8 +1050,8 @@ class _Lazy<T, E, Eval extends Result<T, E>>
 /**
  * impl ToInstance
  */
-function toInstance<T, E>(result: Ok<T>): InferOk<ResultInstance<T, E>>;
-function toInstance<T, E>(result: Err<E>): InferErr<ResultInstance<T, E>>;
+function toInstance<T, E>(result: Ok<T>): InferOk<ResultInstance<T, E>, T, E>;
+function toInstance<T, E>(result: Err<E>): InferErr<ResultInstance<T, E>, T, E>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E>;
 function toInstance<T, E>(result: Ok<T> | Err<E>): ResultInstance<T, E>;
 function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
@@ -1015,7 +1076,7 @@ function toInstance<T, E>(result: Result<T, E>): ResultInstance<T, E> {
  * @typeParam T value type
  * @typeParam E error type
  */
-export function ok<T, E = Error>(value: T): InferOk<ResultInstance<T, E>> {
+export function ok<T, E = never>(value: T): InferOk<ResultInstance<T, E>, T, E> {
   return new _Ok(value);
 }
 
@@ -1035,14 +1096,14 @@ export function ok<T, E = Error>(value: T): InferOk<ResultInstance<T, E>> {
  */
 export function isOk<T, E>(
   result: ResultInstance<T, E>,
-): result is InferOk<typeof result>;
+): result is InferOk<typeof result, T, E>;
 /**
  * @typeParam T value type
  * @typeParam E error type
  */
 export function isOk<T, E>(
   result: Result<T, E>,
-): result is InferOk<typeof result>;
+): result is InferOk<typeof result, T, E>;
 export function isOk<T, E>({ ok }: Result<T, E>) {
   return ok;
 }
@@ -1062,9 +1123,9 @@ export function isOk<T, E>({ ok }: Result<T, E>) {
  * @typeParam T value type
  * @typeParam E error type
  */
-export function err<T = never, E = Error>(
+export function err<T, E>(
   error: E,
-): InferErr<ResultInstance<T, E>> {
+): InferErr<ResultInstance<T, E>, T, E> {
   return new _Err(error);
 }
 
@@ -1084,14 +1145,14 @@ export function err<T = never, E = Error>(
  */
 export function isErr<T, E>(
   result: ResultInstance<T, E>,
-): result is InferErr<typeof result>;
+): result is InferErr<typeof result, T, E>;
 /**
  * @typeParam T value type
  * @typeParam E error type
  */
 export function isErr<T, E>(
   result: Result<T, E>,
-): result is InferErr<typeof result>;
+): result is InferErr<typeof result, T, E>;
 export function isErr<T, E>({ ok }: Result<T, E>) {
   return !ok;
 }
@@ -1152,20 +1213,20 @@ function lazy<
   T = InferT<Eval>,
   E = InferE<Eval>,
 >(result: Fn): ResultLazyContext<Eval, T, E> {
-  return new _Lazy(result);
+  return new _Lazy<T, E, Eval>(result);
 }
 
 function fromOption<T>(o: Option<T>): ResultInstance<T, null> {
   return o.some ? ok(o.value) : err(null);
 }
 
-function tryCatch<T, E = unknown>(
-  fn: () => T | Promise<T>,
-): ResultInstance<T, E> | Promise<ResultInstance<T, E>> {
+function tryCatch<T, E>(
+  fn: () => OrPromise<T>,
+): OrPromise<ResultInstance<T, E>> {
   try {
     const v = fn();
     if (v instanceof Promise) {
-      return v.then((v) => ok(v)).catch((e) => err(e));
+      return v.then((v) => ok<T, E>(v)).catch((e) => err<T, E>(e));
     }
     return ok(v);
   } catch (e) {

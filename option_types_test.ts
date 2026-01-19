@@ -76,7 +76,7 @@ const optionNumber: OptionInstance<number> = some(Math.random())
 }
 
 {
-  const option = none();
+  const option = none<number>();
   test<None>(option);
   test<OptionInstance<number>>(option);
 }
@@ -529,7 +529,7 @@ try {
 }
 
 {
-  const option = none();
+  const option = none<number>();
   test<number | "0">(option.unwrap(() => "0"));
 }
 
@@ -816,7 +816,7 @@ try {
 
 {
   const option = some(1) as Option<number>;
-  const a = option as InferSome<typeof option>;
+  const a = option as InferSome<typeof option, number>;
   test<Some<number>>(a);
   // test<None>(a);
   test<Option<number>>(a);
@@ -825,7 +825,7 @@ try {
 
 {
   const option = none() as Option<number>;
-  const a = option as InferNone<typeof option>;
+  const a = option as InferNone<typeof option, number>;
   // test<Some<number>>(a);
   test<None>(a);
   test<Option<number>>(a);
@@ -834,7 +834,7 @@ try {
 
 {
   const option = some(1) as OptionInstance<number>;
-  const a = option as InferSome<typeof option>;
+  const a = option as InferSome<typeof option, number>;
   test<Some<number>>(a);
   // test<None>(a);
   test<Option<number>>(a);
@@ -843,7 +843,7 @@ try {
 
 {
   const option = none() as OptionInstance<number>;
-  const a = option as InferNone<typeof option>;
+  const a = option as InferNone<typeof option, number>;
   // test<Some<number>>(a);
   test<None>(a);
   test<Option<number>>(a);
@@ -958,13 +958,13 @@ try {
 }
 
 {
-  const option = none().filter((n) => n > 0).map((n) => n + 1);
+  const option = none<number>().filter((n) => n > 0).map((n) => n + 1);
   test<OptionInstance<number>>(option);
 }
 
 {
-  const option = none().filter((n) => n > 0);
-  test<OptionInstance<never>>(option);
+  const option = none<number>().filter((n) => n > 0);
+  test<OptionInstance<number>>(option);
 }
 
 {

@@ -24,7 +24,7 @@ export interface LazyContext<T> extends Context<T> {
  * assertEquals(b, none());
  * ```
  */
-export interface And<T> {
+export interface And<T> extends Context<T> {
   and<U>(andThen: (value: T) => Context<U>): Context<U>;
 }
 
@@ -42,7 +42,7 @@ export interface And<T> {
  * assertEquals(option, some(0));
  * ```
  */
-export interface Or<T> {
+export interface Or<T> extends Context<T> {
   or<U>(orElse: () => Context<U>): Context<T | U>;
 }
 
@@ -63,7 +63,7 @@ export interface Or<T> {
  * assertEquals(b, none());
  * ```
  */
-export interface Map<T> {
+export interface Map<T> extends Context<T> {
   map<U>(then: (value: T) => U): Context<U>;
 }
 
@@ -81,9 +81,24 @@ export interface Map<T> {
  * assertEquals(b, none());
  * ```
  */
-export interface Filter<T> {
+export interface Filter<T> extends Context<T> {
   /** */
   filter(then: (value: T) => boolean): Context<T>;
+}
+
+/**
+ * ## Context Tee
+ *
+ * ```ts
+ * import { assertEquals } from "@std/assert";
+ * import { some, none } from "@askua/core/option";
+ *
+ * const a = some(1).tee((n) => console.log(`Value is: ${n}`));
+ * assertEquals(a, some(1));
+ * ```
+ */
+export interface Tee<T> extends Context<T> {
+  tee(then: (value: T) => void): Context<T>;
 }
 
 /**
@@ -103,7 +118,7 @@ export interface Filter<T> {
  * assertEquals(b, 0);
  * ```
  */
-export interface Unwrap<T> {
+export interface Unwrap<T> extends Context<T> {
   unwrap<U>(orElse: () => U): T | U;
   unwrap(): T;
 }
@@ -125,6 +140,6 @@ export interface Unwrap<T> {
  *  assertEquals(a, some(2));
  *  ```
  */
-export interface Lazy<T> {
+export interface Lazy<T> extends Context<T> {
   lazy(): LazyContext<T>;
 }

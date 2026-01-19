@@ -1,32 +1,36 @@
 /**
  * My favorite type definitions.
  *
- * ## type Option
- *
+ * @example type {@link Option}
  * ```ts
  * import { some, none } from "@askua/core";
  *
- * const n = some(Math.random())
+ * const n = (count = 1): string => some(Math.random())
  *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
+ *   .tee((n) => console.log(`Generated number: ${n} (on attempt #${count})`))
+ *   .unwrap(() => n(count + 1));
  *
- * console.log(n.unwrap(() => "n is less than 0.5"));
+ * console.log(n());
  * ```
  *
- * ## type Result
- *
+ * @example type {@link Result}
  * ```ts
  * import { ok, err } from "@askua/core";
  *
- * const n = ok(Math.random())
- *   .filter((n) => n >= 0.5, (n) => new Error(`n ${n.toFixed(2)} is less than 0.5`))
- *   .map((n) => n.toFixed(2));
+ * const n = (count = 1): string => ok(Math.random())
+ *   .filter((n) => n >= 0.5, (n) => `Generated number ${n} is less than 0.5 (on attempt #${count})`)
+ *   .map((n) => n.toFixed(2))
+ *   .tee((n) => console.log(`Generated number: ${n} (on attempt #${count})`))
+ *   .unwrap((e) => {
+ *     console.error(e);
+ *     return n(count + 1);
+ *   });
  *
- * console.log(n.unwrap((e) => e.message));
+ * console.log(n());
  * ```
  *
- * ## type Brand
- *
+ * @example type {@link Brand}
  * ```ts
  * import { Brand } from "@askua/core";
  *

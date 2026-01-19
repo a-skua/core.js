@@ -1,6 +1,7 @@
 /**
- * Option is Object base type, Some<T> and None.
+ * {@link Option} is Object base type, {@link Some}<T> and {@link None}.
  *
+ * @example `Option` type
  * ```ts
  * import { assert } from "@std/assert";
  *
@@ -9,24 +10,23 @@
  *
  * const b: Option<number> = { some: false };
  * assert(isNone(b));
+ * ```
  *
- * const c: Option<number> = some(2);
- * assert(isSome(c));
+ * @example `OptionInstance` type
+ * ```ts
+ * import { assert } from "@std/assert";
  *
- * const d: Option<number> = none();
- * assert(isNone(d));
+ * const a: Option<number> = some(2);
+ * assert(isSome(a));
+ *
+ * const b: Option<number> = none();
+ * assert(isNone(b));
  * ```
  *
  * ## Usage
  *
  * ```ts
- * import { assertEquals } from "@std/assert";
- *
- * const value = Option({ some: true, value: 1 })
- *   .map((n) => n + 1)
- *   .filter((n) => n >= 2)
- *   .unwrap(() => 0);
- * assertEquals(value, 2);
+ * const n = some(Math.random()).filter((n) => n >= 0.5).unwrap(() => 0);
  * ```
  *
  * ## Why Object base?
@@ -129,9 +129,9 @@ export type SomeInstance<T> = OptionContext<T> & Some<T>;
  * const d: SomeInstance<number> = c;
  * ```
  */
-export type InferSome<O extends Option<unknown>> = O extends
+export type InferSome<O extends Option<T>, T> = O extends
   OptionContext<infer T> ? SomeInstance<T>
-  : Some<O extends Some<infer T> ? T : never>;
+  : Some<O extends Some<infer T> ? T : T>;
 
 /**
  * @example None type
@@ -151,7 +151,7 @@ export interface None {
  * const b: NoneInstance = none();
  * ```
  */
-export type NoneInstance = OptionContext<never> & None;
+export type NoneInstance<T> = OptionContext<T> & None;
 
 /**
  * Infer None type from Option<T> type
@@ -167,8 +167,8 @@ export type NoneInstance = OptionContext<never> & None;
  * const d: NoneInstance = c;
  * ```
  */
-export type InferNone<O extends Option<unknown>> = O extends
-  OptionContext<unknown> ? NoneInstance
+export type InferNone<O extends Option<T>, T> = O extends
+  OptionContext<infer T> ? NoneInstance<T>
   : None;
 
 /**
@@ -266,7 +266,7 @@ export type OptionInstance<T> = Option<T> & OptionContext<T>;
  */
 export type OptionToInstance = {
   <T>(option: Some<T>): SomeInstance<T>;
-  <T>(option: None): NoneInstance;
+  <T>(option: None): NoneInstance<T>;
   <T>(option: Option<T>): OptionInstance<T>;
 };
 
@@ -292,6 +292,7 @@ export interface OptionContext<T>
     c.Or<T>,
     c.Map<T>,
     c.Filter<T>,
+    c.Tee<T>,
     c.Unwrap<T>,
     c.Lazy<T> {
   /**
@@ -369,6 +370,29 @@ export interface OptionContext<T>
   filter(fn: (value: T) => boolean): OptionInstance<T>;
 
   /**
+   * @example `tee` method with {@link Some}
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const a = some(1).tee((n) => { count += n; });
+   * assertEquals(a, some(1));
+   * assertEquals(count, 1);
+   * ```
+   *
+   * @example `tee` method with {@link None}
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const n = none().tee((n) => { count += n; });
+   * assertEquals(n, none());
+   * assertEquals(count, 0);
+   * ```
+   */
+  tee(callback: (value: T) => void): OptionInstance<T>;
+
+  /**
    * ```ts
    * import { assertEquals, assertThrows } from "@std/assert";
    *
@@ -404,7 +428,9 @@ export interface OptionContext<T>
    * assertEquals(b, some(2));
    * ```
    */
-  lazy(): T extends Promise<infer U> ? OptionLazyContext<OptionInstance<U>, U>
+  lazy(): T extends Promise<infer T> ? OptionLazyContext<OptionInstance<T>, T>
+    : OptionLazyContext<OptionInstance<T>, T>;
+  lazy(): T extends Promise<infer T> ? OptionLazyContext<OptionInstance<T>, T>
     : OptionLazyContext<OptionInstance<T>, T>;
 
   /**
@@ -435,7 +461,7 @@ type InferOptionLazy<Eval extends Option<unknown>, T> = OptionLazyContext<
 export interface OptionLazyContext<
   Eval extends Option<T>,
   T = InferT<Eval>,
-> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T> {
+> extends c.LazyContext<T>, c.And<T>, c.Or<T>, c.Map<T>, c.Filter<T>, c.Tee<T> {
   /**
    * ```ts
    * import { assertEquals } from "@std/assert";
@@ -532,6 +558,33 @@ export interface OptionLazyContext<
   filter<IsSome extends boolean>(
     fn: (value: T) => OrPromise<IsSome>,
   ): InferOptionLazy<Eval, T>;
+
+  /**
+   * @example `tee` method
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const a = await some(Promise.resolve(1)).lazy()
+   *   .tee((n) => { count += n; })
+   *   .eval();
+   * assertEquals(a, some(1));
+   * assertEquals(count, 1);
+   * ```
+   *
+   * @example `tee` method
+   * ```ts
+   * import { assertEquals } from "@std/assert";
+   *
+   * let count = 0;
+   * const a = await none().lazy()
+   *   .tee((n) => { count += n; })
+   *   .eval();
+   * assertEquals(a, none());
+   * assertEquals(count, 0);
+   * ```
+   */
+  tee(callback: (value: T) => OrPromise<void>): InferOptionLazy<Eval, T>;
 
   /**
    * ```ts
@@ -789,7 +842,7 @@ export type OptionStatic = {
    * ```
    */
   fromNullable<T>(value: NonNullable<T>): SomeInstance<T>;
-  fromNullable<T>(value: null | undefined): NoneInstance;
+  fromNullable<T>(value: null | undefined): NoneInstance<T>;
   fromNullable<T>(value: T | null | undefined): OptionInstance<T>;
 };
 
@@ -813,8 +866,13 @@ class _Some<T> implements SomeInstance<T> {
   }
 
   filter(fn: (v: T) => boolean) {
-    if (fn(this.value)) return this as never;
-    return none();
+    if (fn(this.value)) return this;
+    return none() as never;
+  }
+
+  tee(fn: (value: T) => void) {
+    fn(this.value);
+    return this as never;
   }
 
   unwrap(): T {
@@ -863,6 +921,10 @@ class _None<T = never> implements None, OptionContext<T> {
     return this as never;
   }
 
+  tee() {
+    return this;
+  }
+
   unwrap<U>(orElse?: () => U) {
     if (orElse) return orElse() as never;
     throw new Error("None");
@@ -892,7 +954,8 @@ type Op<T, U> =
   | { and: (value: T) => OrPromise<Option<U>> }
   | { or: () => OrPromise<Option<U>> }
   | { map: (value: T) => OrPromise<U> }
-  | { filter: (value: T) => OrPromise<boolean> };
+  | { filter: (value: T) => OrPromise<boolean> }
+  | { tee: (value: T) => OrPromise<void> };
 
 /**
  * impl Lazy<T, Eval>
@@ -901,26 +964,31 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
   readonly op: Op<T, never>[] = [];
 
   constructor(
-    private readonly first: (() => Promise<Eval> | Eval) | Promise<Eval> | Eval,
+    private readonly first: OrFunction<OrPromise<Eval>>,
   ) {}
 
-  and<U, Op>(and: Op): U {
+  and(and: unknown) {
     this.op.push({ and } as typeof this.op[number]);
     return this as never;
   }
 
-  or<U, Op>(or: Op): U {
+  or(or: unknown) {
     this.op.push({ or } as typeof this.op[number]);
     return this as never;
   }
 
-  map<U, Op>(map: Op): U {
+  map(map: unknown) {
     this.op.push({ map } as typeof this.op[number]);
     return this as never;
   }
 
-  filter<U, Op>(filter: Op): U {
+  filter(filter: unknown) {
     this.op.push({ filter } as typeof this.op[number]);
+    return this as never;
+  }
+
+  tee(tee: unknown) {
+    this.op.push({ tee } as typeof this.op[number]);
     return this as never;
   }
 
@@ -958,6 +1026,12 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
         if (!result) option = none();
         continue;
       }
+
+      if ("tee" in op && option.some) {
+        const p = op.tee(option.value);
+        if (p instanceof Promise) await p;
+        continue;
+      }
     }
     return option as Eval;
   }
@@ -978,10 +1052,10 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<Eval, T> {
  * impl OptionToInstance
  */
 function toInstance<T>(option: Some<T>): SomeInstance<T>;
-function toInstance<T>(option: None): NoneInstance;
+function toInstance<T>(option: None): NoneInstance<T>;
 function toInstance<T>(option: Option<T>): OptionInstance<T>;
 function toInstance<T>(option: Option<T>): OptionInstance<T> {
-  return (option.some ? some(option.value) : none());
+  return (option.some ? some(option.value) : none() as never);
 }
 
 /**
@@ -1017,13 +1091,13 @@ export function some<T>(value: T): SomeInstance<T> {
  */
 export function isSome<T>(
   option: Option<T>,
-): option is InferSome<typeof option>;
+): option is InferSome<typeof option, T>;
 /**
  * @typeParam T value type
  */
 export function isSome<T>(
   option: OptionInstance<T>,
-): option is InferSome<typeof option>;
+): option is InferSome<typeof option, T>;
 export function isSome<T>({ some }: Option<T>) {
   return some;
 }
@@ -1040,7 +1114,7 @@ export function isSome<T>({ some }: Option<T>) {
  * assertEquals(a.map((n) => n + 1), none());
  * ```
  */
-export function none(): InferNone<OptionInstance<never>> {
+export function none<T>(): InferNone<OptionInstance<T>, T> {
   return new _None();
 }
 
@@ -1059,14 +1133,14 @@ export function none(): InferNone<OptionInstance<never>> {
  */
 export function isNone<T>(
   option: Option<T>,
-): option is InferNone<typeof option>;
+): option is InferNone<typeof option, T>;
 
 /**
  * @typeParam T value type
  */
 export function isNone<T>(
   option: OptionInstance<T>,
-): option is InferNone<typeof option>;
+): option is InferNone<typeof option, T>;
 export function isNone<T>({ some }: Option<T>) {
   return !some;
 }
@@ -1146,6 +1220,6 @@ function fromResult<T, E>(
 }
 
 function fromNullable<T>(value: T | null | undefined): OptionInstance<T> {
-  if (value === null || value === undefined) return none();
+  if (value === null || value === undefined) return none<T>();
   return some(value);
 }
