@@ -547,7 +547,7 @@ Deno.test("Result.lazy", async (t) => {
 Deno.test("Result.fromOption", async (t) => {
   const tests = [
     [some(1), ok(1)],
-    [none(), err(null)],
+    [none<number>(), err<number, null>(null)],
   ] as const;
 
   for (const [input, expected] of tests) {
@@ -648,22 +648,22 @@ Deno.test("Lazy", async (t) => {
 
   await t.step("(Lazy).or", async (t) => {
     {
-      const lazy = Result.lazy(Result.err("error"))
-        .or((e) => Result.err(e + "!"))
-        .or((e) => Result.err(e + "!"));
+      const lazy = Result.lazy(err("error"))
+        .or((e) => err(e + "!"))
+        .or((e) => err(e + "!"));
 
-      const expected = Result.err("error!!");
+      const expected = err<never, string>("error!!");
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
         assertEquals(await lazy.eval(), expected);
       });
     }
 
     {
-      const lazy = Result.lazy(Result.err("error"))
-        .or(() => Promise.resolve(Result.err("error!")))
-        .or(() => Result.err("error!!"));
+      const lazy = Result.lazy(err("error"))
+        .or(() => Promise.resolve(err("error!")))
+        .or(() => err("error!!"));
 
-      const expected = Result.err("error!!");
+      const expected = Result.err<never, string>("error!!");
       await t.step(`${lazy}.eval() => ${expected}`, async () => {
         assertEquals(await lazy.eval(), expected);
       });
@@ -683,7 +683,7 @@ Deno.test("Lazy", async (t) => {
 
   await t.step("(Lazy).filter", async (t) => {
     const tests: [
-      ResultLazyContext<ResultInstance<number, number | string>>,
+      ResultLazyContext<number, number | string>,
       ResultInstance<number, number | string>,
     ][] = [
       [ok(1).lazy().filter((n) => n > 0), ok(1)],
@@ -692,14 +692,11 @@ Deno.test("Lazy", async (t) => {
       [ok(0).lazy().filter((n) => n > 0, () => "ERR!"), err("ERR!")],
       [ok(0).lazy().filter((n) => n > 0, (n) => `Err(${n})!`), err("Err(0)!")],
       [
-        (err(-1) as ResultInstance<number, number>).lazy().filter((n) => n > 0),
+        err<number, number>(-1).lazy().filter((n) => n > 0),
         err(-1),
       ],
       [
-        (err(-1) as ResultInstance<number, number>).lazy().filter(
-          (n) => n > 0,
-          () => "ERR!",
-        ),
+        err<number, number>(-1).lazy().filter((n) => n > 0, () => "ERR!"),
         err(-1),
       ],
     ] as const;

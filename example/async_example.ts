@@ -1,4 +1,4 @@
-import { Result, type ResultInstance } from "@askua/core/result";
+import { err, ok, Result, type ResultInstance } from "@askua/core/result";
 
 async function test(name: string, fn: () => Promise<unknown>) {
   console.time(name);
@@ -12,11 +12,11 @@ const getNumber = (): Promise<ResultInstance<number>> =>
   new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-        Result.ok(Math.random())
+        ok<number>(Math.random())
           .and((n) =>
             n >= 0.1
-              ? Result.ok<number>(n)
-              : Result.err<number>(new Error("Number is less than 0.1"))
+              ? ok<number>(n)
+              : err<number>(new Error("Number is less than 0.1"))
           ),
       );
     }, 200);

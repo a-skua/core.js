@@ -122,15 +122,15 @@ export type SomeInstance<T> = OptionContext<T> & Some<T>;
  *
  * @example InferSome type
  * ```ts
- * const a: InferSome<Option<number>> = { some: true, value: 1 };
+ * const a: InferSome<Option<number>, number> = { some: true, value: 1 };
  * const b: Some<number> = a;
  *
- * const c: InferSome<OptionInstance<number>> = some(1);
+ * const c: InferSome<OptionInstance<number>, number> = some(1);
  * const d: SomeInstance<number> = c;
  * ```
  */
-export type InferSome<O extends Option<T>, T> = O extends
-  OptionContext<infer T> ? SomeInstance<T>
+export type InferSome<O extends Option<T>, T> = O extends OptionContext<infer T>
+  ? SomeInstance<T>
   : Some<O extends Some<infer T> ? T : T>;
 
 /**
@@ -148,7 +148,7 @@ export interface None {
  * @example NoneInstance type
  * ```ts
  * const a: None = { some: false };
- * const b: NoneInstance = none();
+ * const b: NoneInstance<unknown> = none();
  * ```
  */
 export type NoneInstance<T> = OptionContext<T> & None;
@@ -160,15 +160,15 @@ export type NoneInstance<T> = OptionContext<T> & None;
  *
  * @example InferNone type
  * ```ts
- * const a: InferNone<Option<unknown>> = { some: false };
+ * const a: InferNone<Option<unknown>, unknown> = { some: false };
  * const b: None = a;
  *
- * const c: InferNone<OptionInstance<unknown>> = none();
- * const d: NoneInstance = c;
+ * const c: InferNone<OptionInstance<unknown>, unknown> = none();
+ * const d: NoneInstance<unknown> = c;
  * ```
  */
-export type InferNone<O extends Option<T>, T> = O extends
-  OptionContext<infer T> ? NoneInstance<T>
+export type InferNone<O extends Option<T>, T> = O extends OptionContext<infer T>
+  ? NoneInstance<T>
   : None;
 
 /**
@@ -385,7 +385,7 @@ export interface OptionContext<T>
    * import { assertEquals } from "@std/assert";
    *
    * let count = 0;
-   * const n = none().tee((n) => { count += n; });
+   * const n = none<number>().tee((n) => { count += n; });
    * assertEquals(n, none());
    * assertEquals(count, 0);
    * ```
@@ -577,7 +577,7 @@ export interface OptionLazyContext<
    * import { assertEquals } from "@std/assert";
    *
    * let count = 0;
-   * const a = await none().lazy()
+   * const a = await none<number>().lazy()
    *   .tee((n) => { count += n; })
    *   .eval();
    * assertEquals(a, none());

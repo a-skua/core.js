@@ -21,26 +21,26 @@ Result(foo());
 
 Result({ ok: false, error: "error" })
   .map((n) => n + 1)
-  .and<string, number>(() => err(-1))
+  .and(() => err(-1))
   .and(() => ok(1))
-  .and<string, number>(() => err(-1))
-  .and<number, string>(() => ok(1))
+  .and(() => err(-1))
+  .and(() => ok(1))
   .and((n) => n > 0 ? ok(n) : err(-1))
   .and(() => ok(0))
   .lazy()
   .map((n) => n + 1)
   .map((n) => !!n)
   .map((n) => Promise.resolve(n.toString()))
-  .and<Result<number, string>>(() => err(""))
+  .and(() => err(""))
   .and(() => ok(""))
-  .and<Result<string, number>>((s) => s.length > 0 ? ok(s) : err(-1))
+  .and((s) => s.length > 0 ? ok(s) : err(-1))
   .and(() => ({ ok: true, value: 1 }))
   .and(() => Promise.resolve({ ok: true, value: 1 }))
   .and((_) => ({ ok: true, value: 1 }))
   .and((_) => ({ ok: true, value: 1 }) as const)
   .and((_) => ({ ok: true as const, value: 1 }))
   .and((_) => ({ ok: true, value: 1 }))
-  .and<{ ok: true; value: 1 }>((_) => Promise.resolve({ ok: true, value: 1 }))
+  .and((_) => Promise.resolve({ ok: true, value: 1 }))
   .and((_) => ok(1))
   .and(() => ({ ok: false, error: -1 }))
   .and((_) => ({ ok: false, error: -1 }))
@@ -50,7 +50,7 @@ ok(null)
   .or(() => ok(""))
   .or(() => err(""))
   .or(() => ok(1))
-  .or<string, number>(() => err(-1))
+  .or(() => err(-1))
   .lazy()
   .eval();
 
@@ -58,7 +58,7 @@ ok(null)
   .lazy()
   .or(() => ok(""))
   .or(() => err(""))
-  .or<Result<number>>(() => ok(1))
+  .or(() => ok(1))
   .or(() => err(-1))
   .eval();
 
@@ -141,5 +141,5 @@ Result.lazy(Result.or(
   foo,
 )).eval();
 
-Result.lazy<Result<number, string>>(ok(1));
-Result.lazy<Result<string, number>>(err(1));
+Result.lazy(ok(1));
+Result.lazy(err(1));

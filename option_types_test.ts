@@ -7,6 +7,7 @@ import {
   isSome,
   type None,
   none,
+  type NoneInstance,
   Option,
   type OptionInstance,
   type Some,
@@ -70,8 +71,24 @@ const optionNumber: OptionInstance<number> = some(Math.random())
 }
 
 {
+  const option: SomeInstance<number> = some(1);
+  test<Some<number>>(option);
+  test<SomeInstance<number>>(option);
+  test<Option<number>>(option);
+  test<OptionInstance<number>>(option);
+}
+
+{
   const option = some(1);
   test<Some<number>>(option);
+  test<OptionInstance<number>>(option);
+}
+
+{
+  const option: NoneInstance<number> = none();
+  test<None>(option);
+  test<NoneInstance<number>>(option);
+  test<Option<number>>(option);
   test<OptionInstance<number>>(option);
 }
 

@@ -2,12 +2,14 @@ import { test } from "./types_test.ts";
 import {
   type Err,
   err,
+  type ErrInstance,
   type InferErr,
   type InferOk,
   isErr,
   isOk,
   type Ok,
   ok,
+  type OkInstance,
   Result,
   type ResultInstance,
 } from "./result.ts";
@@ -64,21 +66,31 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 }
 
 {
-  const result = Result.ok(1);
+  const result: OkInstance<number, string> = ok(1);
+  test<Ok<number>>(result);
+  test<OkInstance<number, string>>(result);
+  test<Result<number, string>>(result);
+  test<Result<number, string>>(result);
+}
+
+{
+  const result = ok(1);
   test<Ok<number>>(result);
   test<ResultInstance<number>>(result);
 }
 
 {
-  const result = Result.err("error");
+  const result: ErrInstance<number, string> = err("error");
   test<Err<string>>(result);
-  test<ResultInstance<unknown, string>>(result);
+  test<ErrInstance<number, string>>(result);
+  test<Result<number, string>>(result);
+  test<ResultInstance<number, string>>(result);
 }
 
 {
   const result = resultNumber
     .and(() => ({ ok: true, value: 1 }));
-  test<Result<number>>(result);
+  test<Result<number, unknown>>(result);
 }
 
 {
@@ -152,7 +164,7 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 
 {
   const result = resultNumber
-    .and<number, string>((n) => Result.err(n.toFixed(2)));
+    .and<number, string>((n) => err(n.toFixed(2)));
   test<Result<number, string | Error>>(result);
 }
 {
@@ -208,13 +220,13 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 
 {
   const result = resultNumber
-    .or(() => Result.ok("ok"));
+    .or(() => ok("ok"));
   test<ResultInstance<number | string>>(result);
 }
 
 {
   const result = resultNumber
-    .or(() => Result.err("error"));
+    .or(() => err("error"));
   test<Result<number, string>>(result);
 }
 
@@ -238,13 +250,13 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 
 {
   const result = resultNumber
-    .or((e) => Result.ok(e.message));
+    .or((e) => ok(e.message));
   test<ResultInstance<number | string>>(result);
 }
 
 {
   const result = resultNumber
-    .or((e) => Result.err(e.message));
+    .or((e) => err(e.message));
   test<ResultInstance<number, string>>(result);
 }
 
@@ -344,8 +356,8 @@ try {
     .lazy()
     .and((n) => ({ ok: true, value: n + 1 }))
     .and(() => Promise.resolve({ ok: true, value: 2 as const }))
-    .and((n) => Result.ok(n + 1))
-    .and((n) => Promise.resolve(Result.ok(n.toFixed(2))))
+    .and((n) => ok(n + 1))
+    .and((n) => Promise.resolve(ok(n.toFixed(2))))
     .eval();
   test<Result<string>>(result);
 }
@@ -353,10 +365,10 @@ try {
 {
   const result = await resultNumber
     .lazy()
-    .and<Result<number, "1">>(() => ({ ok: false, error: "1" }))
+    .and(() => ({ ok: false, error: "1" as const }))
     .and((n) => Promise.resolve({ ok: false, error: n }))
-    .and(() => Result.err("3" as const))
-    .and((_) => Promise.resolve(Result.err("4" as const)))
+    .and(() => err("3" as const))
+    .and((_) => Promise.resolve(err("4" as const)))
     .eval();
   test<Result<never, Error | "1" | number | "3" | "4">>(result);
 }
@@ -375,7 +387,7 @@ try {
 {
   const result = await resultNumber
     .lazy()
-    .and<Result<number, "1">>(() => ({ ok: false, error: "1" }))
+    .and(() => ({ ok: false, error: "1" as const }))
     .and(() => Promise.resolve({ ok: false, error: "2" as const }))
     .and(() => err("3" as const))
     .and(() => Promise.resolve(err("4" as const)))
@@ -388,8 +400,8 @@ try {
     .lazy()
     .or((e) => ({ ok: false, error: e.message }))
     .or(() => Promise.resolve({ ok: true, value: "1" as const }))
-    .or(() => Result.ok("2" as const))
-    .or((_) => Promise.resolve(Result.ok("3" as const)))
+    .or(() => ok("2" as const))
+    .or((_) => Promise.resolve(ok("3" as const)))
     .eval();
   test<Result<number | "1" | "2" | "3", never>>(result);
 }
@@ -399,8 +411,8 @@ try {
     .lazy()
     .or((e) => ({ ok: false, error: e.message }))
     .or(() => Promise.resolve({ ok: false, error: "1" as const }))
-    .or((_) => Result.err("2" as const))
-    .or((_) => Promise.resolve(Result.err("3" as const)))
+    .or((_) => err("2" as const))
+    .or((_) => Promise.resolve(err("3" as const)))
     .eval();
   test<Result<number, "3">>(result);
 }
@@ -422,7 +434,7 @@ try {
     .or(() => ({ ok: false, error: "1" as const }))
     .or(() => Promise.resolve({ ok: false, error: "2" as const }))
     .or(() => err("3" as const))
-    .or<Result<string, "4">>(() => Promise.resolve(err("4" as const)))
+    .or(() => Promise.resolve(err<string, "4">("4" as const)))
     .eval();
   test<Result<number | string, "4">>(result);
 }

@@ -33,7 +33,7 @@ Deno.bench("some(1).and((n) => some(n + 1))", () => {
 });
 
 Deno.bench("none().and((n) => some(n + 1))", () => {
-  none().and((n) => some(n + 1));
+  none<number>().and((n) => some(n + 1));
 });
 
 Deno.bench("some(1).or(() => some(0))", () => {
@@ -49,7 +49,7 @@ Deno.bench("some(1).map((n) => n + 1)", () => {
 });
 
 Deno.bench("none().map((n) => n + 1)", () => {
-  none().map((n) => n + 1);
+  none<number>().map((n) => n + 1);
 });
 
 Deno.bench("some(1).filter((n) => n > 0)", () => {
@@ -61,7 +61,7 @@ Deno.bench("some(0).filter((n) => n > 0)", () => {
 });
 
 Deno.bench("none().filter((n) => n > 0)", () => {
-  none().filter((n) => n > 0);
+  none<number>().filter((n) => n > 0);
 });
 
 Deno.bench("some(1).unwrap()", () => {
