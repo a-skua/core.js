@@ -1,7 +1,7 @@
 /**
  * My favorite type definitions.
  *
- * @example type {@link Option}
+ * @example {@link Option} usage
  * ```ts
  * import { some, none } from "@askua/core/option";
  *
@@ -14,7 +14,29 @@
  * console.log(n());
  * ```
  *
- * @example type {@link Result}
+ * @example Using {@link Option} with `JSON`
+ * ```ts
+ * import { some, type Option } from "@askua/core/option";
+ *
+ * const json = JSON.stringify(some(1));
+ *
+ * const option: Option<number> = JSON.parse(json);
+ *
+ * if (option.some) console.log("Option has value:", option.value);
+ * ```
+ *
+ * @example Using {@link Option} with `JSON`
+ * ```ts
+ * import { some, Option } from "@askua/core/option";
+ *
+ * const json = JSON.stringify(some(1));
+ *
+ * const option: Option<number> = JSON.parse(json);
+ *
+ * Option(option).tee((value) => console.log("Option has value:", value));
+ * ```
+ *
+ * @example {@link Result} usage
  * ```ts
  * import { ok, err } from "@askua/core/result";
  *
@@ -30,7 +52,29 @@
  * console.log(n());
  * ```
  *
- * @example type {@link Brand}
+ * @example Using {@link Result} with `JSON`
+ * ```ts
+ * import { ok, type Result } from "@askua/core/result";
+ *
+ * const json = JSON.stringify(ok(1));
+ *
+ * const result: Result<number, string> = JSON.parse(json);
+ *
+ * if (result.ok) console.log("Result has value:", result.value);
+ * ```
+ *
+ * @example Using {@link Result} with `JSON`
+ * ```ts
+ * import { ok, Result } from "@askua/core/result";
+ *
+ * const json = JSON.stringify(ok(1));
+ *
+ * const result: Result<number, string> = JSON.parse(json);
+ *
+ * Result(result).tee((value) => console.log("Result has value:", value));
+ * ```
+ *
+ * @example {@link Brand} usage
  * ```ts
  * import { Brand } from "@askua/core/brand";
  *
