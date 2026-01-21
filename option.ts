@@ -1,9 +1,25 @@
 /**
  * {@link Option} is Object base type, {@link Some}<T> and {@link None}.
  *
- * @example `Option` type
+ * ## Why Object base?
+ *
+ * If you use on Server and Browser, using `JSON.stringify` and `JSON.parse`.
+ * So, Object base is easy to use.
+ *
+ * ```ts
+ * const json = '{"some":true,"value":1}';
+ *
+ * const option: Option<number> = JSON.parse(json);
+ * if (option.some) {
+ *   console.log(option.value); // 1
+ * }
+ * ```
+ *
+ * @example type {@link Option}
  * ```ts
  * import { assert } from "@std/assert";
+ * import type { Option } from "@askua/core/option";
+ * import { isSome, isNone } from "@askua/core/option";
  *
  * const a: Option<number> = { some: true, value: 1 };
  * assert(isSome(a));
@@ -12,41 +28,22 @@
  * assert(isNone(b));
  * ```
  *
- * @example `OptionInstance` type
+ * @example type {@link OptionInstance}
  * ```ts
  * import { assert } from "@std/assert";
+ * import type { Option, OptionInstance } from "@askua/core/option";
+ * import { isSome, isNone, some, none } from "@askua/core/option";
  *
- * const a: Option<number> = some(2);
+ * const a: OptionInstance<number> = some(1).map((n) => n + 1);
+ * const b: Option<number> = a;
  * assert(isSome(a));
  *
- * const b: Option<number> = none();
- * assert(isNone(b));
+ * const c: OptionInstance<number> = none<number>().map((n) => n + 1);
+ * const d: Option<number> = c;
+ * assert(isNone(c));
  * ```
  *
- * ## Usage
- *
- * ```ts
- * const n = some(Math.random()).filter((n) => n >= 0.5).unwrap(() => 0);
- * ```
- *
- * ## Why Object base?
- *
- * If you use on Server and Browser, using JSON.stringify and JSON.parse.
- * So, Object base is easy to use.
- *
- * ```ts
- * import { assert, assertEquals } from "@std/assert";
- *
- * const json = '{"some":true,"value":1}';
- *
- * const option: Option<number> = JSON.parse(json);
- * assert(option.some);
- *
- * assertEquals(option.value, 1);
- * ```
- *
- * ## Using with method
- *
+ * @example Using with {@link OptionInstance} method
  * ```ts
  * const option: OptionInstance<number> = some(Math.random());
  *
@@ -58,8 +55,7 @@
  * console.log(value);
  * ```
  *
- * ## Using Iterable
- *
+ * @example Using with `Iterable`
  * ```ts
  * const getNumber = () => some(Math.random()).filter((n) => n >= 0.5);
  *
@@ -72,8 +68,7 @@
  * console.log(list);
  * ```
  *
- * ## Using Lazy type
- *
+ * @example Using with {@link OptionLazyContext}
  * ```ts
  * const getNumber = () => Promise.resolve(some(Math.random()));
  *
