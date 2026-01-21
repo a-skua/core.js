@@ -14,7 +14,7 @@ import {
   some,
   type SomeInstance,
 } from "./option.ts";
-import { err, ok, type Result } from "./result.ts";
+import { err, isErr, isOk, ok, type Result } from "./result.ts";
 
 const optionNumber: OptionInstance<number> = some(Math.random())
   .filter((n) => n > 0.5);
@@ -582,8 +582,8 @@ try {
     .and((n) => Promise.resolve({ some: true, value: n + 1 }))
     .and(() => some(6))
     .and(() => Promise.resolve(some(7)))
-    .and<Option<number>>((n) => some(n + 1))
-    .and<Option<string>>((n) => Promise.resolve(some(n.toFixed(2))))
+    .and((n) => some(n + 1))
+    .and((n) => Promise.resolve(some(n.toFixed(2))))
     .eval();
   test<Option<string>>(option);
 }
@@ -608,8 +608,8 @@ try {
     .or(() => Promise.resolve({ some: false }))
     .or(() => some("4" as const))
     .or(() => none())
-    .or<Option<"5">>(() => Promise.resolve(some("5")))
-    .or<Option<number>>(() => Promise.resolve(none()))
+    .or(() => Promise.resolve(some("5" as const)))
+    .or(() => Promise.resolve(none()))
     .eval();
   test<Option<number | "2" | "3" | "4" | "5">>(option);
 }
@@ -652,6 +652,16 @@ try {
 }
 
 {
+  const option = await Option.and(
+    optionNumber as Option<number>,
+    Promise.resolve(optionNumber as Option<number>),
+    () => optionNumber as Option<number>,
+    () => Promise.resolve(optionNumber as Option<number>),
+  );
+  test<Option<[number, number, number, number]>>(option);
+}
+
+{
   const option = Option.and(
     optionNumber,
     optionNumber,
@@ -659,6 +669,26 @@ try {
     () => optionNumber,
   );
   test<OptionInstance<[number, number, number, number]>>(option);
+}
+
+{
+  const option = Option.and(
+    optionNumber as Option<number>,
+    optionNumber as Option<number>,
+    () => optionNumber as Option<number>,
+    () => optionNumber as Option<number>,
+  );
+  test<Option<[number, number, number, number]>>(option);
+}
+
+{
+  const option = Option.and(
+    optionNumber,
+    optionNumber as Option<number>,
+    () => optionNumber,
+    () => optionNumber as Option<number>,
+  );
+  test<Option<[number, number, number, number]>>(option);
 }
 
 {
@@ -699,6 +729,17 @@ try {
     () => (some("4" as const)),
   );
   test<OptionInstance<["1", "2", "3", "4"]>>(option);
+}
+
+{
+  const option = await Option.or(
+    optionNumber as Option<number>,
+    Promise.resolve(optionNumber as Option<number>),
+    () => optionNumber as Option<number>,
+    () => Promise.resolve(optionNumber as Option<number>),
+    () => some("hello") as Option<string>,
+  );
+  test<Option<number | string>>(option);
 }
 
 {
@@ -806,7 +847,7 @@ try {
 }
 
 {
-  const option = await Option.lazy<Option<string>>(none())
+  const option = await Option.lazy<string>(none())
     .or(() => some(1))
     .eval();
   test<Option<string | number>>(option);
@@ -912,8 +953,35 @@ try {
 
 {
   const result = ok("OK!") as Result<string>;
-  const option = Option.fromResult(result);
-  test<OptionInstance<string>>(option);
+  if (result.ok) {
+    const option = Option.fromResult(result);
+    test<OptionInstance<string>>(option);
+  } else {
+    const option = Option.fromResult(result);
+    test<void>(option);
+  }
+}
+
+{
+  const result = ok("OK!") as Result<string>;
+  if (isOk(result)) {
+    const option = Option.fromResult(result);
+    test<OptionInstance<string>>(option);
+  } else {
+    const option = Option.fromResult(result);
+    test<void>(option);
+  }
+}
+
+{
+  const result = ok("OK!") as Result<string>;
+  if (isErr(result)) {
+    const option = Option.fromResult(result);
+    test<void>(option);
+  } else {
+    const option = Option.fromResult(result);
+    test<OptionInstance<string>>(option);
+  }
 }
 
 {
