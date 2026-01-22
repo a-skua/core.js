@@ -785,22 +785,22 @@ try {
 
 {
   const result = ok(1) as Result<number>;
-  if (isOk(result)) test<Result<number, string>>(result);
+  if (isOk(result)) test<Ok<number>>(result);
 }
 
 {
   const result = ok(1) as ResultInstance<number>;
-  if (isOk(result)) test<ResultInstance<number, Error>>(result);
+  if (isOk(result)) test<OkInstance<number, Error>>(result);
 }
 
 {
   const result = err(1) as Result<string, number>;
-  if (isErr(result)) test<Result<number, number>>(result);
+  if (isErr(result)) test<Err<number>>(result);
 }
 
 {
   const result = err(1) as ResultInstance<string, number>;
-  if (isErr(result)) test<ResultInstance<string, number>>(result);
+  if (isErr(result)) test<ErrInstance<string, number>>(result);
 }
 
 {

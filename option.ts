@@ -18,7 +18,7 @@
  *
  * @example Basic usage
  * ```ts
- * import { some, none } from "@askua/core/option";
+ * import { some } from "@askua/core/option";
  *
  * const value = some(Math.random())
  *   .filter((n) => n >= 0.5)
@@ -65,7 +65,6 @@ export interface Some<T> {
   readonly some: true;
   readonly value: T;
 }
-
 /**
  * {@link Some} with {@link OptionContext} methods.
  *
@@ -74,7 +73,7 @@ export interface Some<T> {
  * import { some, type SomeInstance } from "@askua/core/option";
  *
  * const a: SomeInstance<number> = some(1);
- * a.map((n) => n + 1); // SomeInstance<number>
+ * a.map((n) => n + 1);
  * ```
  */
 export type SomeInstance<T> = OptionContext<T> & Some<T>;
@@ -86,13 +85,12 @@ export type SomeInstance<T> = OptionContext<T> & Some<T>;
  * ```ts
  * import type { Option, OptionInstance, InferSome } from "@askua/core/option";
  *
- * type A = InferSome<Option<string>, number>;       // Some<number>
+ * type A = InferSome<Option<string>, number>;         // Some<number>
  * type B = InferSome<OptionInstance<string>, number>; // SomeInstance<number>
  * ```
  */
 export type InferSome<O extends Option<unknown>, T> = O extends
-  OptionContext<unknown> ? SomeInstance<T>
-  : Some<T>;
+  OptionContext<unknown> ? SomeInstance<T> : Some<T>;
 
 /**
  * Creates a {@link SomeInstance} containing the given value.
@@ -163,13 +161,12 @@ export type NoneInstance<T> = OptionContext<T> & None;
  * ```ts
  * import type { Option, OptionInstance, InferNone } from "@askua/core/option";
  *
- * type A = InferNone<Option<string>, number>;       // None
+ * type A = InferNone<Option<string>, number>;         // None
  * type B = InferNone<OptionInstance<string>, number>; // NoneInstance<number>
  * ```
  */
 export type InferNone<O extends Option<unknown>, T> = O extends
-  OptionContext<unknown> ? NoneInstance<T>
-  : None;
+  OptionContext<unknown> ? NoneInstance<T> : None;
 
 /**
  * Creates a {@link NoneInstance} representing the absence of a value.
@@ -305,10 +302,10 @@ export type OptionToInstance = {
   <T>(option: Option<T>): OptionInstance<T>;
 };
 
-type InferT<O extends Option<unknown>, U = never> = O extends Some<infer T>
+type InferT<O extends Option<unknown>, T = never> = O extends Some<infer U>
   ? T | U
-  : (O extends None ? U
-    : (O extends Option<infer T> ? T | U : unknown));
+  : (O extends None ? T
+    : (O extends Option<infer U> ? T | U : unknown));
 
 type AndT<O extends Option<unknown>> = InferT<O>;
 
@@ -444,7 +441,7 @@ export interface OptionContext<T>
    * assertThrows(() => c.unwrap());
    * ```
    *
-   * @throws {Error} when called on None without argument
+   * @throws {Error} when called on {@link None} without argument
    */
   unwrap<U>(fn: () => U): T | U;
   unwrap(): T;
@@ -484,9 +481,15 @@ export interface OptionContext<T>
   toString(): string;
 }
 
-type InferOptionLazy<Eval extends Option<unknown>, T> = OptionLazyContext<
+type InferOptionLazy<
+  O extends Option<unknown>,
   T,
-  InferOption<Eval, T>
+  Eval extends Option<unknown>,
+> = OptionLazyContext<
+  T,
+  O extends OptionContext<unknown>
+    ? (Eval extends Option<unknown> ? OptionInstance<T> : Option<T>)
+    : Option<T>
 >;
 
 /**
@@ -527,7 +530,7 @@ export interface OptionLazyContext<
   and<
     U,
     O extends Option<U> = OptionInstance<U>,
-  >(andThen: (value: T) => OrPromise<O>): InferOptionLazy<O, AndT<O>>;
+  >(andThen: (value: T) => OrPromise<O>): InferOptionLazy<O, AndT<O>, Eval>;
 
   /**
    * @example
@@ -548,7 +551,7 @@ export interface OptionLazyContext<
   or<
     U,
     O extends Option<U> = OptionInstance<U>,
-  >(orElse: () => OrPromise<O>): InferOptionLazy<O, OrT<O, T>>;
+  >(orElse: () => OrPromise<O>): InferOptionLazy<O, OrT<O, T>, Eval>;
 
   /**
    * @example
@@ -567,7 +570,7 @@ export interface OptionLazyContext<
    * assertEquals(b, none());
    * ```
    */
-  map<U>(fn: (value: T) => OrPromise<U>): InferOptionLazy<Eval, U>;
+  map<U>(fn: (value: T) => OrPromise<U>): InferOptionLazy<Eval, U, Eval>;
 
   /**
    * @example
@@ -590,8 +593,10 @@ export interface OptionLazyContext<
    * assertEquals(c, none());
    * ```
    */
-  filter<U extends T>(fn: (value: T) => value is U): InferOptionLazy<Eval, U>;
-  filter(fn: (value: T) => OrPromise<boolean>): InferOptionLazy<Eval, T>;
+  filter<U extends T>(
+    fn: (value: T) => value is U,
+  ): InferOptionLazy<Eval, U, Eval>;
+  filter(fn: (value: T) => OrPromise<boolean>): InferOptionLazy<Eval, T, Eval>;
 
   /**
    * @example
@@ -618,7 +623,7 @@ export interface OptionLazyContext<
    * assertEquals(count, 0);
    * ```
    */
-  tee(callback: (value: T) => OrPromise<void>): InferOptionLazy<Eval, T>;
+  tee(callback: (value: T) => OrPromise<void>): InferOptionLazy<Eval, T, Eval>;
 
   /**
    * @example
