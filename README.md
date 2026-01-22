@@ -15,44 +15,16 @@ Published to [JSR](https://jsr.io/@askua/core)
 ## Usage
 
 ```ts
-import { Brand, Option, Result } from "@askua/core";
+import { Option, some } from "@askua/core/option";
 
-const PassedNumber = Brand<number, "Passed">;
+const n: Option<number> = { some: true, value: 1 };
 
-const getNumber = () =>
-  Option.some(Math.random())
-    .map((n) => n * 100)
-    .filter((n) => n >= 50)
-    .map((n) => PassedNumber(n));
+const a = Option(n).map((n) => n + 1);
+const b = a.map((n) => n + 1);
+const c = b.filter((n) => n > 3);
+const d = c.or(() => some(4));
 
-const option = await Option
-  .lazy(Option.and(
-    getNumber,
-    getNumber,
-    getNumber,
-  ))
-  .map((n) => n.reduce((acc, n) => acc + n, 0))
-  .or(() => Option.some(0))
-  .map((n) => n.toFixed(2))
-  .map((sum) => ({ sum }))
-  .eval();
-
-console.log(option.unwrap()); // { sum: "0.00" }
-
-const result = await Result
-  .lazy(Result.or(
-    () => Result.fromOption(getNumber()),
-    () => Result.fromOption(getNumber()),
-    () => Result.fromOption(getNumber()),
-  ))
-  .or((err) => {
-    console.error(`${err}`); // Error: None
-    return Result.ok(PassedNumber(0));
-  })
-  .map((n) => n.toFixed(2))
-  .eval();
-
-console.log(result.unwrap()); // 0.00
+console.log([...a, ...b, ...c, ...d]); // [2, 3, 4]
 ```
 
 ## Benchmark
