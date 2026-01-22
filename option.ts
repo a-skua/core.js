@@ -88,10 +88,14 @@ import type { Err, Ok, Result } from "./result.ts";
 import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
 
 /**
+ * type {@link Some} is state of {@link Option} with value.
+ *
  * @example type {@link Some}
  * ```ts
+ * import { some, type Some } from "@askua/core/option";
+ *
  * const a: Some<number> = { some: true, value: 1 };
- * const b: Some<number> = some(1);
+ * const b: Some<number> = some(1).map((n) => n + 1);
  * ```
  */
 export interface Some<T> {
@@ -164,8 +168,12 @@ export function isSome<T>(
 }
 
 /**
+ * type {@link None} is state of {@link Option} without value.
+ *
  * @example type {@link None}
  * ```ts
+ * import { none, type None } from "@askua/core/option";
+ *
  * const a: None = { some: false };
  * const b: None = none();
  * ```
@@ -252,17 +260,19 @@ export function isNone<T>(
  * import type { Some } from "@askua/core/option";
  *
  * const a: Some<number> = { some: true, value: 1 };
- * ```
- *
- * @example type {@link Some}
- * ```ts
- * import { some } from "@askua/core/option";
- *
- * const a = some(1);
  *
  * if (a.some) {
- *   const value: number = a.value;
+ *   console.log(a.value);
  * }
+ * ```
+ *
+ * @example type {@link SomeInstance}
+ * ```ts
+ * import { some, type SomeInstance } from "@askua/core/option";
+ *
+ * const a: SomeInstance<number> = some(1);
+ *
+ * a.tee((value) => console.log(value));
  * ```
  *
  * @example function {@link isSome}
@@ -283,15 +293,13 @@ export function isNone<T>(
  * const a: None = { some: false };
  * ```
  *
- * @example type {@link None}
+ * @example type {@link NoneInstance}
  * ```ts
- * import { none } from "@askua/core/option";
+ * import { none, type NoneInstance } from "@askua/core/option";
  *
- * const a = none();
+ * const a: NoneInstance<number> = none();
  *
- * if (!a.some) {
- *   // a is None
- * }
+ * a.tee((value) => console.log(value)); // won't be called
  * ```
  *
  * @example function {@link isNone}
