@@ -64,6 +64,22 @@ Deno.bench("none().filter((n) => n > 0)", () => {
   none<number>().filter((n) => n > 0);
 });
 
+Deno.bench("some(1).tee(() => void)", () => {
+  some(1).tee(() => {});
+});
+
+Deno.bench("some(1).tee(() => Error)", () => {
+  some(1).tee(() => new Error("test"));
+});
+
+Deno.bench("none().tee(() => void)", () => {
+  none().tee(() => {});
+});
+
+Deno.bench("none().tee(() => Error)", () => {
+  none().tee(() => new Error("test"));
+});
+
 Deno.bench("some(1).unwrap()", () => {
   some(1).unwrap();
 });
