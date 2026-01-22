@@ -19,7 +19,7 @@ Result<number, Error>(ok(1));
 Result<number, number>(err(-1));
 Result(foo());
 
-Result({ ok: false, error: "error" })
+Result<number, string>({ ok: false, error: "error" })
   .map((n) => n + 1)
   .and(() => err(-1))
   .and(() => ok(1))

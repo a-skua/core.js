@@ -31,50 +31,6 @@ Deno.test("ResultInstance", async (t) => {
     }
   });
 
-  await t.step("(ResultInstance).[Symbol.iterator]", async (t) => {
-    await t.step("Ok<T>", async (t) => {
-      const result = Result.ok("value");
-      const expected = ["value"];
-
-      await t.step(`for (const v of ${result})`, () => {
-        let i = 0;
-        for (const value of result) {
-          assertEquals(value, expected[i++]);
-        }
-        assertEquals(i, expected.length);
-      });
-
-      await t.step(`Array.from(${result}) => [${expected}]`, () => {
-        const array = Array.from(result);
-        assertEquals(array, expected);
-      });
-
-      await t.step(`[...${result}] => [${expected}]`, () => {
-        assertEquals([...result], expected);
-      });
-    });
-
-    await t.step("Err<E>", async (t) => {
-      const result = Result.err("error");
-
-      await t.step(`for (const v of ${result})`, () => {
-        assertThrows(() => {
-          for (const _ of result) {
-            assert(false);
-          }
-        });
-      });
-
-      await t.step(`Array.from(${result})`, () => {
-        assertThrows(() => Array.from(result));
-      });
-
-      await t.step(`[...${result}]`, () => {
-        assertThrows(() => [...result]);
-      });
-    });
-  });
-
   await t.step("(ResultInstance).toString", async (t) => {
     const tests = [
       [Result.ok("value"), "Ok(value)"],

@@ -1,33 +1,32 @@
 /**
- * Result is Object base type, Ok<T> and Err<E>.
+ * Result type represented as plain objects for JSON serialization compatibility.
  *
- * ## Why Object base?
+ * This module provides {@link Result}<T, E> = {@link Ok}<T> | {@link Err}<E>,
+ * and {@link ResultInstance}<T, E> with chainable methods.
  *
- * If you use on Server and Browser, using JSON.stringify and JSON.parse.
- * So, Object base is easy to use.
+ * ## Why Object-based?
+ *
+ * Object-based representation allows seamless JSON serialization between server and browser:
  *
  * ```ts
  * const json = '{"ok":true,"value":1}';
  * const result: Result<number> = JSON.parse(json);
- *
  * if (result.ok) {
  *   console.log(result.value); // 1
- * } else {
- *   console.error(result.error);
  * }
  * ```
  *
- * @example Basic Usage
+ * @example Basic usage
  * ```ts
  * import { ok } from "@askua/core/result";
  *
  * const value = ok(Math.random())
- *   .filter((n) => n >= 0.5, (n) => new Error(`less than 0.5: ${n}`))
+ *   .filter((n) => n >= 0.5, (n) => new Error(`too small: ${n}`))
  *   .map((n) => n.toFixed(2))
  *   .unwrap(() => "0.00");
  * ```
  *
- * @example Lazy eval with async functions
+ * @example Async operations with lazy
  * ```ts
  * import { Result, ok } from "@askua/core/result";
  *
@@ -44,6 +43,8 @@ import type { None, Option, Some } from "./option.ts";
 import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
 
 /**
+ * Represents a {@link Result} that contains a success value.
+ *
  * @example
  * ```ts
  * import { ok, type Ok } from "@askua/core/result";
@@ -71,29 +72,28 @@ export interface Ok<T> {
 export type OkInstance<T, E = Error> = Ok<T> & ResultContext<T, E>;
 
 /**
- * Infer {@link Ok} or {@link OkInstance}
+ * Infers {@link Ok} or {@link OkInstance} based on the input {@link Result} type.
  *
  * @example
  * ```ts
- * const a: InferOk<Result<number>, number, Error> = { ok: true, value: 1 };
- * const b: Ok<number> = a;
+ * import type { Result, ResultInstance, InferOk } from "@askua/core/result";
  *
- * const c: InferOk<ResultInstance<number>, number, Error> = ok(1);
- * const d: OkInstance<number> = c;
+ * type A = InferOk<Result<string, Error>, number, Error>;       // Ok<number>
+ * type B = InferOk<ResultInstance<string, Error>, number, Error>; // OkInstance<number, Error>
  * ```
  */
 export type InferOk<R extends Result<unknown, unknown>, T, E> = R extends
   ResultContext<unknown, unknown> ? OkInstance<T, E> : Ok<T>;
 
 /**
- * to {@link OkInstance}
+ * Creates an {@link OkInstance} containing the given value.
  *
  * @example
  * ```ts
  * import { ok } from "@askua/core/result";
  *
  * const a = ok(1);
- * const b = ok(1).map((n) => n + 1);
+ * const b = ok(1).map((n) => n + 1); // ok(2)
  * ```
  */
 export function ok<T, E = never>(
@@ -103,15 +103,15 @@ export function ok<T, E = never>(
 }
 
 /**
- * {@link Result} is {@link Ok}
+ * Type guard that checks if a {@link Result} is {@link Ok}.
  *
  * @example
  * ```ts
- * import { ok, isOk } from "@askua/core/result";
+ * import { ok, isOk, type Result } from "@askua/core/result";
  *
- * const a = ok(1);
+ * const a: Result<number> = ok(1);
  * if (isOk(a)) {
- *   console.log(a.value); // 1
+ *   console.log(a.value); // number
  * }
  * ```
  */
@@ -122,6 +122,8 @@ export function isOk<T, E>(
 }
 
 /**
+ * Represents a {@link Result} that contains an error.
+ *
  * @example
  * ```ts
  * import { err, type Err } from "@askua/core/result";
@@ -149,29 +151,28 @@ export interface Err<E> {
 export type ErrInstance<T, E> = Err<E> & ResultContext<T, E>;
 
 /**
- * Infer {@link Err} or {@link ErrInstance}
+ * Infers {@link Err} or {@link ErrInstance} based on the input {@link Result} type.
  *
  * @example
  * ```ts
- * const a: InferErr<Result<number, string>, number, string> = { ok: false, error: "is error" };
- * const b: Err<string> = a;
+ * import type { Result, ResultInstance, InferErr } from "@askua/core/result";
  *
- * const c: InferErr<ResultInstance<number, string>, number, string> = err("is error");
- * const d: ErrInstance<number, string> = c;
+ * type A = InferErr<Result<number, string>, number, string>;       // Err<string>
+ * type B = InferErr<ResultInstance<number, string>, number, string>; // ErrInstance<number, string>
  * ```
  */
 export type InferErr<R extends Result<unknown, unknown>, T, E> = R extends
   ResultContext<unknown, unknown> ? ErrInstance<T, E> : Err<E>;
 
 /**
- * to {@link ErrInstance}
+ * Creates an {@link ErrInstance} containing the given error.
  *
  * @example
  * ```ts
- * import { err, type ResultInstance } from "@askua/core/result";
+ * import { err, ok } from "@askua/core/result";
  *
  * const a = err(new Error("error"));
- * const b = err<number>(new Error("error")).map((n) => n + 1);
+ * const b = err<number>(new Error("error")).or(() => ok(0)); // ok(0)
  * ```
  */
 export function err<T, E = Error>(
@@ -181,15 +182,15 @@ export function err<T, E = Error>(
 }
 
 /**
- * {@link Result} is {@link Err}
+ * Type guard that checks if a {@link Result} is {@link Err}.
  *
  * @example
  * ```ts
- * import { err, isErr } from "@askua/core/result";
+ * import { err, isErr, type Result } from "@askua/core/result";
  *
- * const result = err(new Error("error"));
- * if (isErr(result)) {
- *   console.log(result.error); // Error: error
+ * const a: Result<number> = err(new Error("error"));
+ * if (isErr(a)) {
+ *   console.log(a.error); // Error
  * }
  * ```
  */
@@ -233,29 +234,29 @@ export const Result: ResultToInstance & ResultStatic = Object.assign(
 );
 
 /**
- * Infer {@link Result} or {@link ResultInstance}
+ * Infers {@link Result} or {@link ResultInstance} based on the input type.
  *
+ * @example
  * ```ts
- * const a: InferResult<Result<unknown, unknown>, number, string> = { ok: true, value: 1 };
- * const b: Result<number, string> = a;
+ * import type { Result, ResultInstance, InferResult } from "@askua/core/result";
  *
- * const c: InferResult<ResultInstance<unknown, unknown>, number, string> = ok(1);
- * const d: ResultInstance<number, string> = c;
+ * type A = InferResult<Result<unknown, unknown>, number, string>;       // Result<number, string>
+ * type B = InferResult<ResultInstance<unknown, unknown>, number, string>; // ResultInstance<number, string>
  * ```
  */
 export type InferResult<R extends Result<unknown, unknown>, T, E> = R extends
   ResultInstance<unknown, unknown> ? ResultInstance<T, E> : Result<T, E>;
 
 /**
- * {@link Result} with {@link ResultContext} methods.
+ * {@link Result} with chainable {@link ResultContext} methods.
  *
  * @example
  * ```ts
- * import { Result, type ResultInstance } from "@askua/core/result";
+ * import { ok, type ResultInstance } from "@askua/core/result";
  *
- * const a: ResultInstance<number> = Result({ ok: true, value: 1 });
+ * const a: ResultInstance<number> = ok(1);
  * const b = a
- *   .filter((n) => n > 0)
+ *   .filter((n) => n > 0, () => new Error("not positive"))
  *   .map((n) => n + 1)
  *   .unwrap(() => 0);
  * ```
@@ -276,17 +277,14 @@ export type ResultInstance<T, E = Error> = Result<T, E> & ResultContext<T, E>;
 export type SerializedResult<T, E> = [1, T] | [0, E];
 
 /**
- * {@link Result} to {@link ResultInstance}
+ * Callable signature for converting {@link Result} to {@link ResultInstance}.
  *
  * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { Result, ok, type ResultInstance } from "@askua/core/result";
  *
- * const a: ResultInstance<number> = Result({ ok: true, value: 1 });
- * assertEquals(a, ok(1));
- *
- * const b: ResultInstance<number, string> = Result({ ok: false, error: "error" });
- * assertEquals(b, err("error"));
+ * const plain = { ok: true, value: 1 } as const;
+ * const instance: ResultInstance<number> = Result(plain);
  * ```
  */
 export type ResultToInstance = {
@@ -312,15 +310,19 @@ type OrT<R extends Result<unknown, unknown>, T> = InferT<R, T>;
 type OrE<R extends Result<unknown, unknown>> = InferE<R>;
 
 /**
- * {@link Result} Context Methods
+ * Chainable methods for {@link Result}.
+ *
+ * Provides `and`, `or`, `map`, `filter`, `tee`, `unwrap`, and `lazy` support.
  *
  * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { ok, err } from "@askua/core/result";
  *
- * const a = ok(1)
- *   .and((n) => ok(n + 1))
- *   .map((n) => n * 2);
+ * const result = ok(10)
+ *   .filter((n) => n > 5, () => new Error("too small"))
+ *   .map((n) => n * 2)
+ *   .unwrap(() => 0); // 20
+ * ```
  */
 export interface ResultContext<T, E>
   extends
@@ -509,16 +511,18 @@ type InferResultLazy<
 >;
 
 /**
- * Lazy eval {@link Result} Context Methods
+ * Lazy chainable methods for async {@link Result} operations.
+ *
+ * Operations are deferred until {@link ResultLazyContext.eval | eval()} is called.
  *
  * @example
  * ```ts
- * import { ok } from "@askua/core/result";
+ * import { Result, ok } from "@askua/core/result";
  *
- * const result = await ok(Promise.resolve(1)).lazy()
- *   .map((n) => n + 1)
- *   .filter((n) => n > 1)
- *   .eval(); // Ok(2)
+ * const result = await Result.lazy(Promise.resolve(ok(1)))
+ *   .map((n) => Promise.resolve(n + 1))
+ *   .filter((n) => n > 0)
+ *   .eval(); // ok(2)
  * ```
  */
 export interface ResultLazyContext<
@@ -703,17 +707,17 @@ export interface ResultLazyContext<
 }
 
 /**
- * {@link Result} Static Methods
+ * Static methods available on the {@link Result} namespace.
  *
  * @example
  * ```ts
  * import { Result, ok, err } from "@askua/core/result";
  *
- * Result.ok(1);                   // ok(1)
- * Result.err("is error");         // err("is error")
+ * Result.ok(1);                            // same as ok(1)
+ * Result.err("error");                     // same as err("error")
  * Result.and(ok(1), () => ok(2));          // ok([1, 2])
- * Result.or(err("is error"), () => ok(2)); // ok(2)
- * Result.try(() => "is ok");               // ok("is ok")
+ * Result.or(err("error"), () => ok(2));    // ok(2)
+ * Result.try(() => JSON.parse("{}"));      // ok({})
  * ```
  */
 export interface ResultStatic {
@@ -746,7 +750,7 @@ export interface ResultStatic {
    *   ok(1),
    *   () => ok(2),
    *   ok(3),
-   *   () => Promise.resolve(ok(4)),
+   *   () => ok(4),
    * );
    * assertEquals(a, ok([1, 2, 3, 4]));
    *

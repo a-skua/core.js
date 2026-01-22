@@ -97,10 +97,6 @@ Deno.bench("err(1).unwrap(() => 0)", () => {
   err(1).unwrap(() => 0);
 });
 
-Deno.bench("[...ok(1)]", () => {
-  [...ok(1)];
-});
-
 Deno.bench("await Result.and(...)", async () => {
   await Result.and(
     ok(1),
@@ -250,15 +246,4 @@ Deno.bench("Result.lazy()...eval()", async () => {
     .map((n) => n + 1)
     .map((n) => Promise.resolve(n + 1))
     .eval();
-});
-
-Deno.bench("for (const v of Ok(1))", () => {
-  const values = [];
-  for (const v of Result.ok(1)) {
-    values.push(v);
-  }
-});
-
-Deno.bench("Array.from(Ok(1))", () => {
-  Array.from(Result.ok(1));
 });

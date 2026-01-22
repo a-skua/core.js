@@ -51,7 +51,7 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 {
   const result = Result({ ok: false, error: "error" });
   test<Err<string>>(result);
-  test<ResultInstance<never, string>>(result);
+  test<ResultInstance<unknown, string>>(result);
 }
 
 {
@@ -61,7 +61,11 @@ const resultNumber: ResultInstance<number> = ok(Math.random())
 }
 
 {
-  const result = Result({ ok: Math.random() >= 0.5, value: 1, error: "error" });
+  const result = Result<number, string>({
+    ok: Math.random() >= 0.5,
+    value: 1,
+    error: "error",
+  });
   test<ResultInstance<number, string>>(result);
 }
 
