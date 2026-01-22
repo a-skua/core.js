@@ -1,83 +1,46 @@
 /**
- * {@link Option} is Object base type, {@link Some}<T> and {@link None}.
+ * Optional value type represented as plain objects for JSON serialization compatibility.
  *
- * ## Why Object base?
+ * This module provides {@link Option}<T> = {@link Some}<T> | {@link None},
+ * and {@link OptionInstance}<T> with chainable methods.
  *
- * If you use on Server and Browser, using `JSON.stringify` and `JSON.parse`.
- * So, Object base is easy to use.
+ * ## Why Object-based?
+ *
+ * Object-based representation allows seamless JSON serialization between server and browser:
  *
  * ```ts
  * const json = '{"some":true,"value":1}';
- *
  * const option: Option<number> = JSON.parse(json);
  * if (option.some) {
  *   console.log(option.value); // 1
  * }
  * ```
  *
- * @example type {@link Option}
+ * @example Basic usage
  * ```ts
- * import { assert } from "@std/assert";
- * import type { Option } from "@askua/core/option";
- * import { isSome, isNone } from "@askua/core/option";
+ * import { some, none } from "@askua/core/option";
  *
- * const a: Option<number> = { some: true, value: 1 };
- * assert(isSome(a));
- *
- * const b: Option<number> = { some: false };
- * assert(isNone(b));
- * ```
- *
- * @example type {@link OptionInstance}
- * ```ts
- * import { assert } from "@std/assert";
- * import type { Option, OptionInstance } from "@askua/core/option";
- * import { isSome, isNone, some, none } from "@askua/core/option";
- *
- * const a: OptionInstance<number> = some(1).map((n) => n + 1);
- * const b: Option<number> = a;
- * assert(isSome(a));
- *
- * const c: OptionInstance<number> = none<number>().map((n) => n + 1);
- * const d: Option<number> = c;
- * assert(isNone(c));
- * ```
- *
- * @example Using with {@link OptionInstance} method
- * ```ts
- * const option: OptionInstance<number> = some(Math.random());
- *
- * const value = option
+ * const value = some(Math.random())
  *   .filter((n) => n >= 0.5)
  *   .map((n) => n.toFixed(2))
  *   .unwrap(() => "0.00");
- *
- * console.log(value);
  * ```
  *
- * @example Using with `Iterable`
+ * @example Iterable spread
  * ```ts
- * const getNumber = () => some(Math.random()).filter((n) => n >= 0.5);
+ * import { some, none } from "@askua/core/option";
  *
- * const list = [
- *   ...getNumber(),
- *   ...getNumber(),
- *   ...getNumber(),
- * ];
- *
- * console.log(list);
+ * const list = [...some(1), ...none(), ...some(2)];
+ * // [1, 2]
  * ```
  *
- * @example Using with {@link OptionLazyContext}
+ * @example Async operations with lazy
  * ```ts
- * const getNumber = () => Promise.resolve(some(Math.random()));
+ * import { Option, some } from "@askua/core/option";
  *
- * const option = await Option.lazy(getNumber())
- *   .filter((n) => n >= 0.5)
- *   .map((n) => n.toFixed(2))
+ * const option = await Option.lazy(Promise.resolve(some(1)))
+ *   .map((n) => n + 1)
  *   .eval();
- *
- * console.log(option.unwrap(() => "0.00"));
  * ```
  *
  * @module
@@ -88,14 +51,14 @@ import type { Err, Ok, Result } from "./result.ts";
 import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
 
 /**
- * type {@link Some} is state of {@link Option} with value.
+ * Represents an {@link Option} that contains a value.
  *
- * @example type {@link Some}
+ * @example
  * ```ts
  * import { some, type Some } from "@askua/core/option";
  *
  * const a: Some<number> = { some: true, value: 1 };
- * const b: Some<number> = some(1).map((n) => n + 1);
+ * const b: Some<number> = some(1);
  * ```
  */
 export interface Some<T> {
@@ -104,26 +67,27 @@ export interface Some<T> {
 }
 
 /**
- * type {@link Some} with {@link OptionContext}
+ * {@link Some} with {@link OptionContext} methods.
  *
- * @example type {@link SomeInstance}
+ * @example
  * ```ts
+ * import { some, type SomeInstance } from "@askua/core/option";
+ *
  * const a: SomeInstance<number> = some(1);
- * const b: Some<number> = a;
+ * a.map((n) => n + 1); // SomeInstance<number>
  * ```
  */
 export type SomeInstance<T> = OptionContext<T> & Some<T>;
 
 /**
- * Infer {@link Some}<T> or {@link SomeInstance}<T> from type {@link Option}<T>
+ * Infers {@link Some} or {@link SomeInstance} based on the input {@link Option} type.
  *
- * @example type {@link InferSome}
+ * @example
  * ```ts
- * const a: InferSome<Option<string>, number> = { some: true, value: 1 };
- * const b: Some<number> = a;
+ * import type { Option, OptionInstance, InferSome } from "@askua/core/option";
  *
- * const c: InferSome<OptionInstance<string>, number> = some(1);
- * const d: SomeInstance<number> = c;
+ * type A = InferSome<Option<string>, number>;       // Some<number>
+ * type B = InferSome<OptionInstance<string>, number>; // SomeInstance<number>
  * ```
  */
 export type InferSome<O extends Option<unknown>, T> = O extends
@@ -131,15 +95,14 @@ export type InferSome<O extends Option<unknown>, T> = O extends
   : Some<T>;
 
 /**
- * function {@link some} to {@link SomeInstance}
+ * Creates a {@link SomeInstance} containing the given value.
  *
- * @example function {@link some}
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
  * import { some } from "@askua/core/option";
  *
- * const a = some(1).map((n) => n + 1);
- * assertEquals(a, some(2));
+ * const a = some(1);
+ * const b = some(1).map((n) => n + 1); // some(2)
  * ```
  */
 export function some<T>(value: T): SomeInstance<T> {
@@ -147,17 +110,15 @@ export function some<T>(value: T): SomeInstance<T> {
 }
 
 /**
- * {@link isSome} is {@link Some}
+ * Type guard that checks if an {@link Option} is {@link Some}.
  *
- * @example function {@link isSome}
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, isSome } from "@askua/core/option";
+ * import { some, isSome, type Option } from "@askua/core/option";
  *
- * const a = some(1);
+ * const a: Option<number> = some(1);
  * if (isSome(a)) {
- *   const value = a.unwrap();
- *   assertEquals(value, 1);
+ *   console.log(a.value); // number
  * }
  * ```
  */
@@ -168,9 +129,9 @@ export function isSome<T>(
 }
 
 /**
- * type {@link None} is state of {@link Option} without value.
+ * Represents an {@link Option} that contains no value.
  *
- * @example type {@link None}
+ * @example
  * ```ts
  * import { none, type None } from "@askua/core/option";
  *
@@ -183,26 +144,27 @@ export interface None {
 }
 
 /**
- * type {@link None} with {@link OptionContext}
+ * {@link None} with {@link OptionContext} methods.
  *
- * @example type {@link NoneInstance}
+ * @example
  * ```ts
+ * import { none, type NoneInstance } from "@askua/core/option";
+ *
  * const a: NoneInstance<number> = none();
- * const b: None = a;
+ * a.map((n) => n + 1); // NoneInstance<number>
  * ```
  */
 export type NoneInstance<T> = OptionContext<T> & None;
 
 /**
- * Infer {@link None} or {@link NoneInstance} from type {@link Option}<T>
+ * Infers {@link None} or {@link NoneInstance} based on the input {@link Option} type.
  *
- * @example type {@link InferNone}
+ * @example
  * ```ts
- * const a: InferNone<Option<string>, number> = { some: false };
- * const b: None = a;
+ * import type { Option, OptionInstance, InferNone } from "@askua/core/option";
  *
- * const c: InferNone<OptionInstance<string>, number> = none();
- * const d: NoneInstance<number> = c;
+ * type A = InferNone<Option<string>, number>;       // None
+ * type B = InferNone<OptionInstance<string>, number>; // NoneInstance<number>
  * ```
  */
 export type InferNone<O extends Option<unknown>, T> = O extends
@@ -210,16 +172,14 @@ export type InferNone<O extends Option<unknown>, T> = O extends
   : None;
 
 /**
- * function {@link none} to {@link NoneInstance}
+ * Creates a {@link NoneInstance} representing the absence of a value.
  *
- * @example function {@link none}
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
- * import type { OptionInstance } from "@askua/core/option";
- * import { none } from "@askua/core/option";
+ * import { none, some } from "@askua/core/option";
  *
- * const a = none<string>().map((n) => n + 1);
- * assertEquals(a, none());
+ * const a = none<number>();
+ * const b = none<number>().or(() => some(0)); // some(0)
  * ```
  */
 export function none<T>(): InferNone<OptionInstance<T>, T> {
@@ -227,15 +187,16 @@ export function none<T>(): InferNone<OptionInstance<T>, T> {
 }
 
 /**
- * {@link isNone} is {@link None}
+ * Type guard that checks if an {@link Option} is {@link None}.
  *
- * @example function {@link isNone}
+ * @example
  * ```ts
- * import { assert } from "@std/assert";
- * import { none, isNone } from "@askua/core/option";
+ * import { none, isNone, type Option } from "@askua/core/option";
  *
- * const a = none<number>();
- * assert(isNone(a));
+ * const a: Option<number> = none();
+ * if (isNone(a)) {
+ *   console.log("No value");
+ * }
  * ```
  */
 export function isNone<T>(
@@ -245,103 +206,29 @@ export function isNone<T>(
 }
 
 /**
- * {@link Option} is Object base type, {@link Some} or {@link None}.
+ * Union type of {@link Some}<T> | {@link None}.
  *
- * @example type {@link Option}
+ * Use {@link isSome} or {@link isNone} for type narrowing,
+ * or convert to {@link OptionInstance} for chainable methods.
+ *
+ * @example Plain object
  * ```ts
  * import type { Option } from "@askua/core/option";
  *
  * const a: Option<number> = { some: true, value: 1 };
  * const b: Option<number> = { some: false };
- * ```
- *
- * @example type {@link Some}
- * ```ts
- * import type { Some } from "@askua/core/option";
- *
- * const a: Some<number> = { some: true, value: 1 };
  *
  * if (a.some) {
  *   console.log(a.value);
  * }
  * ```
  *
- * @example type {@link SomeInstance}
+ * @example Convert to OptionInstance
  * ```ts
- * import { some, type SomeInstance } from "@askua/core/option";
+ * import { Option, type OptionInstance } from "@askua/core/option";
  *
- * const a: SomeInstance<number> = some(1);
- *
- * a.tee((value) => console.log(value));
- * ```
- *
- * @example function {@link isSome}
- * ```ts
- * import { isSome, type Option } from "@askua/core/option";
- *
- * const a: Option<number> = { some: true, value: 1 };
- *
- * if (isSome(a)) {
- *  const value: number = a.value;
- * }
- * ```
- *
- * @example type {@link None}
- * ```ts
- * import type { None } from "@askua/core/option";
- *
- * const a: None = { some: false };
- * ```
- *
- * @example type {@link NoneInstance}
- * ```ts
- * import { none, type NoneInstance } from "@askua/core/option";
- *
- * const a: NoneInstance<number> = none();
- *
- * a.tee((value) => console.log(value)); // won't be called
- * ```
- *
- * @example function {@link isNone}
- * ```ts
- * import { isNone, type Option } from "@askua/core/option";
- *
- * const a: Option<number> = { some: false };
- *
- * if (isNone(a)) {
- *   // a is None
- * }
- * ```
- *
- * @example {@link Option} to {@link OptionInstance}
- * ```ts
- * import type { OptionInstance } from "@askua/core/option";
- * import { Option } from "@askua/core/option";
- *
- * const a: Option<number> = { some: true, value: 1 };
- * const b: OptionInstance<number> = Option(a);
- * ```
- *
- * @example type {@link OptionInstance}
- * ```ts
- * import type { OptionInstance } from "@askua/core/option";
- * import { some } from "@askua/core/option";
- *
- * const a: OptionInstance<number> = some(Math.random());
- * const b: OptionInstance<number> = a.filter((n) => n >= 0.5);
- * const c: OptionInstance<string> = b.map((n) => n.toFixed(2));
- * const d: string = c.unwrap(() => "0.00");
- * ```
- *
- * @example {@link OptionStatic} methods
- * ```ts
- * import { Option } from "@askua/core/option";
- *
- * const a = Option.and(
- *   some(1),
- *   () => some(2),
- * ).map(([x, y]) => x + y);
- * console.log(a); // Some(3)
+ * const plain: Option<number> = { some: true, value: 1 };
+ * const instance: OptionInstance<number> = Option(plain);
  * ```
  */
 export type Option<T> = Some<T> | None;
@@ -359,44 +246,31 @@ export const Option: OptionToInstance & OptionStatic = Object.assign(
 );
 
 /**
- * Infer {@link Option}<T> or {@link OptionInstance}<T> from type {@link Option}<T>
+ * Infers {@link Option} or {@link OptionInstance} based on the input type.
  *
- * @example type {@link InferOption}
+ * @example
  * ```ts
- * const a: InferOption<Option<string>, number> = { some: true, value: 1 };
- * const b: Option<number> = a;
+ * import type { Option, OptionInstance, InferOption } from "@askua/core/option";
  *
- * const c: InferOption<OptionInstance<string>, number> = some(1);
- * const d: OptionInstance<number> = c;
+ * type A = InferOption<Option<string>, number>;       // Option<number>
+ * type B = InferOption<OptionInstance<string>, number>; // OptionInstance<number>
  * ```
  */
 export type InferOption<O extends Option<unknown>, T> = O extends
   OptionInstance<unknown> ? OptionInstance<T> : Option<T>;
 
 /**
- * {@link OptionInstance} is Object base type {@link Option} with Context Methods type {@link OptionContext}.
+ * {@link Option} with chainable {@link OptionContext} methods.
  *
- * @example type {@link OptionInstance}
+ * @example
  * ```ts
- * import type { Option, OptionInstance } from "@askua/core/option";
- * import { some, none } from "@askua/core/option";
+ * import { some, type OptionInstance } from "@askua/core/option";
  *
- * const a: OptionInstance<number> = none();
- * const b: Option<number> = a;
- *
- * const c: OptionInstance<number> = some(1);
- * const d: Option<number> = c;
- * ```
- *
- * @example {@link OptionContext} methods
- * ```ts
- * import { some } from "@askua/core/option";
- *
- * const a = some(Math.random())
- *   .filter((n) => n >= 0.5)
- *   .map((n) => Math.floor(n * 100))
+ * const a: OptionInstance<number> = some(1);
+ * const b = a
+ *   .filter((n) => n > 0)
+ *   .map((n) => n * 2)
  *   .unwrap(() => 0);
- * console.log(a);
  * ```
  */
 export type OptionInstance<T> = Option<T> & OptionContext<T>;
@@ -415,39 +289,14 @@ export type OptionInstance<T> = Option<T> & OptionContext<T>;
 export type SerializedOption<T> = [T] | 0;
 
 /**
- * {@link Option} to {@link OptionInstance}
+ * Callable signature for converting {@link Option} to {@link OptionInstance}.
  *
- * @example {@link Some} to {@link SomeInstance}<T>
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
+ * import { Option, some, type OptionInstance } from "@askua/core/option";
  *
- * const a: SomeInstance<number> = Option({ some: true, value: 1 });
- * assertEquals(a, some(1));
- *
- * const b: SomeInstance<number> = Option(some(1));
- * assertEquals(b, some(1));
- * ```
- *
- * @example {@link None} to {@link NoneInstance}<T>
- * ```ts
- * import { assertEquals } from "@std/assert";
- *
- * const a: NoneInstance<number> = Option({ some: false });
- * assertEquals(a, none());
- *
- * const b: NoneInstance<number> = Option(none());
- * assertEquals(b, none());
- * ```
- *
- * @example {@link Option} to {@link OptionInstance}<T>
- * ```ts
- * import { assertEquals } from "@std/assert";
- *
- * const a: OptionInstance<number> = Option({ some: true, value: 1 } as Option<number>);
- * assertEquals(a, some(1));
- *
- * const b: OptionInstance<number> = Option(none() as Option<number>);
- * assertEquals(b, none());
+ * const plain = { some: true, value: 1 } as const;
+ * const instance: OptionInstance<number> = Option(plain);
  * ```
  */
 export type OptionToInstance = {
@@ -466,97 +315,20 @@ type AndT<O extends Option<unknown>> = InferT<O>;
 type OrT<O extends Option<unknown>, T> = InferT<O, T>;
 
 /**
- * Operation Methods for {@link Option}
+ * Chainable methods for {@link Option}.
  *
- * @example {@link OptionContext.and} method
+ * Provides `and`, `or`, `map`, `filter`, `tee`, `unwrap`, `lazy`, and `Iterable` support.
+ *
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = some(1).and((n) => some(n + 1));
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionContext.or} method
- * ```ts
- * import { assertEquals } from "@std/assert";
  * import { some, none } from "@askua/core/option";
  *
- * const a = none().or(() => some(2));
- * assertEquals(a, some(2));
- * ```
+ * const result = some(10)
+ *   .filter((n) => n > 5)
+ *   .map((n) => n * 2)
+ *   .unwrap(() => 0); // 20
  *
- * @example {@link OptionContext.map} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = some(1).map((n) => n + 1);
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionContext.filter} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = some(1).filter((n) => n > 0);
- * assertEquals(a, some(1));
- * ```
- *
- * @example {@link OptionContext.tee} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = some(1).tee((n) => console.log(n));
- * assertEquals(a, some(1));
- * ```
- *
- * @example {@link OptionContext.unwrap} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * const a = some(1).unwrap();
- * assertEquals(a, 1);
- *
- * const b = none().unwrap(() => 0);
- * assertEquals(b, 0);
- * ```
- *
- * @example {@link OptionContext.lazy} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = await some(Promise.resolve(1)).lazy()
- *   .map((n) => Promise.resolve(n + 1))
- *   .eval();
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionContext.toString} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = some(1);
- * assertEquals(a.toString(), "Some(1)");
- * ```
- *
- * @example `Iterable`
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * const list = [
- * ...some(1),
- * ...none<number>(),
- * ...some(2),
- * ...some(3),
- * ];
- * assertEquals(list, [1, 2, 3]);
+ * const list = [...some(1), ...none(), ...some(2)]; // [1, 2]
  * ```
  */
 export interface OptionContext<T>
@@ -718,61 +490,18 @@ type InferOptionLazy<Eval extends Option<unknown>, T> = OptionLazyContext<
 >;
 
 /**
- * Lazy Operation Methods for {@link Option}
+ * Lazy chainable methods for async {@link Option} operations.
  *
- * @example {@link OptionLazyContext.and} method
+ * Operations are deferred until {@link OptionLazyContext.eval | eval()} is called.
+ *
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
+ * import { Option, some } from "@askua/core/option";
  *
- * const a = await some(Promise.resolve(1)).lazy()
- *   .and((n) => Promise.resolve(some(n + 1)))
- *   .eval();
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionLazyContext.or} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none } from "@askua/core/option";
- *
- * const a = await none().lazy()
- *   .or(() => Promise.resolve(some(2)))
- *   .eval();
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionLazyContext.map} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = await some(Promise.resolve(1)).lazy()
+ * const result = await Option.lazy(Promise.resolve(some(1)))
  *   .map((n) => Promise.resolve(n + 1))
- *   .eval();
- * assertEquals(a, some(2));
- * ```
- *
- * @example {@link OptionLazyContext.filter} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = await some(Promise.resolve(1)).lazy()
- *   .filter((n) => Promise.resolve(n > 0))
- *   .eval();
- * assertEquals(a, some(1));
- * ```
- *
- * @example {@link OptionLazyContext.tee} method
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some } from "@askua/core/option";
- *
- * const a = await some(Promise.resolve(1)).lazy()
- *   .tee((n) => console.log(n))
- *   .eval();
- * assertEquals(a, some(1));
+ *   .filter((n) => n > 0)
+ *   .eval(); // some(2)
  * ```
  */
 export interface OptionLazyContext<
@@ -841,6 +570,7 @@ export interface OptionLazyContext<
   map<U>(fn: (value: T) => OrPromise<U>): InferOptionLazy<Eval, U>;
 
   /**
+   * @example
    * ```ts
    * import { assertEquals } from "@std/assert";
    *
@@ -926,81 +656,17 @@ export interface OptionLazyContext<
 }
 
 /**
- * Static Methods for {@link Option}
+ * Static methods available on the {@link Option} namespace.
  *
- * @example {@link OptionStatic.some}
+ * @example
  * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, Option } from "@askua/core/option";
+ * import { Option, some, none } from "@askua/core/option";
  *
- * const a = Option.some(1);
- * assertEquals(a, some(1));
- * ```
- *
- * @example {@link OptionStatic.none}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { none, Option } from "@askua/core/option";
- *
- * const a = Option.none();
- * assertEquals(a, none());
- * ```
- *
- * @example {@link OptionStatic.and}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none, Option } from "@askua/core/option";
- *
- * const a = Option.and(
- *   some(1),
- *   () => some(2),
- * ).map(([x, y]) => x + y);
- * assertEquals(a, some(3));
- * ```
- *
- * @example {@link OptionStatic.or}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none, Option } from "@askua/core/option";
- *
- * const a = Option.or(
- *   none(),
- *   () => some(2),
- * ).map((n) => n + 1);
- * assertEquals(a, some(3));
- * ```
- *
- * @example {@link OptionStatic.lazy} to {@link OptionLazyContext}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, Option } from "@askua/core/option";
- *
- * const option = await Option.lazy(Promise.resolve(some(1)))
- *   .map((n) => Promise.resolve(n + 1))
- *   .eval();
- * assertEquals(option, some(2));
- * ```
- *
- * @example {@link OptionStatic.fromResult}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none, Option } from "@askua/core/option";
- * import { ok } from "@askua/core/result";
- *
- * const a = Option.fromResult(ok(1));
- * assertEquals(a, some(1));
- * ```
- *
- * @example {@link OptionStatic.fromNullable}
- * ```ts
- * import { assertEquals } from "@std/assert";
- * import { some, none, Option } from "@askua/core/option";
- *
- * const a = Option.fromNullable(1);
- * assertEquals(a, some(1));
- *
- * const b = Option.fromNullable(null);
- * assertEquals(b, none());
+ * Option.some(1);           // same as some(1)
+ * Option.none();            // same as none()
+ * Option.and(some(1), () => some(2)); // some([1, 2])
+ * Option.or(none(), () => some(1));   // some(1)
+ * Option.fromNullable(null);          // none()
  * ```
  */
 export type OptionStatic = {
@@ -1248,9 +914,7 @@ export type OptionStatic = {
   fromNullable<T>(value: T | null | undefined): OptionInstance<T>;
 };
 
-/**
- * impl {@link SomeInstance}
- */
+/** @internal */
 class _Some<T> implements SomeInstance<T> {
   readonly some = true;
   constructor(readonly value: T) {}
@@ -1300,9 +964,7 @@ class _Some<T> implements SomeInstance<T> {
   }
 }
 
-/**
- * impl {@link NoneInstance}
- */
+/** @internal */
 class _None<T = never> implements None, OptionContext<T> {
   readonly some = false;
   constructor() {}
@@ -1349,9 +1011,7 @@ class _None<T = never> implements None, OptionContext<T> {
   }
 }
 
-/**
- * {@link OptionLazyContext} Operation
- */
+/** @internal */
 type Op<T, U> =
   | { and: (value: T) => OrPromise<Option<U>> }
   | { or: () => OrPromise<Option<U>> }
@@ -1359,9 +1019,7 @@ type Op<T, U> =
   | { filter: (value: T) => OrPromise<boolean> }
   | { tee: (value: T) => OrPromise<void> };
 
-/**
- * impl {@link OptionLazyContext}
- */
+/** @internal */
 class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<T, Eval> {
   readonly op: Op<T, never>[] = [];
 
@@ -1450,16 +1108,12 @@ class _Lazy<T, Eval extends Option<T>> implements OptionLazyContext<T, Eval> {
   }
 }
 
-/**
- * impl {@link OptionToInstance}
- */
+/** @internal */
 function toInstance<T>(option: Option<T>): OptionInstance<T> {
   return (option.some ? some(option.value) : none() as never);
 }
 
-/**
- * impl {@link OptionStatic.and}
- */
+/** @internal */
 function and<T>(
   options: OrFunction<OrPromise<Option<T>>>[],
   i: number = 0,
@@ -1489,9 +1143,7 @@ function and<T>(
   return some(values);
 }
 
-/**
- * impl {@link OptionStatic.or}
- */
+/** @internal */
 function or<T>(
   options: OrFunction<OrPromise<Option<T>>>[],
   last?: OrPromise<Option<T>>,
@@ -1514,18 +1166,14 @@ function or<T>(
   return last!;
 }
 
-/**
- * impl {@link OptionStatic.lazy}
- */
+/** @internal */
 function lazy<T>(
   option: OrFunction<OrPromise<Option<T>>>,
 ): OptionLazyContext<T, Option<T>> {
   return new _Lazy(option);
 }
 
-/**
- * impl {@link OptionStatic.fromResult}
- */
+/** @internal */
 function fromResult<T, E>(
   result: Result<T, E>,
   orElse?: (e: E) => OptionInstance<T>,
@@ -1540,9 +1188,7 @@ function fromResult<T, E>(
   );
 }
 
-/**
- * impl {@link OptionStatic.fromNullable}
- */
+/** @internal */
 function fromNullable<T>(value: T | null | undefined): OptionInstance<T> {
   if (value === null || value === undefined) return none<T>();
   return some(value);
