@@ -19,12 +19,12 @@ import { Option, some } from "@askua/core/option";
 
 const n: Option<number> = { some: true, value: 1 };
 
-const a = Option(n).map((n) => n + 1);
+const a = Option(n);
 const b = a.map((n) => n + 1);
-const c = b.filter((n) => n > 3);
-const d = c.or(() => some(4));
+const c = b.filter((n) => n > 2);
+const d = c.or(() => some(3));
 
-console.log([...a, ...b, ...c, ...d]); // [2, 3, 4]
+console.log([...a, ...b, ...c, ...d]); // [1, 2, 3]
 ```
 
 ## Benchmark
