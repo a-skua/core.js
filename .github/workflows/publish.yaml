@@ -6,14 +6,16 @@ on:
     tags:
       - "*"
 
+permissions: {}
+
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: denoland/setup-deno@v2
       - run: deno task check
-      - run: npx jsr publish
+      - run: deno publish
