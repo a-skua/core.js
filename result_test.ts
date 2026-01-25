@@ -16,6 +16,7 @@ import {
   type ResultLazyContext,
 } from "./result.ts";
 import { none, some } from "./option.ts";
+import type { NonEmptyArray } from "./types.ts";
 
 Deno.test("ResultInstance", async (t) => {
   await t.step("(ResultInstance).toString", async (t) => {
@@ -306,7 +307,7 @@ Deno.test("Result.and", async (t) => {
       | (() => Result<unknown, unknown>);
 
     const tests: [
-      [Arg, ...Arg[]],
+      NonEmptyArray<Arg>,
       Result<unknown, unknown>,
     ][] = [
       [
@@ -351,7 +352,7 @@ Deno.test("Result.and", async (t) => {
       | (() => Result<unknown, unknown>);
 
     const tests: [
-      [Arg, ...Arg[]],
+      NonEmptyArray<Arg>,
       Result<unknown, unknown>,
     ][] = [
       [
@@ -399,7 +400,7 @@ Deno.test("Result.or", async (t) => {
       | (() => Promise<Result<unknown, unknown>>)
       | (() => Result<unknown, unknown>);
 
-    const tests: [[Arg, ...Arg[]], Result<unknown, unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Result<unknown, unknown>][] = [
       [
         [
           err("Error"),
@@ -441,7 +442,7 @@ Deno.test("Result.or", async (t) => {
       | Result<unknown, unknown>
       | (() => Result<unknown, unknown>);
 
-    const tests: [[Arg, ...Arg[]], Result<unknown, unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Result<unknown, unknown>][] = [
       [
         [
           err("Error"),

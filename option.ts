@@ -48,7 +48,12 @@
 
 import type * as c from "./context.ts";
 import type { Err, Ok, Result } from "./result.ts";
-import type { InferReturnTypeOr, OrFunction, OrPromise } from "./types.ts";
+import type {
+  InferReturnTypeOr,
+  NonEmptyArray,
+  OrFunction,
+  OrPromise,
+} from "./types.ts";
 
 /**
  * Represents an {@link Option} that contains a value.
@@ -745,7 +750,7 @@ export type OptionStatic = {
         : unknown;
     },
     Fn extends OrFunction<OrPromise<Option<T[number]>>>,
-    Args extends [Fn, ...Fn[]],
+    Args extends NonEmptyArray<Fn>,
   >(
     ...args: Args
   ): InferReturnTypeOr<Args[number]> extends infer O
@@ -808,7 +813,7 @@ export type OptionStatic = {
         : unknown;
     }[number],
     Fn extends OrFunction<OrPromise<Option<T>>>,
-    Args extends [Fn, ...Fn[]],
+    Args extends NonEmptyArray<Fn>,
   >(
     ...args: Args
   ): InferReturnTypeOr<Args[number]> extends infer O

@@ -13,3 +13,8 @@ export type OrFunction<T> = (() => T) | T;
  */
 export type InferReturnTypeOr<OrFn extends OrFunction<unknown>> = OrFn extends
   () => infer R ? R : OrFn;
+
+/**
+ * Utility type for non-empty arrays
+ */
+export type NonEmptyArray<T> = [T, ...T[]];

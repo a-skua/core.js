@@ -1,4 +1,3 @@
-import type { OrFunction, OrPromise } from "./types.ts";
 import {
   assert,
   assertEquals,
@@ -16,6 +15,7 @@ import {
   some,
 } from "./option.ts";
 import { err, ok, type Result } from "./result.ts";
+import type { NonEmptyArray, OrFunction, OrPromise } from "./types.ts";
 
 Deno.test("Option", async (t) => {
   const tests = [
@@ -303,7 +303,7 @@ Deno.test("Option.and", async (t) => {
   {
     type Arg = OrFunction<OrPromise<Option<unknown>>>;
 
-    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Option<unknown>][] = [
       [
         [
           some(1),
@@ -341,7 +341,7 @@ Deno.test("Option.and", async (t) => {
   {
     type Arg = OrFunction<Option<unknown>>;
 
-    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Option<unknown>][] = [
       [
         [
           some(1),
@@ -381,7 +381,7 @@ Deno.test("Option.or", async (t) => {
   {
     type Arg = OrFunction<OrPromise<Option<unknown>>>;
 
-    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Option<unknown>][] = [
       [
         [
           none(),
@@ -426,7 +426,7 @@ Deno.test("Option.or", async (t) => {
   {
     type Arg = OrFunction<Option<unknown>>;
 
-    const tests: [[Arg, ...Arg[]], Option<unknown>][] = [
+    const tests: [NonEmptyArray<Arg>, Option<unknown>][] = [
       [
         [
           none(),
