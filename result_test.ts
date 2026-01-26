@@ -517,11 +517,20 @@ Deno.test("Result.fromOption", async (t) => {
 
 Deno.test("Result.try", async (t) => {
   {
-    const tests: [() => number, ResultInstance<number>][] = [
-      [() => 1, ok(1)],
-      [() => {
-        throw new Error("test");
-      }, err(new Error("test"))],
+    const tests: [
+      () => number,
+      ResultInstance<number>,
+    ][] = [
+      [
+        () => 1,
+        ok(1),
+      ],
+      [
+        () => {
+          throw new Error("test");
+        },
+        err(new Error("test")),
+      ],
     ];
 
     for (const [input, expected] of tests) {
@@ -532,16 +541,25 @@ Deno.test("Result.try", async (t) => {
   }
 
   {
-    const tests: [() => Promise<number>, ResultInstance<number>][] = [
-      [() => Promise.resolve(1), ok(1)],
-      [() =>
-        new Promise(() => {
-          throw new Error("test");
-        }), err(new Error("test"))],
+    const tests: [
+      () => Promise<number>,
+      ResultInstance<number>,
+    ][] = [
+      [
+        () => Promise.resolve(1),
+        ok(1),
+      ],
+      [
+        () =>
+          new Promise(() => {
+            throw new Error("test");
+          }),
+        err(new Error("test")),
+      ],
     ];
 
     for (const [input, expected] of tests) {
-      await t.step(`Result.try(${input}) => ${expected}`, async () => {
+      await t.step(`await Result.try(${input}) => ${expected}`, async () => {
         assertEquals(await Result.try(input), expected);
       });
     }
