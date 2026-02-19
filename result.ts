@@ -154,7 +154,7 @@ export interface Err<E> {
  * a.map((n) => n + 1);
  * ```
  */
-export type ErrInstance<T, E> = Err<E> & ResultContext<T, E>;
+export type ErrInstance<T = never, E = Error> = Err<E> & ResultContext<T, E>;
 
 /**
  * Infers {@link Err} or {@link ErrInstance} based on the input {@link Result} type.
@@ -181,9 +181,9 @@ export type InferErr<R extends Result<unknown, unknown>, T, E> = R extends
  * const b = err<number>(new Error("error")).or(() => ok(0)); // ok(0)
  * ```
  */
-export function err<T, E = Error>(
+export function err<T = never, E = Error>(
   error: E,
-): InferErr<ResultInstance<T, E>, T, E> {
+): ErrInstance<T, E> {
   return new _.Err(error);
 }
 
@@ -374,7 +374,7 @@ export interface ResultContext<T, E>
    */
   or<U, F, R extends Result<U, F> = ResultInstance<U, F>>(
     fn: (error: E) => R,
-  ): InferResult<R, OrT<R, T>, OrE<R>>;
+  ): InferResult<R, OrT<R, T>, OrE<InferE<R> extends never ? Result<T, E> : R>>;
 
   /**
    * @example
