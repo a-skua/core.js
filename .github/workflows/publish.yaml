@@ -19,3 +19,13 @@ jobs:
       - uses: denoland/setup-deno@v2
       - run: deno task check
       - run: deno publish
+
+  release:
+    needs: publish
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+    steps:
+      - run: gh release create "$GITHUB_REF_NAME" --generate-notes --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
