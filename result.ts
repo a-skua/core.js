@@ -483,9 +483,7 @@ export interface ResultContext<T, E>
    * assertEquals(b, ok(2));
    * ```
    */
-  lazy(): T extends Promise<infer T>
-    ? ResultLazyContext<T, E, ResultInstance<T, E>>
-    : ResultLazyContext<T, E, ResultInstance<T, E>>;
+  lazy(): ResultLazyContext<Awaited<T>, E, ResultInstance<Awaited<T>, E>>;
 
   /**
    * @example
@@ -606,7 +604,9 @@ export interface ResultLazyContext<
   map<
     U,
     R extends Result<U, E> = ResultInstance<U, E>,
-  >(fn: (value: T) => OrPromise<U>): InferResultLazy<R, AndT<R>, E, Eval>;
+  >(
+    fn: (value: T) => OrPromise<U>,
+  ): InferResultLazy<R, Awaited<AndT<R>>, E, Eval>;
 
   /**
    * @example

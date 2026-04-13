@@ -469,8 +469,7 @@ export interface OptionContext<T>
    * assertEquals(b, some(2));
    * ```
    */
-  lazy(): T extends Promise<infer T> ? OptionLazyContext<T, OptionInstance<T>>
-    : OptionLazyContext<T, OptionInstance<T>>;
+  lazy(): OptionLazyContext<Awaited<T>, OptionInstance<Awaited<T>>>;
 
   /**
    * @example
@@ -576,7 +575,9 @@ export interface OptionLazyContext<
    * assertEquals(b, none());
    * ```
    */
-  map<U>(fn: (value: T) => OrPromise<U>): InferOptionLazy<Eval, U, Eval>;
+  map<U>(
+    fn: (value: T) => OrPromise<U>,
+  ): InferOptionLazy<Eval, Awaited<U>, Eval>;
 
   /**
    * @example
