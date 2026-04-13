@@ -1009,7 +1009,7 @@ function or<T, E>(
 function lazy<T, E, Eval extends Result<T, E>>(
   result: Eval,
 ): ResultLazyContext<T, E, Eval> {
-  return new _.Lazy<T, E, Eval>(result);
+  return new _.ResultLazy<T, E, Eval>(result);
 }
 
 /** @internal */

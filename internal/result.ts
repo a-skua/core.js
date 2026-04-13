@@ -42,7 +42,7 @@ export class Ok<T, E> implements OkInstance<T, E> {
   }
 
   lazy() {
-    return new Lazy(this) as never;
+    return new ResultLazy(this) as never;
   }
 
   toString(): string {
@@ -86,7 +86,7 @@ export class Err<T, E> implements ErrInstance<T, E> {
   }
 
   lazy() {
-    return new Lazy(this) as never;
+    return new ResultLazy(this) as never;
   }
 
   toString(): string {
@@ -106,7 +106,7 @@ type Op<T, E> =
   | { tee: (value: T) => OrPromise<void> };
 
 /** @internal */
-export class Lazy<T, E, Eval extends Result<T, E>>
+export class ResultLazy<T, E, Eval extends Result<T, E>>
   implements ResultLazyContext<T, E, Eval> {
   readonly op: Op<T, E>[] = [];
 

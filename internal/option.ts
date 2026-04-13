@@ -38,7 +38,7 @@ export class Some<T> implements SomeInstance<T> {
   }
 
   lazy() {
-    return new Lazy(this) as never;
+    return new OptionLazy(this) as never;
   }
 
   toString(): string {
@@ -87,7 +87,7 @@ export class None<T = never> implements NoneInstance<T> {
   }
 
   lazy() {
-    return new Lazy(this) as never;
+    return new OptionLazy(this) as never;
   }
 
   toString(): string {
@@ -112,7 +112,7 @@ type Op<T, U> =
   | { tee: (value: T) => OrPromise<void> };
 
 /** @internal */
-export class Lazy<T, Eval extends Option<T>>
+export class OptionLazy<T, Eval extends Option<T>>
   implements OptionLazyContext<T, Eval> {
   readonly op: Op<T, never>[] = [];
 

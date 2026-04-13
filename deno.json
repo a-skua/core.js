@@ -1,7 +1,7 @@
 {
   "name": "@askua/core",
   "description": "My favorite types",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "exports": {
     ".": "./mod.ts",
     "./result": "./result.ts",
@@ -18,7 +18,10 @@
       "bench/*",
       "*_bench.ts",
       "*_test.ts",
-      "docs/*"
+      "docs/*",
+      "deno.lock",
+      "CLAUDE.md",
+      ".claude/*"
     ]
   },
   "tasks": {
@@ -38,7 +41,7 @@
     "check:lint": "deno lint",
     "check:version": "test \"$(deno task version)\" = \"$(git tag --points-at)\"",
     "check": {
-      "command": "deno check . && deno publish --dry-run",
+      "command": "deno check . && deno publish --dry-run --allow-dirty",
       "dependencies": [
         "check:format",
         "check:lint",

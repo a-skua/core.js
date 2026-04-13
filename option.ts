@@ -987,7 +987,7 @@ function or<T>(
 function lazy<T>(
   option: OrFunction<OrPromise<Option<T>>>,
 ): OptionLazyContext<T, Option<T>> {
-  return new _.Lazy(option);
+  return new _.OptionLazy(option);
 }
 
 /** @internal */
